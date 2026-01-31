@@ -14,7 +14,7 @@
     - `turbo.json`にビルドタスクが定義されていることを確認
     - `pnpm install`を実行してエラーが発生しないことを確認
 
-- [ ] 1.2 (P) 共有パッケージのディレクトリ構造を作成する
+- [x] 1.2 (P) 共有パッケージのディレクトリ構造を作成する
   - `packages/shared`ディレクトリを作成し、`package.json`と`src/index.ts`を設定する
   - `packages/config`ディレクトリを作成し、ESLintとTypeScriptの共有設定を配置する
   - 各パッケージの`package.json`で適切な名前とエクスポートを設定する
