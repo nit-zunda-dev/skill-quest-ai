@@ -25,7 +25,7 @@
     - `packages/shared/package.json`に`"name": "@skill-quest/shared"`が設定されていることを確認
     - ルートから`pnpm install`を実行し、ワークスペースが認識されることを確認
 
-- [ ] 1.3 (P) 既存のフロントエンドをワークスペースに統合する
+- [x] 1.3 (P) 既存のフロントエンドをワークスペースに統合する
   - `apps/frontend`の`package.json`をワークスペース形式に更新する
   - ルートレベルの設定ファイルとの整合性を確認する
   - _Requirements: 1.4_
