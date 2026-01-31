@@ -49,12 +49,13 @@
 
 #### Acceptance Criteria
 1. When 認証リクエストが送信された時, the バックエンド shall リクエストごとに`auth`関数を呼び出し、環境変数からDBバインディングを注入する
-2. When GitHub OAuth認証が実行された時, the システム shall Better Authの`socialProviders`設定を使用してOAuthフローを処理する
-3. When セッションが作成された時, the システム shall HttpOnly Cookieにセッショントークンを保存する
-4. When 認証が必要なエンドポイントにアクセスした時, the システム shall Better Authミドルウェアでセッションを検証する
-5. If 無効なセッションが検出された場合, the システム shall 401 Unauthorizedレスポンスを返す
-6. When CORSリクエストが送信された時, the システム shall `Access-Control-Allow-Credentials: true`ヘッダーを設定する
-7. The 認証システム shall CSRF対策をデフォルトで実装する
+2. When メール/パスワード認証が実行された時, the システム shall Better Authの`emailAndPassword`設定を使用して認証フローを処理する
+3. When GitHub OAuth認証が実行された時, the システム shall Better Authの`socialProviders`設定を使用してOAuthフローを処理する
+4. When セッションが作成された時, the システム shall HttpOnly Cookieにセッショントークンを保存する
+5. When 認証が必要なエンドポイントにアクセスした時, the システム shall Better Authミドルウェアでセッションを検証する
+6. If 無効なセッションが検出された場合, the システム shall 401 Unauthorizedレスポンスを返す
+7. When CORSリクエストが送信された時, the システム shall `Access-Control-Allow-Credentials: true`ヘッダーを設定する
+8. The 認証システム shall CSRF対策をデフォルトで実装する
 
 ### Requirement 5: AI統合（Workers AIへの移行）
 
