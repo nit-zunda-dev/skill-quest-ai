@@ -1,0 +1,533 @@
+# Implementation Plan
+
+
+- [ ] 1. モノレポ構成のセットアップ
+- [ ] 1.1 ルートレベルのモノレポ設定ファイルを作成する
+  - プロジェクトルートに`package.json`を作成し、ワークスペース定義を追加する
+  - `pnpm-workspace.yaml`を作成し、`apps/`と`packages/`ディレクトリをワークスペースとして定義する
+  - `turbo.json`を作成し、ビルドパイプラインの依存関係と並列実行を設定する
+  - ルートレベルの`tsconfig.json`を作成し、ベースとなるTypeScript設定を定義する
+  - _Requirements: 1.1, 1.2, 1.4_
+  - **確認方法:**
+    - ルートディレクトリに`package.json`、`pnpm-workspace.yaml`、`turbo.json`、`tsconfig.json`が存在することを確認
+    - `pnpm-workspace.yaml`に`apps/`と`packages/`が定義されていることを確認
+    - `turbo.json`にビルドタスクが定義されていることを確認
+    - `pnpm install`を実行してエラーが発生しないことを確認
+
+- [ ] 1.2 (P) 共有パッケージのディレクトリ構造を作成する
+  - `packages/shared`ディレクトリを作成し、`package.json`と`src/index.ts`を設定する
+  - `packages/config`ディレクトリを作成し、ESLintとTypeScriptの共有設定を配置する
+  - 各パッケージの`package.json`で適切な名前とエクスポートを設定する
+  - _Requirements: 1.4_
+  - **確認方法:**
+    - `packages/shared/package.json`と`packages/shared/src/index.ts`が存在することを確認
+    - `packages/config/`ディレクトリが存在することを確認
+    - `packages/shared/package.json`に`"name": "@skill-quest/shared"`が設定されていることを確認
+    - ルートから`pnpm install`を実行し、ワークスペースが認識されることを確認
+
+- [ ] 1.3 (P) 既存のフロントエンドをワークスペースに統合する
+  - `apps/frontend`の`package.json`をワークスペース形式に更新する
+  - ルートレベルの設定ファイルとの整合性を確認する
+  - _Requirements: 1.4_
+  - **確認方法:**
+    - `apps/frontend/package.json`が存在し、適切な設定が含まれていることを確認
+    - ルートから`pnpm install`を実行し、`apps/frontend`がワークスペースとして認識されることを確認
+    - `pnpm --filter @skill-quest/frontend build`（または適切なビルドコマンド）が実行できることを確認
+
+- [ ] 2. 共有型定義とZodスキーマの実装
+- [ ] 2.1 既存の型定義を共有パッケージに移動する
+  - `apps/frontend/types.ts`の内容を`packages/shared/src/types.ts`に移動する
+  - 型定義を`packages/shared/src/index.ts`からエクスポートする
+  - フロントエンドの既存インポートを`@skill-quest/shared`からのインポートに更新する
+  - _Requirements: 1.3, 1.5_
+  - **確認方法:**
+    - `packages/shared/src/types.ts`が存在し、既存の型定義が含まれていることを確認
+    - `packages/shared/src/index.ts`から型がエクスポートされていることを確認
+    - `apps/frontend`内のファイルで`import type { ... } from '@skill-quest/shared'`が使用されていることを確認
+    - `pnpm --filter @skill-quest/frontend build`を実行し、型エラーが発生しないことを確認
+
+- [ ] 2.2 (P) Zodスキーマを定義して共有する
+  - `packages/shared/src/schemas.ts`を作成し、APIリクエスト/レスポンス用のZodスキーマを定義する
+  - クエスト作成、更新、プロフィール更新などのスキーマを実装する
+  - スキーマを`packages/shared/src/index.ts`からエクスポートする
+  - _Requirements: 2.2_
+  - **確認方法:**
+    - `packages/shared/src/schemas.ts`が存在し、Zodスキーマが定義されていることを確認
+    - `packages/shared/src/index.ts`からスキーマがエクスポートされていることを確認
+    - スキーマが正しくインポートできることを確認（`import { createQuestSchema } from '@skill-quest/shared'`）
+    - スキーマのバリデーションが動作することを確認（テストコードまたは手動検証）
+
+- [ ] 3. バックエンドプロジェクトの初期化
+- [ ] 3.1 バックエンドプロジェクトの基本構造を作成する
+  - `apps/backend`ディレクトリを作成し、`package.json`を設定する
+  - Hono、Drizzle ORM、Better Authなどの依存関係をインストールする
+  - `apps/backend/src/index.ts`を作成し、基本的なHonoアプリケーション構造を実装する
+  - `wrangler.toml`を作成し、Cloudflare Workersの基本設定を定義する
+  - _Requirements: 2.1, 2.4, 2.6_
+  - **確認方法:**
+    - `apps/backend/package.json`が存在し、必要な依存関係（hono、drizzle-orm、better-auth等）が含まれていることを確認
+    - `apps/backend/src/index.ts`が存在し、Honoアプリケーションが初期化されていることを確認
+    - `apps/backend/wrangler.toml`が存在することを確認
+    - `pnpm --filter @skill-quest/backend install`を実行し、依存関係がインストールされることを確認
+    - `pnpm --filter @skill-quest/backend build`を実行し、ビルドが成功することを確認（可能な場合）
+
+- [ ] 3.2 (P) 環境変数とバインディングの型定義を実装する
+  - `Bindings`型を定義し、`DB`、`AI`、認証関連の環境変数を含める
+  - Honoアプリケーションに`Bindings`型を適用する
+  - ミドルウェアで環境変数とバインディングをコンテキストに注入する
+  - _Requirements: 2.1_
+  - **確認方法:**
+    - `Bindings`型が定義され、`DB`、`AI`、認証関連のプロパティが含まれていることを確認
+    - Honoアプリケーションの型パラメータに`Bindings`が適用されていることを確認（`new Hono<{ Bindings: Bindings }>()`）
+    - TypeScriptの型チェックが通ることを確認（`pnpm --filter @skill-quest/backend type-check`または`tsc --noEmit`）
+
+- [ ] 3.3 (P) 共通ミドルウェアを実装する
+  - ロギングミドルウェアを作成し、リクエスト情報を記録する
+  - エラーハンドリングミドルウェアを作成し、統一的なエラーレスポンスを返す
+  - CORSミドルウェアを設定し、`Access-Control-Allow-Credentials`ヘッダーを追加する
+  - _Requirements: 2.6, 4.6_
+  - **確認方法:**
+    - ミドルウェアファイルが存在し、ロギング、エラーハンドリング、CORSの実装が含まれていることを確認
+    - Honoアプリケーションにミドルウェアが適用されていることを確認（`app.use('*', ...)`）
+    - ローカルで`wrangler dev`を実行し、リクエストを送信してログが出力されることを確認
+    - レスポンスヘッダーに`Access-Control-Allow-Credentials: true`が含まれていることを確認（ブラウザの開発者ツールで確認）
+
+- [ ] 4. データベーススキーマとマイグレーションの実装
+- [ ] 4.1 Drizzleスキーマを定義する
+  - `apps/backend/src/db/schema.ts`を作成し、Better Auth用テーブル（`user`、`session`、`account`、`verification`）を定義する
+  - アプリケーション用テーブル（`skills`、`quests`、`user_progress`、`interaction_logs`）を定義する
+  - 外部キー制約とリレーションを設定する
+  - JSONカラムを適切に使用する
+  - _Requirements: 3.1, 3.5, 3.6, 3.7, 3.8_
+  - **確認方法:**
+    - `apps/backend/src/db/schema.ts`が存在し、すべてのテーブル定義が含まれていることを確認
+    - Better Auth用テーブル（`user`、`session`、`account`、`verification`）が定義されていることを確認
+    - アプリケーション用テーブル（`skills`、`quests`、`user_progress`、`interaction_logs`）が定義されていることを確認
+    - 外部キー制約（`.references()`）が設定されていることを確認
+    - JSONカラム（`json()`）が使用されていることを確認
+    - TypeScriptの型チェックが通ることを確認
+
+- [ ] 4.2 マイグレーション設定を実装する
+  - `drizzle.config.ts`を作成し、Drizzle Kitの設定を定義する
+  - マイグレーションファイルの出力先を設定する
+  - `package.json`にマイグレーション生成スクリプトを追加する
+  - _Requirements: 3.2_
+  - **確認方法:**
+    - `apps/backend/drizzle.config.ts`が存在し、適切な設定が含まれていることを確認
+    - `apps/backend/package.json`に`"db:generate": "drizzle-kit generate"`などのスクリプトが追加されていることを確認
+    - `pnpm --filter @skill-quest/backend db:generate`を実行し、エラーが発生しないことを確認（スキーマが存在する場合）
+
+- [ ] 4.3 初期マイグレーションを生成して適用する
+  - `drizzle-kit generate`を実行して初期マイグレーションSQLファイルを生成する
+  - マイグレーションSQLに`PRAGMA foreign_keys = ON;`を追加する
+  - ローカル環境で`wrangler d1 migrations apply --local`を実行してマイグレーションを適用する
+  - _Requirements: 3.2, 3.3, 3.7_
+  - **確認方法:**
+    - マイグレーションファイル（通常は`apps/backend/migrations/`ディレクトリ）が生成されていることを確認
+    - マイグレーションSQLファイルに`PRAGMA foreign_keys = ON;`が含まれていることを確認
+    - `wrangler d1 migrations apply --local`を実行し、マイグレーションが正常に適用されることを確認
+    - `wrangler d1 execute --local --command "SELECT name FROM sqlite_master WHERE type='table';"`を実行し、すべてのテーブルが作成されていることを確認
+
+- [ ] 5. 認証システムの実装
+- [ ] 5.1 Better Authのオンデマンド初期化関数を実装する
+  - `apps/backend/src/auth.ts`を作成し、`auth(env)`関数を実装する
+  - Drizzleアダプタを使用してD1データベースと統合する
+  - メール/パスワード認証を有効化する（`emailAndPassword.enabled: true`）
+  - GitHub OAuth設定を追加する（オプション）
+  - `trustedOrigins`を設定する
+  - _Requirements: 4.1, 4.2, 4.3, 4.7_
+  - **確認方法:**
+    - `apps/backend/src/auth.ts`が存在し、`auth(env)`関数が実装されていることを確認
+    - `emailAndPassword.enabled: true`が設定されていることを確認
+    - Drizzleアダプタが使用されていることを確認（`drizzleAdapter(db, { provider: 'sqlite' })`）
+    - `trustedOrigins`が設定されていることを確認
+    - TypeScriptの型チェックが通ることを確認
+
+- [ ] 5.2 認証ルートハンドラを実装する
+  - `apps/backend/src/routes/auth.ts`を作成し、Better Authのハンドラをマウントする
+  - すべてのHTTPメソッド（GET、POST）を処理する
+  - リクエストごとに`auth(c.env)`を呼び出して認証インスタンスを生成する
+  - _Requirements: 4.1_
+  - **確認方法:**
+    - `apps/backend/src/routes/auth.ts`が存在し、Better Authのハンドラがマウントされていることを確認
+    - `app.on(['GET', 'POST'], '/*', ...)`または類似のパターンで全HTTPメソッドが処理されていることを確認
+    - リクエストごとに`auth(c.env)`が呼び出されていることを確認
+    - ローカルで`wrangler dev`を実行し、`/api/auth/sign-in/email`にPOSTリクエストを送信してエラーが発生しないことを確認（環境変数が設定されている場合）
+
+- [ ] 5.3 認証ミドルウェアを実装する
+  - 認証が必要なエンドポイントでセッションを検証するミドルウェアを作成する
+  - 無効なセッションが検出された場合、401 Unauthorizedレスポンスを返す
+  - 認証済みユーザー情報をコンテキストに注入する
+  - _Requirements: 4.4, 4.5_
+  - **確認方法:**
+    - 認証ミドルウェアが実装され、セッション検証ロジックが含まれていることを確認
+    - 認証が必要なエンドポイントにミドルウェアが適用されていることを確認
+    - 認証されていないリクエストで401 Unauthorizedが返されることを確認（`curl`またはブラウザで確認）
+    - 認証済みユーザー情報がコンテキストに注入されていることを確認（ログまたはデバッガーで確認）
+
+- [ ] 6. APIルートハンドラの実装
+- [ ] 6.1 クエスト管理ルートを実装する
+  - `apps/backend/src/routes/quests.ts`を作成し、`/api/quests`ルートを定義する
+  - GET、POST、PUT、DELETEエンドポイントを実装する
+  - Zodバリデーターを使用して入力を検証する
+  - 認証ミドルウェアを適用する
+  - Drizzle ORMを使用してデータベース操作を実行する
+  - _Requirements: 2.2, 2.3, 2.5, 4.4_
+  - **確認方法:**
+    - `apps/backend/src/routes/quests.ts`が存在し、GET、POST、PUT、DELETEエンドポイントが実装されていることを確認
+    - Zodバリデーター（`zValidator`）が使用されていることを確認
+    - 認証ミドルウェアが適用されていることを確認
+    - ローカルで`wrangler dev`を実行し、`/api/quests`にGETリクエストを送信してエラーが発生しないことを確認（認証が必要な場合は認証トークンを付与）
+    - 不正な入力でバリデーションエラーが返されることを確認
+
+- [ ] 6.2 AI生成ルートを実装する
+  - `apps/backend/src/routes/ai.ts`を作成し、`/api/ai`ルートを定義する
+  - `/api/ai/generate-character`エンドポイントを実装する
+  - `/api/ai/generate-narrative`エンドポイントを実装する
+  - `/api/ai/generate-partner-message`エンドポイントを実装する
+  - Zodバリデーターを使用して入力を検証する
+  - _Requirements: 2.2, 2.3, 2.5, 5.1, 5.2, 5.3_
+  - **確認方法:**
+    - `apps/backend/src/routes/ai.ts`が存在し、3つのエンドポイントが実装されていることを確認
+    - Zodバリデーターが使用されていることを確認
+    - ローカルで`wrangler dev`を実行し、各エンドポイントにPOSTリクエストを送信してエラーが発生しないことを確認（環境変数`AI`が設定されている場合）
+    - 不正な入力でバリデーションエラーが返されることを確認
+
+- [ ] 6.3 AppTypeをエクスポートする
+  - `apps/backend/src/index.ts`でルートをマウントし、`AppType`をエクスポートする
+  - 型のみをエクスポートすることを確認する（実装コードは含めない）
+  - `package.json`で型エクスポートを設定する
+  - _Requirements: 2.4, 1.3_
+  - **確認方法:**
+    - `apps/backend/src/index.ts`で`export type AppType = typeof routes`が定義されていることを確認
+    - `apps/backend/package.json`に`"types": "./dist/index.d.ts"`または類似の設定が含まれていることを確認
+    - フロントエンドから`import type { AppType } from '@skill-quest/backend'`が可能であることを確認
+    - 型のみのインポートが動作することを確認（`import type`を使用）
+
+- [ ] 7. Workers AIサービスの実装
+- [ ] 7.1 AIサービス基盤を実装する
+  - `apps/backend/src/services/ai.ts`を作成し、Workers AI統合の基本構造を実装する
+  - Llama 3.1 8Bモデルを使用する関数を実装する
+  - Llama 3.3 70Bモデルを使用する関数を実装する（複雑な推論用）
+  - 環境変数から`env.AI`バインディングを取得する
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.7_
+  - **確認方法:**
+    - `apps/backend/src/services/ai.ts`が存在し、Workers AI統合の基本構造が実装されていることを確認
+    - Llama 3.1 8BとLlama 3.3 70Bを使用する関数が実装されていることを確認
+    - `env.AI`バインディングが使用されていることを確認
+    - TypeScriptの型チェックが通ることを確認
+
+- [ ] 7.2 (P) キャラクター生成機能を実装する
+  - `generateCharacter`関数を実装し、Llama 3.1 8Bを使用してプロフィールを生成する
+  - プロンプトを構築し、JSON形式のレスポンスをパースする
+  - エラーハンドリングとフォールバックロジックを実装する
+  - _Requirements: 5.1_
+  - **確認方法:**
+    - `generateCharacter`関数が実装され、Llama 3.1 8Bが使用されていることを確認
+    - プロンプト構築とJSONパースのロジックが含まれていることを確認
+    - エラーハンドリングが実装されていることを確認
+    - `/api/ai/generate-character`エンドポイントから呼び出され、正常に動作することを確認（環境変数が設定されている場合）
+
+- [ ] 7.3 (P) ナラティブ生成機能を実装する
+  - `generateNarrative`関数を実装し、Llama 3.1 8Bを使用して物語セグメントと報酬を生成する
+  - タスク情報とユーザーコメントをプロンプトに含める
+  - 難易度に応じた報酬計算ロジックを実装する
+  - _Requirements: 5.2_
+  - **確認方法:**
+    - `generateNarrative`関数が実装され、Llama 3.1 8Bが使用されていることを確認
+    - タスク情報とユーザーコメントがプロンプトに含まれていることを確認
+    - 報酬計算ロジックが実装されていることを確認
+    - `/api/ai/generate-narrative`エンドポイントから呼び出され、正常に動作することを確認（環境変数が設定されている場合）
+
+- [ ] 7.4 (P) パートナーメッセージ生成機能を実装する
+  - `generatePartnerMessage`関数を実装し、Llama 3.1 8Bを使用して動的なセリフを生成する
+  - 時間帯、進捗状況、タスク状態をプロンプトに含める
+  - _Requirements: 5.3_
+  - **確認方法:**
+    - `generatePartnerMessage`関数が実装され、Llama 3.1 8Bが使用されていることを確認
+    - 時間帯、進捗状況、タスク状態がプロンプトに含まれていることを確認
+    - `/api/ai/generate-partner-message`エンドポイントから呼び出され、正常に動作することを確認（環境変数が設定されている場合）
+
+- [ ] 7.5 Function Calling機能を実装する
+  - ツール定義（`submit_answer`、`request_hint`、`search_docs`）をJSONスキーマ形式で定義する
+  - Llama 3.1のFunction Calling機能を使用してツール実行を処理する
+  - ツール実行結果を再度LLMに入力して最終回答を生成する
+  - _Requirements: 5.5_
+  - **確認方法:**
+    - ツール定義がJSONスキーマ形式で定義されていることを確認
+    - Function Calling機能が実装されていることを確認
+    - ツール実行結果を再度LLMに入力するロジックが実装されていることを確認
+    - 実際にFunction Callingが動作することを確認（テストコードまたは手動検証）
+
+- [ ] 7.6 ストリーミングレスポンスハンドラを実装する
+  - `apps/backend/src/routes/ai.ts`に`/api/ai/chat`エンドポイントを追加する
+  - Honoの`streamText`ヘルパーを使用してストリーミングレスポンスを実装する
+  - Workers AIのストリーム形式を処理し、チャンクを逐次送信する
+  - エラーハンドリングとストリーム終了処理を実装する
+  - _Requirements: 5.6_
+  - **確認方法:**
+    - `/api/ai/chat`エンドポイントが実装されていることを確認
+    - `streamText`ヘルパーが使用されていることを確認
+    - ローカルで`wrangler dev`を実行し、`/api/ai/chat`にPOSTリクエストを送信してストリーミングレスポンスが返されることを確認（`curl`またはブラウザで確認）
+    - チャンクが逐次送信されることを確認
+
+- [ ] 7.7 プロンプトサニタイズとセーフティチェックを実装する
+  - プロンプトインジェクション攻撃を防ぐためのサニタイズ関数を実装する
+  - 不適切なコンテンツを検出するロジックを追加する
+  - Llama Guard等のセーフティモデルの統合を検討する（将来の拡張）
+  - _Requirements: 11.3, 11.4_
+  - **確認方法:**
+    - サニタイズ関数が実装されていることを確認
+    - 不適切なコンテンツ検出ロジックが実装されていることを確認
+    - AIエンドポイントでサニタイズ関数が呼び出されていることを確認
+    - プロンプトインジェクション攻撃のテストケースで適切にブロックされることを確認
+
+- [ ] 8. フロントエンド統合（Hono RPCとTanStack Query）
+- [ ] 8.1 Hono RPCクライアントを実装する
+  - `apps/frontend/src/lib/client.ts`を作成し、Hono RPCクライアントを初期化する
+  - `@skill-quest/backend`から`AppType`を型のみインポートする（`import type`）
+  - 環境変数からAPI URLを取得し、クライアントを生成する
+  - 型推論によりレスポンスの型を自動的に認識する
+  - クエリパラメータを型安全な方法で渡す
+  - _Requirements: 6.1, 6.3, 6.4, 6.5_
+  - **確認方法:**
+    - `apps/frontend/src/lib/client.ts`が存在し、Hono RPCクライアントが初期化されていることを確認
+    - `import type { AppType } from '@skill-quest/backend'`が使用されていることを確認
+    - 環境変数からAPI URLが取得されていることを確認
+    - `client.api.quests.$get()`などの呼び出しで型推論が動作することを確認（IDEで型が表示されることを確認）
+    - TypeScriptの型チェックが通ることを確認
+
+- [ ] 8.2 TanStack Queryをセットアップする
+  - `@tanstack/react-query`をインストールする
+  - `QueryClientProvider`をアプリケーションのルートに追加する
+  - クエリクライアントの設定（キャッシュ、リフェッチ設定など）を実装する
+  - _Requirements: 7.2, 7.3_
+  - **確認方法:**
+    - `apps/frontend/package.json`に`@tanstack/react-query`が追加されていることを確認
+    - `QueryClientProvider`がアプリケーションのルート（`App.tsx`または`index.tsx`）に追加されていることを確認
+    - クエリクライアントの設定が実装されていることを確認
+    - アプリケーションが正常に起動することを確認（`pnpm --filter @skill-quest/frontend dev`）
+
+- [ ] 8.3 (P) クエスト管理用のカスタムフックを実装する
+  - `apps/frontend/src/hooks/useQuests.ts`を作成し、`useQuery`を使用してクエスト一覧を取得する
+  - Hono RPCクライアントと組み合わせて型安全なデータフェッチを実装する
+  - ローディング状態とエラー状態を適切に処理する
+  - _Requirements: 7.1, 7.4, 7.5, 7.6_
+  - **確認方法:**
+    - `apps/frontend/src/hooks/useQuests.ts`が存在し、`useQuery`が使用されていることを確認
+    - Hono RPCクライアントが使用されていることを確認
+    - `isLoading`と`isError`が適切に処理されていることを確認
+    - コンポーネントで`useQuests()`を呼び出し、正常に動作することを確認（ブラウザで確認）
+
+- [ ] 8.4 (P) プロフィール管理用のカスタムフックを実装する
+  - `apps/frontend/src/hooks/useProfile.ts`を作成し、ユーザープロフィールを取得・更新する
+  - TanStack Queryの`useMutation`を使用して更新操作を実装する
+  - _Requirements: 7.1, 7.4, 7.5, 7.6_
+  - **確認方法:**
+    - `apps/frontend/src/hooks/useProfile.ts`が存在し、`useQuery`と`useMutation`が使用されていることを確認
+    - プロフィール取得と更新の機能が実装されていることを確認
+    - コンポーネントで`useProfile()`を呼び出し、正常に動作することを確認（ブラウザで確認）
+
+- [ ] 8.5 既存コンポーネントをTanStack Queryに移行する
+  - `Dashboard.tsx`の状態管理を`useState`からTanStack Queryフックに移行する
+  - `QuestBoard.tsx`のデータフェッチングをTanStack Queryに移行する
+  - キャッシュと自動リフェッチの動作を確認する
+  - _Requirements: 7.1, 7.2, 7.3, 7.6_
+  - **確認方法:**
+    - `Dashboard.tsx`と`QuestBoard.tsx`で`useState`が`useQuery`に置き換えられていることを確認
+    - コンポーネントが正常に動作することを確認（ブラウザで確認）
+    - データがキャッシュされ、自動リフェッチが動作することを確認（ネットワークタブで確認）
+
+- [ ] 9. AIチャットUIの実装
+- [ ] 9.1 ストリーミング処理用のカスタムフックを実装する
+  - `apps/frontend/src/hooks/useChat.ts`を作成し、ストリーミングレスポンスを処理する
+  - Server-Sent EventsまたはReadableStreamを処理する
+  - メッセージ状態とローディング状態を管理する
+  - Workers AIのストリーム形式に合わせたアダプタを実装する
+  - _Requirements: 8.1, 8.4, 8.5_
+  - **確認方法:**
+    - `apps/frontend/src/hooks/useChat.ts`が存在し、ストリーミング処理が実装されていることを確認
+    - メッセージ状態とローディング状態が管理されていることを確認
+    - ストリームアダプタが実装されていることを確認
+    - コンポーネントで`useChat()`を呼び出し、ストリーミングが正常に動作することを確認（ブラウザで確認）
+
+- [ ] 9.2 チャットUIコンポーネントを実装する
+  - ストリーミングメッセージを逐次表示するUIコンポーネントを作成する
+  - ローディングインジケーターを表示する
+  - メッセージ送信フォームを実装する
+  - 既存の`PartnerWidget.tsx`を拡張してストリーミング対応にする
+  - _Requirements: 8.1, 8.2, 8.3_
+  - **確認方法:**
+    - ストリーミングメッセージが逐次表示されることを確認（ブラウザで確認）
+    - ローディングインジケーターが表示されることを確認
+    - メッセージ送信フォームが動作することを確認
+    - `PartnerWidget.tsx`がストリーミング対応になっていることを確認
+
+- [ ] 10. 認証UIの実装
+- [ ] 10.1 Better Authクライアントライブラリを実装する
+  - `apps/frontend/src/lib/auth-client.ts`を作成し、Better AuthのReact用クライアントを初期化する
+  - `signIn`、`signOut`、`getSession`メソッドをエクスポートする
+  - 環境変数からAPI URLを取得する
+  - _Requirements: 9.1, 9.2, 9.3, 9.4_
+  - **確認方法:**
+    - `apps/frontend/src/lib/auth-client.ts`が存在し、Better Authクライアントが初期化されていることを確認
+    - `signIn`、`signOut`、`getSession`メソッドがエクスポートされていることを確認
+    - 環境変数からAPI URLが取得されていることを確認
+    - TypeScriptの型チェックが通ることを確認
+
+- [ ] 10.2 (P) ログイン/サインアップUIコンポーネントを実装する
+  - メール/パスワード入力フォームを作成する
+  - ログインとサインアップの処理を実装する
+  - エラーメッセージとバリデーションを表示する
+  - _Requirements: 9.1, 9.5_
+  - **確認方法:**
+    - ログイン/サインアップUIコンポーネントが実装されていることを確認
+    - メール/パスワード入力フォームが動作することを確認（ブラウザで確認）
+    - ログインとサインアップが正常に動作することを確認（実際にログイン/サインアップを試す）
+    - エラーメッセージとバリデーションが表示されることを確認
+
+- [ ] 10.3 (P) 認証状態管理を実装する
+  - アプリケーション起動時にセッションを取得して認証状態を確認する
+  - 認証状態に基づいてルーティングを制御する
+  - ログアウト機能を実装する
+  - _Requirements: 9.2, 9.3_
+  - **確認方法:**
+    - アプリケーション起動時にセッションが取得されることを確認（ブラウザの開発者ツールで確認）
+    - 認証状態に基づいてルーティングが制御されることを確認（ログインしていない場合はログインページにリダイレクト）
+    - ログアウト機能が正常に動作することを確認（実際にログアウトを試す）
+
+- [ ] 10.4 GitHub OAuth UIを実装する（オプション）
+  - GitHub OAuthログインボタンを作成する
+  - OAuthフローを適切に処理する
+  - _Requirements: 9.5a_
+  - **確認方法:**
+    - GitHub OAuthログインボタンが実装されていることを確認
+    - OAuthフローが正常に動作することを確認（実際にGitHub OAuthでログインを試す）
+    - 認証後に適切にリダイレクトされることを確認
+
+- [ ] 11. 既存Gemini API呼び出しの置き換え
+- [ ] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える
+  - `apps/frontend/services/geminiService.ts`を`apps/frontend/lib/api-client.ts`に置き換える
+  - `generateCharacter`関数をHono RPCクライアントを使用する実装に変更する
+  - `generateTaskNarrative`関数をバックエンドAPI呼び出しに変更する
+  - `generatePartnerMessage`関数をバックエンドAPI呼び出しに変更する
+  - 既存のコンポーネントのインポートを更新する
+  - _Requirements: 5.7, 6.1, 6.3_
+  - **確認方法:**
+    - `apps/frontend/services/geminiService.ts`が削除または置き換えられていることを確認
+    - `apps/frontend/lib/api-client.ts`が存在し、Hono RPCクライアントが使用されていることを確認
+    - 既存のコンポーネントのインポートが更新されていることを確認
+    - TypeScriptの型チェックが通ることを確認
+    - アプリケーションが正常に動作することを確認（ブラウザで確認）
+
+- [ ] 11.2 既存コンポーネントのAPI統合を更新する
+  - `App.tsx`の`generateCharacter`呼び出しを新しいAPIクライアントに更新する
+  - `Dashboard.tsx`の`generateTaskNarrative`と`generatePartnerMessage`呼び出しを更新する
+  - エラーハンドリングを適切に実装する
+  - _Requirements: 5.7_
+  - **確認方法:**
+    - `App.tsx`と`Dashboard.tsx`で新しいAPIクライアントが使用されていることを確認
+    - エラーハンドリングが実装されていることを確認
+    - アプリケーションが正常に動作し、AI機能が正常に動作することを確認（ブラウザで確認）
+    - Gemini APIへの直接呼び出しが完全に削除されていることを確認（`grep -r "gemini" apps/frontend`で確認）
+
+- [ ] 12. セキュリティ対策の実装
+- [ ] 12.1 レート制限ミドルウェアを実装する
+  - AIエンドポイント用のレート制限ミドルウェアを作成する
+  - リクエスト頻度を制限し、超過時に適切なエラーレスポンスを返す
+  - Cloudflare WAFの設定を確認する
+  - _Requirements: 11.1, 11.5_
+  - **確認方法:**
+    - レート制限ミドルウェアが実装されていることを確認
+    - AIエンドポイントにミドルウェアが適用されていることを確認
+    - レート制限を超えたリクエストで適切なエラーレスポンス（429 Too Many Requests）が返されることを確認（複数のリクエストを短時間で送信して確認）
+    - Cloudflare WAFの設定を確認（Cloudflare Dashboardで確認）
+
+- [ ] 12.2 入力バリデーションを強化する
+  - すべてのAPIエンドポイントでZodバリデーションを適用する
+  - バリデーションエラーメッセージを適切に返す
+  - _Requirements: 11.2_
+  - **確認方法:**
+    - すべてのAPIエンドポイントでZodバリデーター（`zValidator`）が使用されていることを確認
+    - 不正な入力でバリデーションエラー（400 Bad Request）が返されることを確認（`curl`またはブラウザで確認）
+    - バリデーションエラーメッセージが適切に返されることを確認
+
+- [ ] 13. インフラ設定とCI/CDパイプライン
+- [ ] 13.1 wrangler.tomlの環境分離を設定する
+  - 本番環境とプレビュー環境で異なるD1データベースIDを設定する
+  - 環境変数のバインディングを設定する
+  - Cloudflare PagesとWorkersの統合設定を追加する
+  - _Requirements: 10.1, 10.2, 10.3, 10.7_
+  - **確認方法:**
+    - `apps/backend/wrangler.toml`に`[env.preview]`セクションが定義されていることを確認
+    - 本番環境とプレビュー環境で異なるD1データベースIDが設定されていることを確認
+    - 環境変数のバインディングが設定されていることを確認
+    - Cloudflare PagesとWorkersの統合設定が追加されていることを確認
+    - `wrangler dev --env preview`でプレビュー環境が動作することを確認
+
+- [ ] 13.2 GitHub Actionsワークフローを実装する
+  - `.github/workflows/check.yml`を作成し、PR作成時にESLint、TypeScript型チェック、単体テストを実行する
+  - `.github/workflows/deploy.yml`を作成し、mainブランチへのマージ時に本番デプロイを実行する
+  - マイグレーション自動化を実装する（バックエンドデプロイ前にD1マイグレーションを適用）
+  - Cloudflare PagesとWorkersのデプロイメントを設定する
+  - _Requirements: 10.4, 10.5, 10.6_
+  - **確認方法:**
+    - `.github/workflows/check.yml`と`.github/workflows/deploy.yml`が存在することを確認
+    - PRを作成し、GitHub Actionsでチェックが実行されることを確認（GitHubのActionsタブで確認）
+    - mainブランチにマージし、デプロイが実行されることを確認（GitHubのActionsタブで確認）
+    - マイグレーションが自動的に適用されることを確認（Cloudflare Dashboardで確認）
+    - Cloudflare PagesとWorkersが正常にデプロイされることを確認
+
+- [ ] 13.3 Cloudflare WAF設定を確認する
+  - Cloudflare DashboardでWAFルールを設定する
+  - レート制限ルールを設定する
+  - DDoS対策設定を確認する
+  - _Requirements: 11.5_
+  - **確認方法:**
+    - Cloudflare DashboardでWAFルールが設定されていることを確認
+    - レート制限ルールが設定されていることを確認
+    - DDoS対策設定が有効になっていることを確認
+    - 実際にレート制限が動作することを確認（複数のリクエストを短時間で送信して確認）
+
+- [ ] 14. 統合テストと検証
+- [ ] 14.1 認証フローの統合テストを実装する
+  - メール/パスワード認証のE2Eテストを実装する
+  - セッション管理の動作を確認する
+  - _Requirements: 4.2, 4.4, 4.5_
+  - **確認方法:**
+    - 認証フローの統合テストが実装されていることを確認
+    - テストを実行し、すべてのテストがパスすることを確認（`pnpm test`または適切なテストコマンド）
+    - メール/パスワード認証が正常に動作することを確認（手動でも確認）
+    - セッション管理が正常に動作することを確認（ログイン後、セッションが維持されることを確認）
+
+- [ ] 14.2 APIエンドポイントの統合テストを実装する
+  - クエスト管理APIのCRUD操作をテストする
+  - AI生成APIの動作をテストする
+  - エラーハンドリングをテストする
+  - _Requirements: 2.2, 2.3, 5.1, 5.2, 5.3_
+  - **確認方法:**
+    - APIエンドポイントの統合テストが実装されていることを確認
+    - テストを実行し、すべてのテストがパスすることを確認（`pnpm test`または適切なテストコマンド）
+    - クエスト管理APIのCRUD操作が正常に動作することを確認（手動でも確認）
+    - AI生成APIが正常に動作することを確認（環境変数が設定されている場合）
+    - エラーハンドリングが適切に動作することを確認
+
+- [ ] 14.3 ストリーミング機能の統合テストを実装する
+  - ストリーミングレスポンスの受信をテストする
+  - エラー時のフォールバックをテストする
+  - _Requirements: 5.6, 8.1_
+  - **確認方法:**
+    - ストリーミング機能の統合テストが実装されていることを確認
+    - テストを実行し、すべてのテストがパスすることを確認（`pnpm test`または適切なテストコマンド）
+    - ストリーミングレスポンスが正常に受信されることを確認（手動でも確認、ブラウザで確認）
+    - エラー時のフォールバックが正常に動作することを確認
+
+- [ ] 14.4 型安全性の検証を実施する
+  - バックエンドの型定義変更がフロントエンドで型エラーとして検知されることを確認する
+  - Hono RPCクライアントの型推論が正しく動作することを確認する
+  - _Requirements: 1.3, 6.2_
+  - **確認方法:**
+    - バックエンドのAPIレスポンス型を意図的に変更し、フロントエンドで型エラーが発生することを確認（TypeScriptコンパイラで確認）
+    - Hono RPCクライアントの型推論が正しく動作することを確認（IDEで型が表示されることを確認）
+    - `pnpm --filter @skill-quest/frontend type-check`を実行し、型エラーが検知されることを確認
+    - 型安全性が保たれていることを確認（すべてのAPI呼び出しで型が推論されることを確認）
