@@ -1,3 +1,5 @@
+PRAGMA foreign_keys = ON;
+--> statement-breakpoint
 CREATE TABLE `account` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,

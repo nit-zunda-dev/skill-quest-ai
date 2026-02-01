@@ -130,7 +130,7 @@
     - `apps/backend/package.json`に`"db:generate": "drizzle-kit generate"`などのスクリプトが追加されていることを確認
     - `pnpm --filter @skill-quest/backend db:generate`を実行し、エラーが発生しないことを確認（スキーマが存在する場合）
 
-- [ ] 4.3 初期マイグレーションを生成して適用する
+- [x] 4.3 初期マイグレーションを生成して適用する
   - **前提条件:** タスク4.0でCloudflareアカウント設定とD1データベース作成が完了していること
   - `drizzle-kit generate`を実行して初期マイグレーションSQLファイルを生成する
   - マイグレーションSQLに`PRAGMA foreign_keys = ON;`を追加する
