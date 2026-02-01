@@ -93,7 +93,7 @@
     - レスポンスヘッダーに`Access-Control-Allow-Credentials: true`が含まれていることを確認（ブラウザの開発者ツールで確認）
 
 - [ ] 4. データベーススキーマとマイグレーションの実装
-- [ ] 4.0 Cloudflareアカウント設定とD1データベース作成の手順書を作成する
+- [x] 4.0 Cloudflareアカウント設定とD1データベース作成の手順書を作成する
   - `docs/setup/01_cloudflare_account_setup.md`を作成し、Cloudflareアカウントの作成手順を記載する
   - `docs/setup/02_d1_database_setup.md`を作成し、ローカル開発用D1データベースの作成手順を記載する
   - Wrangler CLIのインストールと認証手順を含める
