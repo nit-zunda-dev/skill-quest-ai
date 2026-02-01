@@ -81,7 +81,7 @@
     - Honoアプリケーションの型パラメータに`Bindings`が適用されていることを確認（`new Hono<{ Bindings: Bindings }>()`）
     - TypeScriptの型チェックが通ることを確認（`pnpm --filter @skill-quest/backend type-check`または`tsc --noEmit`）
 
-- [ ] 3.3 (P) 共通ミドルウェアを実装する
+- [x] 3.3 (P) 共通ミドルウェアを実装する
   - ロギングミドルウェアを作成し、リクエスト情報を記録する
   - エラーハンドリングミドルウェアを作成し、統一的なエラーレスポンスを返す
   - CORSミドルウェアを設定し、`Access-Control-Allow-Credentials`ヘッダーを追加する

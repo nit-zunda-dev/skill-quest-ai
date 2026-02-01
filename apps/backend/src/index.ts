@@ -1,17 +1,14 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import type { Bindings } from './types';
+import { setupMiddleware } from './middleware';
 
 // Honoアプリケーションを初期化
 // Bindings型を適用して、c.envで型安全にアクセスできるようにする
 const app = new Hono<{ Bindings: Bindings }>();
 
-// ミドルウェア: 環境変数とバインディングは自動的にc.envに注入される
-// このミドルウェアは型安全性を確保し、バインディングが利用可能であることを保証する
-app.use('*', async (c, next) => {
-  // c.envにはBindings型で定義されたすべてのプロパティが含まれる
-  // DB, AI, BETTER_AUTH_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, FRONTEND_URL
-  await next();
-});
+// 共通ミドルウェアを適用（CORS、ロギング、エラーハンドリング）
+setupMiddleware(app);
 
 // 基本的なルート（ヘルスチェック）
 app.get('/', (c) => {
@@ -30,6 +27,21 @@ app.get('/test-bindings', (c) => {
       DB: hasDB,
       AI: hasAI,
       BETTER_AUTH_SECRET: hasAuthSecret,
+    },
+  });
+});
+
+// エラーハンドリングのテストルート
+app.get('/test-error', (c) => {
+  throw new HTTPException(400, { message: 'Test error for error handler' });
+});
+
+// CORSヘッダーの確認用ルート
+app.get('/test-cors', (c) => {
+  return c.json({
+    message: 'CORS headers should be set',
+    headers: {
+      'Access-Control-Allow-Credentials': c.res.headers.get('Access-Control-Allow-Credentials'),
     },
   });
 });
