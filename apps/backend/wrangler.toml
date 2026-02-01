@@ -1,0 +1,31 @@
+name = "skill-quest-backend"
+main = "src/index.ts"
+compatibility_date = "2024-11-27"
+
+# D1データベースバインディング（ローカル開発用）
+[[d1_databases]]
+binding = "DB"
+database_name = "skill-quest-db"
+database_id = "local"
+
+# Workers AIバインディング（AI機能を使う場合は有効化）
+# [ai]
+# binding = "AI"
+
+# 環境変数（開発環境）
+[vars]
+FRONTEND_URL = "http://localhost:5173"
+
+# プレビュー環境設定
+[env.preview]
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "skill-quest-db-preview"
+database_id = "preview-db-id"
+
+# 本番環境設定
+[env.production]
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "skill-quest-db-production"
+database_id = "production-db-id"
