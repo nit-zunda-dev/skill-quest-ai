@@ -8,9 +8,9 @@ binding = "DB"
 database_name = "skill-quest-db"
 database_id = "local"
 
-# Workers AIバインディング
-[ai]
-binding = "AI"
+# Workers AIバインディング（AI機能を使う場合は有効化）
+# [ai]
+# binding = "AI"
 
 # 環境変数（開発環境）
 [vars]
