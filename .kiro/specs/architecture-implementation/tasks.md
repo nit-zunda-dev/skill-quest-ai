@@ -93,6 +93,19 @@
     - レスポンスヘッダーに`Access-Control-Allow-Credentials: true`が含まれていることを確認（ブラウザの開発者ツールで確認）
 
 - [ ] 4. データベーススキーマとマイグレーションの実装
+- [ ] 4.0 Cloudflareアカウント設定とD1データベース作成の手順書を作成する
+  - `docs/setup/01_cloudflare_account_setup.md`を作成し、Cloudflareアカウントの作成手順を記載する
+  - `docs/setup/02_d1_database_setup.md`を作成し、ローカル開発用D1データベースの作成手順を記載する
+  - Wrangler CLIのインストールと認証手順を含める
+  - ローカル開発用D1データベースの作成コマンド（`wrangler d1 create <database-name> --local`）を記載する
+  - `wrangler.toml`へのデータベースID設定方法を記載する
+  - _Requirements: 3.1, 3.3_
+  - **確認方法:**
+    - `docs/setup/01_cloudflare_account_setup.md`が存在し、アカウント作成手順が記載されていることを確認
+    - `docs/setup/02_d1_database_setup.md`が存在し、D1データベース作成手順が記載されていることを確認
+    - 手順書に従ってCloudflareアカウントを作成できることを確認
+    - 手順書に従ってローカル開発用D1データベースを作成できることを確認
+
 - [ ] 4.1 Drizzleスキーマを定義する
   - `apps/backend/src/db/schema.ts`を作成し、Better Auth用テーブル（`user`、`session`、`account`、`verification`）を定義する
   - アプリケーション用テーブル（`skills`、`quests`、`user_progress`、`interaction_logs`）を定義する
@@ -118,6 +131,7 @@
     - `pnpm --filter @skill-quest/backend db:generate`を実行し、エラーが発生しないことを確認（スキーマが存在する場合）
 
 - [ ] 4.3 初期マイグレーションを生成して適用する
+  - **前提条件:** タスク4.0でCloudflareアカウント設定とD1データベース作成が完了していること
   - `drizzle-kit generate`を実行して初期マイグレーションSQLファイルを生成する
   - マイグレーションSQLに`PRAGMA foreign_keys = ON;`を追加する
   - ローカル環境で`wrangler d1 migrations apply --local`を実行してマイグレーションを適用する
@@ -205,7 +219,19 @@
     - 型のみのインポートが動作することを確認（`import type`を使用）
 
 - [ ] 7. Workers AIサービスの実装
+- [ ] 7.0 Workers AI有効化の手順書を作成する
+  - `docs/setup/03_workers_ai_setup.md`を作成し、Workers AIの有効化手順を記載する
+  - Cloudflare DashboardでのWorkers AI有効化手順を含める
+  - アカウントでWorkers AIが利用可能であることを確認する方法を記載する
+  - 必要に応じて、Workers AIの料金プランや制限事項を記載する
+  - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - **確認方法:**
+    - `docs/setup/03_workers_ai_setup.md`が存在し、Workers AI有効化手順が記載されていることを確認
+    - 手順書に従ってWorkers AIを有効化できることを確認
+    - Cloudflare DashboardでWorkers AIが有効になっていることを確認
+
 - [ ] 7.1 AIサービス基盤を実装する
+  - **前提条件:** タスク7.0でWorkers AIが有効化されていること
   - `apps/backend/src/services/ai.ts`を作成し、Workers AI統合の基本構造を実装する
   - Llama 3.1 8Bモデルを使用する関数を実装する
   - Llama 3.3 70Bモデルを使用する関数を実装する（複雑な推論用）
@@ -453,7 +479,24 @@
     - バリデーションエラーメッセージが適切に返されることを確認
 
 - [ ] 13. インフラ設定とCI/CDパイプライン
+- [ ] 13.0 本番環境とプレビュー環境のCloudflare設定手順書を作成する
+  - `docs/setup/04_production_environment_setup.md`を作成し、本番環境とプレビュー環境の設定手順を記載する
+  - 本番環境用D1データベースの作成手順（`wrangler d1 create <production-db-name>`）を記載する
+  - プレビュー環境用D1データベースの作成手順（`wrangler d1 create <preview-db-name>`）を記載する
+  - 環境変数の設定手順（`wrangler secret put`）を記載する
+    - `BETTER_AUTH_SECRET`の生成と設定方法
+    - `GITHUB_CLIENT_ID`と`GITHUB_CLIENT_SECRET`の取得と設定方法
+  - GitHub OAuthアプリケーションの作成手順を含める（GitHub Developer Settings）
+  - Cloudflare PagesとWorkersの統合設定手順を記載する
+  - _Requirements: 10.1, 10.2, 10.3, 10.7_
+  - **確認方法:**
+    - `docs/setup/04_production_environment_setup.md`が存在し、本番環境とプレビュー環境の設定手順が記載されていることを確認
+    - 手順書に従って本番環境用D1データベースを作成できることを確認
+    - 手順書に従ってプレビュー環境用D1データベースを作成できることを確認
+    - 手順書に従って環境変数を設定できることを確認
+
 - [ ] 13.1 wrangler.tomlの環境分離を設定する
+  - **前提条件:** タスク13.0で本番環境とプレビュー環境のD1データベースが作成されていること
   - 本番環境とプレビュー環境で異なるD1データベースIDを設定する
   - 環境変数のバインディングを設定する
   - Cloudflare PagesとWorkersの統合設定を追加する
@@ -479,11 +522,14 @@
     - Cloudflare PagesとWorkersが正常にデプロイされることを確認
 
 - [ ] 13.3 Cloudflare WAF設定を確認する
-  - Cloudflare DashboardでWAFルールを設定する
-  - レート制限ルールを設定する
-  - DDoS対策設定を確認する
+  - `docs/setup/05_waf_setup.md`を作成し、Cloudflare WAF設定手順を記載する
+  - Cloudflare DashboardでWAFルールを設定する手順を記載する
+  - レート制限ルールの設定手順を記載する
+  - DDoS対策設定の確認手順を記載する
+  - 手順書に従ってWAF設定を実施する
   - _Requirements: 11.5_
   - **確認方法:**
+    - `docs/setup/05_waf_setup.md`が存在し、WAF設定手順が記載されていることを確認
     - Cloudflare DashboardでWAFルールが設定されていることを確認
     - レート制限ルールが設定されていることを確認
     - DDoS対策設定が有効になっていることを確認
