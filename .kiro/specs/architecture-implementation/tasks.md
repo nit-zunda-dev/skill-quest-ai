@@ -106,7 +106,7 @@
     - 手順書に従ってCloudflareアカウントを作成できることを確認
     - 手順書に従ってローカル開発用D1データベースを作成できることを確認
 
-- [ ] 4.1 Drizzleスキーマを定義する
+- [x] 4.1 Drizzleスキーマを定義する
   - `apps/backend/src/db/schema.ts`を作成し、Better Auth用テーブル（`user`、`session`、`account`、`verification`）を定義する
   - アプリケーション用テーブル（`skills`、`quests`、`user_progress`、`interaction_logs`）を定義する
   - 外部キー制約とリレーションを設定する
