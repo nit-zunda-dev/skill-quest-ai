@@ -46,7 +46,7 @@
     - `apps/frontend`内のファイルで`import type { ... } from '@skill-quest/shared'`が使用されていることを確認
     - `pnpm --filter @skill-quest/frontend build`を実行し、型エラーが発生しないことを確認
 
-- [ ] 2.2 (P) Zodスキーマを定義して共有する
+- [x] 2.2 (P) Zodスキーマを定義して共有する
   - `packages/shared/src/schemas.ts`を作成し、APIリクエスト/レスポンス用のZodスキーマを定義する
   - クエスト作成、更新、プロフィール更新などのスキーマを実装する
   - スキーマを`packages/shared/src/index.ts`からエクスポートする
