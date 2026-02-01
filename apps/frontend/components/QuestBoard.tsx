@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task, TaskType, Difficulty } from '../types';
+import { Task, TaskType, Difficulty } from '@skill-quest/shared';
 import { Plus, Trash2, CheckSquare, Repeat, Calendar, Check } from 'lucide-react';
 
 interface QuestBoardProps {

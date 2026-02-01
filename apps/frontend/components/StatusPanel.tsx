@@ -1,5 +1,5 @@
 import React from 'react';
-import { CharacterProfile } from '../types';
+import { CharacterProfile } from '@skill-quest/shared';
 import StatsChart from './RadarChart';
 import { User, Heart, Star, Coins, ScrollText } from 'lucide-react';
 

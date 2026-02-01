@@ -7,7 +7,7 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from 'recharts';
-import { CharacterStats } from '../types';
+import { CharacterStats } from '@skill-quest/shared';
 
 interface StatsChartProps {
   stats: CharacterStats;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppMode, CharacterProfile, Genre, GenesisFormData } from './types';
+import { AppMode, CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
 import { generateCharacter } from './services/geminiService';
 import { IntroStep, QuestionStep, LoadingStep } from './components/GenesisStep';
 import ResultStep from './components/ResultStep';

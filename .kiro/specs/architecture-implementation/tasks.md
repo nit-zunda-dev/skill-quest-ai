@@ -14,7 +14,7 @@
     - `turbo.json`にビルドタスクが定義されていることを確認
     - `pnpm install`を実行してエラーが発生しないことを確認
 
-- [ ] 1.2 (P) 共有パッケージのディレクトリ構造を作成する
+- [x] 1.2 (P) 共有パッケージのディレクトリ構造を作成する
   - `packages/shared`ディレクトリを作成し、`package.json`と`src/index.ts`を設定する
   - `packages/config`ディレクトリを作成し、ESLintとTypeScriptの共有設定を配置する
   - 各パッケージの`package.json`で適切な名前とエクスポートを設定する
@@ -25,7 +25,7 @@
     - `packages/shared/package.json`に`"name": "@skill-quest/shared"`が設定されていることを確認
     - ルートから`pnpm install`を実行し、ワークスペースが認識されることを確認
 
-- [ ] 1.3 (P) 既存のフロントエンドをワークスペースに統合する
+- [x] 1.3 (P) 既存のフロントエンドをワークスペースに統合する
   - `apps/frontend`の`package.json`をワークスペース形式に更新する
   - ルートレベルの設定ファイルとの整合性を確認する
   - _Requirements: 1.4_
@@ -35,7 +35,7 @@
     - `pnpm --filter @skill-quest/frontend build`（または適切なビルドコマンド）が実行できることを確認
 
 - [ ] 2. 共有型定義とZodスキーマの実装
-- [ ] 2.1 既存の型定義を共有パッケージに移動する
+- [x] 2.1 既存の型定義を共有パッケージに移動する
   - `apps/frontend/types.ts`の内容を`packages/shared/src/types.ts`に移動する
   - 型定義を`packages/shared/src/index.ts`からエクスポートする
   - フロントエンドの既存インポートを`@skill-quest/shared`からのインポートに更新する
@@ -46,7 +46,7 @@
     - `apps/frontend`内のファイルで`import type { ... } from '@skill-quest/shared'`が使用されていることを確認
     - `pnpm --filter @skill-quest/frontend build`を実行し、型エラーが発生しないことを確認
 
-- [ ] 2.2 (P) Zodスキーマを定義して共有する
+- [x] 2.2 (P) Zodスキーマを定義して共有する
   - `packages/shared/src/schemas.ts`を作成し、APIリクエスト/レスポンス用のZodスキーマを定義する
   - クエスト作成、更新、プロフィール更新などのスキーマを実装する
   - スキーマを`packages/shared/src/index.ts`からエクスポートする

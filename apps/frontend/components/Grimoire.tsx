@@ -1,5 +1,5 @@
 import React from 'react';
-import { GrimoireEntry } from '../types';
+import { GrimoireEntry } from '@skill-quest/shared';
 import { Scroll, Sparkles } from 'lucide-react';
 
 interface GrimoireProps {
