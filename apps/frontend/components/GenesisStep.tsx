@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Genre } from '../types';
+import { Genre } from '@skill-quest/shared';
 import { ArrowRight, Wand2, Sword, Scroll, User, CheckCircle2 } from 'lucide-react';
 
 export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (

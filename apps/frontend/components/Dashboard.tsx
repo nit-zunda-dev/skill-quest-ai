@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserState, Task, GrimoireEntry, CharacterProfile, Difficulty } from '../types';
+import { UserState, Task, GrimoireEntry, CharacterProfile, Difficulty } from '@skill-quest/shared';
 import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';

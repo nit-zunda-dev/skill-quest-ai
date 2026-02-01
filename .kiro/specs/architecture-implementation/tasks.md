@@ -35,7 +35,7 @@
     - `pnpm --filter @skill-quest/frontend build`（または適切なビルドコマンド）が実行できることを確認
 
 - [ ] 2. 共有型定義とZodスキーマの実装
-- [ ] 2.1 既存の型定義を共有パッケージに移動する
+- [x] 2.1 既存の型定義を共有パッケージに移動する
   - `apps/frontend/types.ts`の内容を`packages/shared/src/types.ts`に移動する
   - 型定義を`packages/shared/src/index.ts`からエクスポートする
   - フロントエンドの既存インポートを`@skill-quest/shared`からのインポートに更新する

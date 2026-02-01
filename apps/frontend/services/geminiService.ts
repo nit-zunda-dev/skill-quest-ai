@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { CharacterProfile, GenesisFormData, Task, CharacterStats, GrimoireEntry, Difficulty } from "../types";
+import { CharacterProfile, GenesisFormData, Task, CharacterStats, GrimoireEntry, Difficulty } from "@skill-quest/shared";
 
 const apiKey = process.env.API_KEY;
 const ai = new GoogleGenAI({ apiKey: apiKey || '' });
