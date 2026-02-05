@@ -26,17 +26,19 @@ export const session = sqliteTable('session', {
 
 export const account = sqliteTable('account', {
   id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(), // Better Auth 1.4+ で必須
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   providerId: text('provider_id').notNull(),
-  providerAccountId: text('provider_account_id').notNull(),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }),
+  idToken: text('id_token'), // Better Auth 1.4+ で追加
+  accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp' }),
+  refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp' }),
+  scope: text('scope'), // Better Auth 1.4+ で追加
+  password: text('password'), // メール/パスワード認証用
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
-}, (table) => ({
-  uniqueProviderAccount: unique().on(table.providerId, table.providerAccountId),
-}));
+});
 
 export const verification = sqliteTable('verification', {
   id: text('id').primaryKey(),

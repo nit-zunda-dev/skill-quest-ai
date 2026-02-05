@@ -1,0 +1,400 @@
+{
+	"info": {
+		"_postman_id": "skill-quest-ai-collection",
+		"name": "Skill Quest AI API",
+		"description": "Skill Quest AI Backend API Collection\n\nこのコレクションには、Skill Quest AIバックエンドAPIのすべてのエンドポイントが含まれています。\n\n## 認証\n\nBetter Authを使用した認証エンドポイントが含まれています。\n\n## 使用方法\n\n1. Environmentファイルをインポートして、適切な環境を選択してください\n2. 認証が必要なエンドポイントを使用する前に、`Auth - Sign Up`または`Auth - Sign In`を実行してください\n3. セッションは自動的にCookieに保存されます",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Root",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "APIのヘルスチェックエンドポイント"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Bindings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/test-bindings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"test-bindings"
+							]
+						},
+						"description": "Cloudflare Workersのバインディング（DB、AI、認証関連）が利用可能かどうかを確認するエンドポイント"
+					},
+					"response": []
+				},
+				{
+					"name": "Test CORS",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/test-cors",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"test-cors"
+							]
+						},
+						"description": "CORSヘッダーが正しく設定されているか確認するエンドポイント"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Error",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/test-error",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"test-error"
+							]
+						},
+						"description": "エラーハンドリングが正しく動作するか確認するエンドポイント"
+					},
+					"response": []
+				}
+			],
+			"description": "APIの基本的な動作確認用エンドポイント"
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Sign Up (Email/Password)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// レスポンスが成功した場合、セッションCookieが自動的に保存されます",
+									"pm.test(\"Status code is 200 or 201\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"pm.test(\"Response has user data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('user');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\",\n  \"name\": \"{{test_name}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/sign-up/email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"sign-up",
+								"email"
+							]
+						},
+						"description": "メール/パスワードで新規ユーザーを登録します\n\n公式ドキュメント: https://www.better-auth.com/docs/installation"
+					},
+					"response": []
+				},
+				{
+					"name": "Sign In (Email/Password)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// レスポンスが成功した場合、セッションCookieが自動的に保存されます",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Response has session data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('session');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/sign-in/email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"sign-in",
+								"email"
+							]
+						},
+						"description": "メール/パスワードでログインします"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"",
+									"pm.test(\"Response has session or user data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('session').or.have.property('user');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/auth/get-session",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"get-session"
+							]
+						},
+						"description": "現在のセッション情報を取得します"
+					},
+					"response": []
+				},
+			{
+				"name": "Sign Out",
+				"event": [
+					{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test(\"Status code is 200\", function () {",
+								"    pm.expect(pm.response.code).to.be.equal(200);",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}
+				],
+				"request": {
+					"method": "POST",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": {
+						"mode": "raw",
+						"raw": "{}"
+					},
+					"url": {
+						"raw": "{{base_url}}/api/auth/sign-out",
+						"host": [
+							"{{base_url}}"
+						],
+						"path": [
+							"api",
+							"auth",
+							"sign-out"
+						]
+					},
+					"description": "ログアウトします。セッションCookieが削除されます。\n\n**注意:** Sign Inでログイン済みの状態で実行してください。"
+				},
+				"response": []
+			},
+			{
+				"name": "Delete Account",
+				"event": [
+					{
+						"listen": "test",
+						"script": {
+							"exec": [
+								"pm.test(\"Status code is 200\", function () {",
+								"    pm.expect(pm.response.code).to.be.equal(200);",
+								"});",
+								"",
+								"pm.test(\"Response has success message\", function () {",
+								"    const jsonData = pm.response.json();",
+								"    pm.expect(jsonData.success).to.be.true;",
+								"});"
+							],
+							"type": "text/javascript"
+						}
+					}
+				],
+				"request": {
+					"method": "POST",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": {
+						"mode": "raw",
+						"raw": "{}"
+					},
+					"url": {
+						"raw": "{{base_url}}/api/account/delete",
+						"host": [
+							"{{base_url}}"
+						],
+						"path": [
+							"api",
+							"account",
+							"delete"
+						]
+					},
+					"description": "現在ログイン中のユーザーアカウントを削除します。\n\n**注意:** この操作は取り消せません。実行前に必ずSign Inしてください。"
+				},
+				"response": []
+			}
+			],
+			"description": "Better Authを使用した認証エンドポイント\n\n公式ドキュメント: https://www.better-auth.com/docs/installation"
+		},
+		{
+			"name": "Protected Endpoints",
+			"item": [
+				{
+					"name": "Test Protected Route (Requires Auth)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// 認証が必要なエンドポイントのテスト",
+									"pm.test(\"Status code is 200 when authenticated\", function () {",
+									"    // 認証済みの場合、200が返される",
+									"    // 未認証の場合、401が返される",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+									"});",
+									"",
+									"if (pm.response.code === 401) {",
+									"    pm.test(\"Unauthorized response when not authenticated\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('error');",
+									"        pm.expect(jsonData.error.message).to.include('Unauthorized');",
+									"    });",
+									"} else {",
+									"    pm.test(\"User data is returned when authenticated\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('user');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/test-protected",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test-protected"
+							]
+						},
+						"description": "認証が必要なエンドポイントのテスト。認証されていない場合は401 Unauthorizedが返されます。\n\n**使用方法:**\n1. まず`Auth > Sign In (Email/Password)`を実行してログイン\n2. その後、このリクエストを実行して認証状態を確認"
+					},
+					"response": []
+				}
+			],
+			"description": "認証が必要なエンドポイントのテスト用コレクション。実際のAPIエンドポイント（例：`/api/quests`）が実装されたら、ここに追加してください。"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8787",
+			"type": "string"
+		}
+	]
+}

@@ -143,7 +143,7 @@
     - `wrangler d1 execute --local --command "SELECT name FROM sqlite_master WHERE type='table';"`を実行し、すべてのテーブルが作成されていることを確認
 
 - [ ] 5. 認証システムの実装
-- [ ] 5.1 Better Authのオンデマンド初期化関数を実装する
+- [x] 5.1 Better Authのオンデマンド初期化関数を実装する
   - `apps/backend/src/auth.ts`を作成し、`auth(env)`関数を実装する
   - Drizzleアダプタを使用してD1データベースと統合する
   - メール/パスワード認証を有効化する（`emailAndPassword.enabled: true`）
@@ -157,7 +157,7 @@
     - `trustedOrigins`が設定されていることを確認
     - TypeScriptの型チェックが通ることを確認
 
-- [ ] 5.2 認証ルートハンドラを実装する
+- [x] 5.2 認証ルートハンドラを実装する
   - `apps/backend/src/routes/auth.ts`を作成し、Better Authのハンドラをマウントする
   - すべてのHTTPメソッド（GET、POST）を処理する
   - リクエストごとに`auth(c.env)`を呼び出して認証インスタンスを生成する
@@ -168,7 +168,7 @@
     - リクエストごとに`auth(c.env)`が呼び出されていることを確認
     - ローカルで`wrangler dev`を実行し、`/api/auth/sign-in/email`にPOSTリクエストを送信してエラーが発生しないことを確認（環境変数が設定されている場合）
 
-- [ ] 5.3 認証ミドルウェアを実装する
+- [x] 5.3 認証ミドルウェアを実装する
   - 認証が必要なエンドポイントでセッションを検証するミドルウェアを作成する
   - 無効なセッションが検出された場合、401 Unauthorizedレスポンスを返す
   - 認証済みユーザー情報をコンテキストに注入する

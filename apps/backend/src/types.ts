@@ -9,8 +9,7 @@ export type Bindings = {
   DB: D1Database;
   AI: Ai;
   BETTER_AUTH_SECRET: string;
-  GITHUB_CLIENT_ID?: string;
-  GITHUB_CLIENT_SECRET?: string;
+  BETTER_AUTH_BASE_URL?: string;
   FRONTEND_URL?: string;
 };
 
@@ -18,3 +17,14 @@ export type Bindings = {
  * @deprecated Use `Bindings` instead. This alias is kept for backward compatibility.
  */
 export type Env = Bindings;
+
+/**
+ * 認証済みユーザー情報の型定義
+ * Better Authのセッションから取得されるユーザー情報
+ */
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  image?: string | null;
+}
