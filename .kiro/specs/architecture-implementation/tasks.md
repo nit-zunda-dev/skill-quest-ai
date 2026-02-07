@@ -219,7 +219,7 @@
     - 型のみのインポートが動作することを確認（`import type`を使用）
 
 - [ ] 7. Workers AIサービスの実装
-- [ ] 7.0 Workers AI有効化の手順書を作成する
+- [x] 7.0 Workers AI有効化の手順書を作成する
   - `docs/setup/03_workers_ai_setup.md`を作成し、Workers AIの有効化手順を記載する
   - Cloudflare DashboardでのWorkers AI有効化手順を含める
   - アカウントでWorkers AIが利用可能であることを確認する方法を記載する
