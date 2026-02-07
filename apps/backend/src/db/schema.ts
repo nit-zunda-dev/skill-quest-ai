@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, unique } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, unique, primaryKey } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 // Better Auth用テーブル
@@ -92,6 +92,24 @@ export const interactionLogs = sqliteTable('interaction_logs', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+// AI利用制限（06_AI設計.md 利用制限ポリシー）
+/** キャラ生成済みフラグ（1アカウント1回限り） */
+export const userCharacterGenerated = sqliteTable('user_character_generated', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+/** 日次AI利用回数（ナラティブ・パートナー・チャット） */
+export const aiDailyUsage = sqliteTable('ai_daily_usage', {
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  dateUtc: text('date_utc').notNull(), // YYYY-MM-DD (UTC)
+  narrativeCount: integer('narrative_count').notNull().default(0),
+  partnerCount: integer('partner_count').notNull().default(0),
+  chatCount: integer('chat_count').notNull().default(0),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.dateUtc] }),
+}));
+
 // リレーション定義
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -155,4 +173,6 @@ export const schema = {
   quests,
   userProgress,
   interactionLogs,
+  userCharacterGenerated,
+  aiDailyUsage,
 };

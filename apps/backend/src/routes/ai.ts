@@ -1,56 +1,57 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import type { Bindings } from '../types';
+import { streamText } from 'hono/streaming';
+import type { Bindings, AuthUser } from '../types';
 import {
   genesisFormDataSchema,
   narrativeRequestSchema,
   partnerMessageRequestSchema,
+  chatRequestSchema,
 } from '@skill-quest/shared';
-import type { CharacterProfile } from '@skill-quest/shared';
+import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
+import { prepareUserPrompt } from '../services/prompt-safety';
+import {
+  hasCharacterGenerated,
+  recordCharacterGenerated,
+  getDailyUsage,
+  recordNarrative,
+  recordPartner,
+  recordChat,
+  getTodayUtc,
+  CHAT_DAILY_LIMIT,
+} from '../services/ai-usage';
 
-type NarrativeResult = { narrative: string; rewardXp: number; rewardGold: number };
+type AiVariables = { user: AuthUser };
 
 /**
- * AI生成ルート
- * - POST /generate-character
- * - POST /generate-narrative
- * - POST /generate-partner-message
- * Workers AI はタスク7で統合。ここではスタブで応答する。
+ * AI生成ルート（認証必須・利用制限ポリシー適用）
+ * - POST /generate-character … 1回限り
+ * - POST /generate-narrative … 1日1回
+ * - POST /generate-partner-message … 1日1回
+ * - POST /chat … 1日N回（例: 10回）
  */
-export const aiRouter = new Hono<{ Bindings: Bindings }>();
+export const aiRouter = new Hono<{ Bindings: Bindings; Variables: AiVariables }>();
 
-function stubCharacterProfile(name: string, goal: string): CharacterProfile {
-  return {
-    name,
-    className: '冒険者',
-    title: '見習い',
-    stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
-    prologue: `目標: ${goal}`,
-    startingSkill: '基礎',
-    themeColor: '#4a90d9',
-    level: 1,
-    currentXp: 0,
-    nextLevelXp: 100,
-    hp: 100,
-    maxHp: 100,
-    gold: 0,
-  };
-}
-
-function stubNarrativeResult(): NarrativeResult {
-  return {
-    narrative: 'クエストを達成した。',
-    rewardXp: 10,
-    rewardGold: 5,
-  };
-}
+const limitExceeded = (c: { json: (body: unknown, status: number) => Response }, message: string) =>
+  c.json({ error: 'Too Many Requests', message }, 429);
 
 aiRouter.post(
   '/generate-character',
   zValidator('json', genesisFormDataSchema),
   async (c) => {
+    const user = c.get('user');
+    const already = await hasCharacterGenerated(c.env.DB, user.id);
+    if (already) return limitExceeded(c, 'キャラクターは1アカウント1回までです。');
+
     const data = c.req.valid('json');
-    const profile = stubCharacterProfile(data.name, data.goal);
+    const nameResult = prepareUserPrompt(data.name);
+    if (!nameResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: nameResult.reason }, 400);
+    const goalResult = prepareUserPrompt(data.goal);
+    if (!goalResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
+    const sanitized = { ...data, name: nameResult.sanitized, goal: goalResult.sanitized };
+    const service = createAiService(c.env);
+    const profile = await service.generateCharacter(sanitized);
+    await recordCharacterGenerated(c.env.DB, user.id);
     return c.json(profile);
   }
 );
@@ -59,7 +60,23 @@ aiRouter.post(
   '/generate-narrative',
   zValidator('json', narrativeRequestSchema),
   async (c) => {
-    const result = stubNarrativeResult();
+    const user = c.get('user');
+    const today = getTodayUtc();
+    const usage = await getDailyUsage(c.env.DB, user.id, today);
+    if (usage.narrativeCount >= 1) return limitExceeded(c, 'ナラティブ生成は1日1回までです。');
+
+    const data = c.req.valid('json');
+    const titleResult = prepareUserPrompt(data.taskTitle);
+    if (!titleResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: titleResult.reason }, 400);
+    const sanitized = { ...data, taskTitle: titleResult.sanitized };
+    if (sanitized.userComment != null && sanitized.userComment !== '') {
+      const commentResult = prepareUserPrompt(sanitized.userComment);
+      if (!commentResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: commentResult.reason }, 400);
+      sanitized.userComment = commentResult.sanitized;
+    }
+    const service = createAiService(c.env);
+    const result = await service.generateNarrative(sanitized);
+    await recordNarrative(c.env.DB, user.id, today);
     return c.json(result);
   }
 );
@@ -68,7 +85,65 @@ aiRouter.post(
   '/generate-partner-message',
   zValidator('json', partnerMessageRequestSchema),
   async (c) => {
-    const result = { message: '一緒に頑張ろう。' };
-    return c.json(result);
+    const user = c.get('user');
+    const today = getTodayUtc();
+    const usage = await getDailyUsage(c.env.DB, user.id, today);
+    if (usage.partnerCount >= 1) return limitExceeded(c, 'パートナーメッセージは1日1回までです。');
+
+    const data = c.req.valid('json');
+    const sanitized = { ...data };
+    for (const key of ['progressSummary', 'timeOfDay', 'currentTaskTitle'] as const) {
+      const v = sanitized[key];
+      if (v != null && v !== '') {
+        const result = prepareUserPrompt(v);
+        if (!result.ok) return c.json({ error: 'Invalid or unsafe input', reason: result.reason }, 400);
+        sanitized[key] = result.sanitized;
+      }
+    }
+    const service = createAiService(c.env);
+    const message = await service.generatePartnerMessage(sanitized);
+    await recordPartner(c.env.DB, user.id, today);
+    return c.json({ message });
+  }
+);
+
+aiRouter.post(
+  '/chat',
+  zValidator('json', chatRequestSchema),
+  async (c) => {
+    const user = c.get('user');
+    const today = getTodayUtc();
+    const usage = await getDailyUsage(c.env.DB, user.id, today);
+    if (usage.chatCount >= CHAT_DAILY_LIMIT) return limitExceeded(c, `チャットは1日${CHAT_DAILY_LIMIT}回までです。`);
+
+    const data = c.req.valid('json');
+    const msgResult = prepareUserPrompt(data.message);
+    if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
+    const messages = [{ role: 'user' as const, content: msgResult.sanitized }];
+
+    await recordChat(c.env.DB, user.id, today);
+
+    return streamText(c, async (stream) => {
+      try {
+        const ai = c.env.AI as {
+          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<{ response?: string }>>;
+        };
+        const response = await ai.run(MODEL_LLAMA_31_8B, {
+          messages,
+          stream: true,
+        });
+        const iterable = response;
+        for await (const chunk of iterable) {
+          if (chunk?.response) {
+            await stream.write(chunk.response);
+          }
+        }
+      } catch (err) {
+        console.error('Chat stream error:', err);
+        await stream.write('申し訳ありません。一時的に応答を生成できませんでした。');
+      } finally {
+        await stream.close();
+      }
+    });
   }
 );

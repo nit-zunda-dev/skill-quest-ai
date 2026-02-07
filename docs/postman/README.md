@@ -9,6 +9,28 @@
 - `Skill-Quest-AI-Preview.postman_environment.json` - プレビュー環境用の環境設定
 - `Skill-Quest-AI-Production.postman_environment.json` - 本番環境用の環境設定
 
+## ローカルでの動作確認（推奨手順）
+
+1. **バックエンドのD1マイグレーションを適用**
+   ```bash
+   cd apps/backend
+   pnpm db:migrate:local
+   ```
+2. **バックエンドを起動**
+   ```bash
+   pnpm dev
+   # または モノレポルートから: pnpm --filter @skill-quest/backend dev
+   ```
+   → `http://localhost:8787` でAPIが有効になります。
+
+3. **Postmanで環境を選択**
+   - 環境ドロップダウンで `Skill-Quest-AI (Local)` などを選択
+   - `base_url` が `http://localhost:8787` であることを確認
+
+4. **認証してからAPIを呼ぶ**
+   - **Auth > Sign In (Email/Password)** を実行（未登録なら先に Sign Up）
+   - 以降、Quests や AI のリクエストでセッションCookieが送信され、200 が返ります。
+
 ## セットアップ手順
 
 1. **Postmanをインストール**
@@ -95,13 +117,22 @@
 
 ### AI生成（AI）
 
-認証は不要です。現状はスタブ応答（Workers AI 統合はタスク7で予定）です。
+**認証必須**です。先に `Auth > Sign In (Email/Password)` でログインしてください。未認証では 401 が返ります。  
+Workers AI（Llama 3.1 8B）で実装され、利用制限ポリシー（06_AI設計.md）に従い制限があります。
+
+| エンドポイント | 制限 | 超過時 |
+|----------------|------|--------|
+| キャラクター生成 | 1アカウント1回限り | 429 |
+| ナラティブ生成 | 1日1回 | 429 |
+| パートナーメッセージ | 1日1回 | 429 |
+| チャット | 1日10回 | 429 |
 
 1. **キャラクター生成**
    - `AI > Generate Character` を実行
    - エンドポイント: `POST /api/ai/generate-character`
    - 必須: `name`, `goal`, `genre`（FANTASY | CYBERPUNK | MODERN | HORROR | SCI_FI）
    - レスポンス: CharacterProfile（name, className, stats, prologue など）
+   - 2回目以降は 429 Too Many Requests
 
 2. **ナラティブ生成**
    - `AI > Generate Narrative` を実行
@@ -109,17 +140,27 @@
    - 必須: `taskId`, `taskTitle`, `taskType`（DAILY | HABIT | TODO）, `difficulty`（EASY | MEDIUM | HARD）
    - 任意: `userComment`
    - レスポンス: `narrative`, `rewardXp`, `rewardGold`
+   - 同一日に2回目は 429
 
 3. **パートナーメッセージ生成**
    - `AI > Generate Partner Message` を実行
    - エンドポイント: `POST /api/ai/generate-partner-message`
    - すべて任意: `progressSummary`, `timeOfDay`, `currentTaskTitle`, `context`
    - レスポンス: `message`（文字列）
+   - 同一日に2回目は 429
+
+4. **チャット（ストリーミング）**
+   - `AI > Chat (Streaming)` を実行
+   - エンドポイント: `POST /api/ai/chat`
+   - 必須: `message`（1〜2000文字）
+   - 任意: `context`（オブジェクト）
+   - レスポンス: `text/plain` のストリーム（逐次テキスト）
+   - 1日10回を超えると 429
 
 ## 注意事項
 
-- 認証が必要なエンドポイント（Quests、Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
-- AI エンドポイントは認証不要です（現状はスタブ応答）
+- 認証が必要なエンドポイント（**Quests、AI、** Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
+- AI エンドポイントは**認証必須**です。利用制限（キャラ1回/ナラティブ・パートナー1日1回/チャット1日10回）を超えると 429 が返ります
 - セッションはCookieに保存されるため、PostmanのCookie管理が有効になっていることを確認してください
 - Quests の PUT/DELETE では、コレクション変数 `quest_id` が使われます。Get Quests または Create Quest を先に実行すると自動で設定されます
 
@@ -133,7 +174,8 @@
 ### 認証エラーが発生する
 
 - 環境変数の`test_email`と`test_password`が正しく設定されているか確認してください
-- データベースが正しく初期化されているか確認してください（`wrangler d1 migrations apply --local`）
+- データベースが正しく初期化されているか確認してください（`pnpm db:migrate:local` を `apps/backend` で実行）
+- AI エンドポイントは認証必須のため、先に **Auth > Sign In** を実行してから呼び出してください
 
 ### CORSエラーが発生する
 

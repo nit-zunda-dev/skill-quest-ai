@@ -616,9 +616,47 @@
 					},
 					"description": "AIパートナーのメッセージを生成します。すべて任意: progressSummary, timeOfDay, currentTaskTitle, context。",
 					"response": []
+				},
+				{
+					"name": "Chat (Streaming)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Content-Type is text/plain or streaming\", function () {",
+									"    const ct = pm.response.headers.get(\"Content-Type\");",
+									"    pm.expect(ct).to.match(/text\\/plain|charset/);",
+									"});",
+									"pm.test(\"Response body is text\", function () {",
+									"    pm.expect(pm.response.text()).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"こんにちは。簡単に自己紹介してください。\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/chat",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "chat"]
+						}
+					},
+					"description": "ストリーミングチャット。Llama 3.1 8B で応答を逐次返します。必須: message (1〜2000文字)。任意: context。レスポンスは text/plain のストリーム。",
+					"response": []
 				}
 			],
-			"description": "AI生成API。generate-character: キャラプロフィール、generate-narrative: ナラティブと報酬、generate-partner-message: パートナーのセリフ。現状はスタブ応答（Workers AI はタスク7で統合予定）。"
+			"description": "AI生成API。generate-character: キャラプロフィール、generate-narrative: ナラティブと報酬、generate-partner-message: パートナーのセリフ、chat: ストリーミングチャット（Workers AI Llama 3.1 8B）。"
 		}
 	],
 	"event": [

@@ -7,14 +7,17 @@ import { Difficulty, TaskType } from '@skill-quest/shared';
 
 type QuestVariables = { user: AuthUser };
 
+/** Test-only fixture: not used for real auth */
+const MOCK_AUTH_USER: AuthUser = {
+  id: 'test-user-id',
+  email: process.env.TEST_USER_EMAIL ?? 'test-user@test.invalid',
+  name: 'Test User',
+};
+
 function createTestApp(mockEnv: Bindings) {
   const app = new Hono<{ Bindings: Bindings; Variables: QuestVariables }>();
   app.use('*', async (c, next) => {
-    c.set('user', {
-      id: 'test-user-id',
-      email: 'test@example.com',
-      name: 'Test User',
-    });
+    c.set('user', MOCK_AUTH_USER);
     await next();
   });
   app.route('/', questsRouter);
