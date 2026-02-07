@@ -30,6 +30,8 @@
      - `test_email`: テスト用のメールアドレス
      - `test_password`: テスト用のパスワード
      - `test_name`: テスト用のユーザー名
+   - コレクション変数（Quests 用）：
+     - `quest_id`: PUT/Delete Quest で使用するID（Get Quests または Create Quest のレスポンスから自動設定されます。手動で設定することも可能）
 
 ## 使用方法
 
@@ -66,10 +68,60 @@
 - `Health Check > Test CORS`: CORS設定の確認
 - `Health Check > Test Error`: エラーハンドリングの確認
 
+### クエスト管理（Quests）
+
+いずれも**認証必須**です。先に `Auth > Sign In (Email/Password)` でログインしてください。
+
+1. **一覧取得**
+   - `Quests > Get Quests` を実行
+   - エンドポイント: `GET /api/quests`
+   - レスポンスの先頭クエストIDがコレクション変数 `quest_id` に自動保存されます
+
+2. **作成**
+   - `Quests > Create Quest` を実行
+   - エンドポイント: `POST /api/quests`
+   - 必須: `title`, `type`（DAILY | HABIT | TODO）, `difficulty`（EASY | MEDIUM | HARD）
+   - 任意: `skillId`, `scenario`, `winCondition`（オブジェクト）
+   - 作成されたクエストのIDが `quest_id` に自動保存されます
+
+3. **更新**
+   - `Quests > Update Quest` を実行
+   - エンドポイント: `PUT /api/quests/{{quest_id}}`
+   - `quest_id` は Get Quests または Create Quest の実行で自動設定されます
+
+4. **削除**
+   - `Quests > Delete Quest` を実行
+   - エンドポイント: `DELETE /api/quests/{{quest_id}}`
+
+### AI生成（AI）
+
+認証は不要です。現状はスタブ応答（Workers AI 統合はタスク7で予定）です。
+
+1. **キャラクター生成**
+   - `AI > Generate Character` を実行
+   - エンドポイント: `POST /api/ai/generate-character`
+   - 必須: `name`, `goal`, `genre`（FANTASY | CYBERPUNK | MODERN | HORROR | SCI_FI）
+   - レスポンス: CharacterProfile（name, className, stats, prologue など）
+
+2. **ナラティブ生成**
+   - `AI > Generate Narrative` を実行
+   - エンドポイント: `POST /api/ai/generate-narrative`
+   - 必須: `taskId`, `taskTitle`, `taskType`（DAILY | HABIT | TODO）, `difficulty`（EASY | MEDIUM | HARD）
+   - 任意: `userComment`
+   - レスポンス: `narrative`, `rewardXp`, `rewardGold`
+
+3. **パートナーメッセージ生成**
+   - `AI > Generate Partner Message` を実行
+   - エンドポイント: `POST /api/ai/generate-partner-message`
+   - すべて任意: `progressSummary`, `timeOfDay`, `currentTaskTitle`, `context`
+   - レスポンス: `message`（文字列）
+
 ## 注意事項
 
-- 認証が必要なエンドポイントを使用する前に、必ずサインアップまたはログインを実行してください
+- 認証が必要なエンドポイント（Quests、Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
+- AI エンドポイントは認証不要です（現状はスタブ応答）
 - セッションはCookieに保存されるため、PostmanのCookie管理が有効になっていることを確認してください
+- Quests の PUT/DELETE では、コレクション変数 `quest_id` が使われます。Get Quests または Create Quest を先に実行すると自動で設定されます
 
 ## トラブルシューティング
 

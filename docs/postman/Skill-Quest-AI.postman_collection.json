@@ -367,7 +367,258 @@
 					"response": []
 				}
 			],
-			"description": "認証が必要なエンドポイントのテスト用コレクション。実際のAPIエンドポイント（例：`/api/quests`）が実装されたら、ここに追加してください。"
+			"description": "認証が必要なエンドポイントのテスト用コレクション"
+		},
+		{
+			"name": "Quests",
+			"item": [
+				{
+					"name": "Get Quests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response is array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});",
+									"const jsonData = pm.response.json();",
+									"if (jsonData && jsonData.length > 0) {",
+									"    pm.collectionVariables.set(\"quest_id\", jsonData[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/quests",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests"]
+						}
+					},
+					"description": "クエスト一覧を取得します。認証必須。",
+					"response": []
+				},
+				{
+					"name": "Create Quest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(201);",
+									"});",
+									"const jsonData = pm.response.json();",
+									"if (jsonData && jsonData.id) {",
+									"    pm.collectionVariables.set(\"quest_id\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"デイリークエストの例\",\n  \"type\": \"DAILY\",\n  \"difficulty\": \"EASY\",\n  \"scenario\": \"オプション\",\n  \"winCondition\": {}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/quests",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests"]
+						}
+					},
+					"description": "新規クエストを作成。認証必須。必須: title, type (DAILY|HABIT|TODO), difficulty (EASY|MEDIUM|HARD)。",
+					"response": []
+				},
+				{
+					"name": "Update Quest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"更新後のタイトル\",\n  \"difficulty\": \"MEDIUM\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/quests/{{quest_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests", "{{quest_id}}"]
+						}
+					},
+					"description": "指定IDのクエストを更新。認証必須。quest_id は Get Quests または Create Quest で自動設定。",
+					"response": []
+				},
+				{
+					"name": "Delete Quest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/quests/{{quest_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests", "{{quest_id}}"]
+						}
+					},
+					"description": "指定IDのクエストを削除。認証必須。",
+					"response": []
+				}
+			],
+			"description": "クエスト管理API。すべて認証必須。GET: 一覧、POST: 作成、PUT: 更新、DELETE: 削除。quest_id は Get/Create のレスポンスから自動でコレクション変数に保存されます。"
+		},
+		{
+			"name": "AI",
+			"item": [
+				{
+					"name": "Generate Character",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has CharacterProfile shape\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('className');",
+									"    pm.expect(jsonData).to.have.property('stats');",
+									"    pm.expect(jsonData).to.have.property('prologue');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"冒険者\",\n  \"goal\": \"世界を救う\",\n  \"genre\": \"FANTASY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/generate-character",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "generate-character"]
+						}
+					},
+					"description": "キャラクター（CharacterProfile）を生成します。必須: name, goal, genre (FANTASY|CYBERPUNK|MODERN|HORROR|SCI_FI)。",
+					"response": []
+				},
+				{
+					"name": "Generate Narrative",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has narrative and rewards\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('narrative');",
+									"    pm.expect(jsonData).to.have.property('rewardXp');",
+									"    pm.expect(jsonData).to.have.property('rewardGold');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"taskId\": \"task-1\",\n  \"taskTitle\": \"朝のルーティン\",\n  \"taskType\": \"DAILY\",\n  \"difficulty\": \"EASY\",\n  \"userComment\": \"完了した\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/generate-narrative",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "generate-narrative"]
+						}
+					},
+					"description": "タスク完了時のナラティブと報酬を生成します。必須: taskId, taskTitle, taskType (DAILY|HABIT|TODO), difficulty (EASY|MEDIUM|HARD)。任意: userComment。",
+					"response": []
+				},
+				{
+					"name": "Generate Partner Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has message\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"    pm.expect(jsonData.message).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"progressSummary\": \"今日の進捗\",\n  \"timeOfDay\": \"morning\",\n  \"currentTaskTitle\": \"朝のストレッチ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/generate-partner-message",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "generate-partner-message"]
+						}
+					},
+					"description": "AIパートナーのメッセージを生成します。すべて任意: progressSummary, timeOfDay, currentTaskTitle, context。",
+					"response": []
+				}
+			],
+			"description": "AI生成API。generate-character: キャラプロフィール、generate-narrative: ナラティブと報酬、generate-partner-message: パートナーのセリフ。現状はスタブ応答（Workers AI はタスク7で統合予定）。"
 		}
 	],
 	"event": [
@@ -394,6 +645,11 @@
 		{
 			"key": "base_url",
 			"value": "http://localhost:8787",
+			"type": "string"
+		},
+		{
+			"key": "quest_id",
+			"value": "",
 			"type": "string"
 		}
 	]
