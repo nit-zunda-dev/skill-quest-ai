@@ -9,6 +9,7 @@ import {
   chatRequestSchema,
 } from '@skill-quest/shared';
 import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
+import { prepareUserPrompt } from '../services/prompt-safety';
 
 /**
  * AI生成ルート
@@ -24,8 +25,13 @@ aiRouter.post(
   zValidator('json', genesisFormDataSchema),
   async (c) => {
     const data = c.req.valid('json');
+    const nameResult = prepareUserPrompt(data.name);
+    if (!nameResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: nameResult.reason }, 400);
+    const goalResult = prepareUserPrompt(data.goal);
+    if (!goalResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
+    const sanitized = { ...data, name: nameResult.sanitized, goal: goalResult.sanitized };
     const service = createAiService(c.env);
-    const profile = await service.generateCharacter(data);
+    const profile = await service.generateCharacter(sanitized);
     return c.json(profile);
   }
 );
@@ -35,8 +41,16 @@ aiRouter.post(
   zValidator('json', narrativeRequestSchema),
   async (c) => {
     const data = c.req.valid('json');
+    const titleResult = prepareUserPrompt(data.taskTitle);
+    if (!titleResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: titleResult.reason }, 400);
+    const sanitized = { ...data, taskTitle: titleResult.sanitized };
+    if (sanitized.userComment != null && sanitized.userComment !== '') {
+      const commentResult = prepareUserPrompt(sanitized.userComment);
+      if (!commentResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: commentResult.reason }, 400);
+      sanitized.userComment = commentResult.sanitized;
+    }
     const service = createAiService(c.env);
-    const result = await service.generateNarrative(data);
+    const result = await service.generateNarrative(sanitized);
     return c.json(result);
   }
 );
@@ -46,8 +60,17 @@ aiRouter.post(
   zValidator('json', partnerMessageRequestSchema),
   async (c) => {
     const data = c.req.valid('json');
+    const sanitized = { ...data };
+    for (const key of ['progressSummary', 'timeOfDay', 'currentTaskTitle'] as const) {
+      const v = sanitized[key];
+      if (v != null && v !== '') {
+        const result = prepareUserPrompt(v);
+        if (!result.ok) return c.json({ error: 'Invalid or unsafe input', reason: result.reason }, 400);
+        sanitized[key] = result.sanitized;
+      }
+    }
     const service = createAiService(c.env);
-    const message = await service.generatePartnerMessage(data);
+    const message = await service.generatePartnerMessage(sanitized);
     return c.json({ message });
   }
 );
@@ -57,7 +80,9 @@ aiRouter.post(
   zValidator('json', chatRequestSchema),
   async (c) => {
     const data = c.req.valid('json');
-    const messages = [{ role: 'user' as const, content: data.message }];
+    const msgResult = prepareUserPrompt(data.message);
+    if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
+    const messages = [{ role: 'user' as const, content: msgResult.sanitized }];
     return streamText(c, async (stream) => {
       try {
         const ai = c.env.AI as {
