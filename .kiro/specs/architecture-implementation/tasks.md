@@ -230,7 +230,7 @@
     - 手順書に従ってWorkers AIを有効化できることを確認
     - Cloudflare DashboardでWorkers AIが有効になっていることを確認
 
-- [ ] 7.1 AIサービス基盤を実装する
+- [x] 7.1 AIサービス基盤を実装する
   - **前提条件:** タスク7.0でWorkers AIが有効化されていること
   - `apps/backend/src/services/ai.ts`を作成し、Workers AI統合の基本構造を実装する
   - Llama 3.1 8Bモデルを使用する関数を実装する
