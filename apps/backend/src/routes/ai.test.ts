@@ -108,4 +108,37 @@ describe('ai router', () => {
       expect(typeof body.message).toBe('string');
     });
   });
+
+  describe('POST /chat', () => {
+    it('returns 400 for invalid body', async () => {
+      const { app, env } = createTestApp(mockEnv);
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: '' }),
+      }, env);
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 200 with streaming body when AI returns chunks', async () => {
+      async function* streamChunks() {
+        yield { response: 'Hello' };
+        yield { response: ', ' };
+        yield { response: 'world.' };
+      }
+      mockEnv.AI = {
+        run: async () => streamChunks(),
+      } as unknown as Bindings['AI'];
+      const { app, env } = createTestApp(mockEnv);
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Say hello' }),
+      }, env);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('Content-Type')).toMatch(/text\/plain|charset/);
+      const text = await res.text();
+      expect(text).toBe('Hello, world.');
+    });
+  });
 });

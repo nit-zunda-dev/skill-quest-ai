@@ -1,18 +1,21 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { streamText } from 'hono/streaming';
 import type { Bindings } from '../types';
 import {
   genesisFormDataSchema,
   narrativeRequestSchema,
   partnerMessageRequestSchema,
+  chatRequestSchema,
 } from '@skill-quest/shared';
-import { createAiService } from '../services/ai';
+import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
 
 /**
  * AI生成ルート
  * - POST /generate-character … Workers AI (Llama 3.1 8B) でキャラクター生成
  * - POST /generate-narrative … Workers AI (Llama 3.1 8B) でナラティブ・報酬生成
  * - POST /generate-partner-message … Workers AI (Llama 3.1 8B) でパートナーセリフ生成
+ * - POST /chat … ストリーミングチャット (Llama 3.1 8B)
  */
 export const aiRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -46,5 +49,36 @@ aiRouter.post(
     const service = createAiService(c.env);
     const message = await service.generatePartnerMessage(data);
     return c.json({ message });
+  }
+);
+
+aiRouter.post(
+  '/chat',
+  zValidator('json', chatRequestSchema),
+  async (c) => {
+    const data = c.req.valid('json');
+    const messages = [{ role: 'user' as const, content: data.message }];
+    return streamText(c, async (stream) => {
+      try {
+        const ai = c.env.AI as {
+          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<{ response?: string }>>;
+        };
+        const response = await ai.run(MODEL_LLAMA_31_8B, {
+          messages,
+          stream: true,
+        });
+        const iterable = response;
+        for await (const chunk of iterable) {
+          if (chunk?.response) {
+            await stream.write(chunk.response);
+          }
+        }
+      } catch (err) {
+        console.error('Chat stream error:', err);
+        await stream.write('申し訳ありません。一時的に応答を生成できませんでした。');
+      } finally {
+        await stream.close();
+      }
+    });
   }
 );

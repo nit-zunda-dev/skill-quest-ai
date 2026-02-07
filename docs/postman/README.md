@@ -95,7 +95,7 @@
 
 ### AI生成（AI）
 
-認証は不要です。現状はスタブ応答（Workers AI 統合はタスク7で予定）です。
+認証は不要です。Workers AI（Llama 3.1 8B）で実装されています。
 
 1. **キャラクター生成**
    - `AI > Generate Character` を実行
@@ -116,10 +116,17 @@
    - すべて任意: `progressSummary`, `timeOfDay`, `currentTaskTitle`, `context`
    - レスポンス: `message`（文字列）
 
+4. **チャット（ストリーミング）**
+   - `AI > Chat (Streaming)` を実行
+   - エンドポイント: `POST /api/ai/chat`
+   - 必須: `message`（1〜2000文字）
+   - 任意: `context`（オブジェクト）
+   - レスポンス: `text/plain` のストリーム（逐次テキスト）
+
 ## 注意事項
 
 - 認証が必要なエンドポイント（Quests、Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
-- AI エンドポイントは認証不要です（現状はスタブ応答）
+- AI エンドポイントは認証不要です（Workers AI Llama 3.1 8B で動作）
 - セッションはCookieに保存されるため、PostmanのCookie管理が有効になっていることを確認してください
 - Quests の PUT/DELETE では、コレクション変数 `quest_id` が使われます。Get Quests または Create Quest を先に実行すると自動で設定されます
 
