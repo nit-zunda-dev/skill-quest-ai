@@ -80,7 +80,8 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
 app.use('/api/quests/*', authMiddleware);
 app.route('/api/quests', questsRouter);
 
-// AI生成ルート
+// AI生成ルート（認証必須・利用制限は各ハンドラで実施）
+app.use('/api/ai/*', authMiddleware);
 app.route('/api/ai', aiRouter);
 
 // 認証が必要なエンドポイントのテスト用ルート
