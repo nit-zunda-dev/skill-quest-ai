@@ -6,36 +6,17 @@ import {
   narrativeRequestSchema,
   partnerMessageRequestSchema,
 } from '@skill-quest/shared';
-import type { CharacterProfile } from '@skill-quest/shared';
+import { createAiService } from '../services/ai';
 
 type NarrativeResult = { narrative: string; rewardXp: number; rewardGold: number };
 
 /**
  * AI生成ルート
- * - POST /generate-character
- * - POST /generate-narrative
- * - POST /generate-partner-message
- * Workers AI はタスク7で統合。ここではスタブで応答する。
+ * - POST /generate-character … Workers AI (Llama 3.1 8B) でキャラクター生成
+ * - POST /generate-narrative … スタブ（タスク7.3で実装）
+ * - POST /generate-partner-message … スタブ（タスク7.4で実装）
  */
 export const aiRouter = new Hono<{ Bindings: Bindings }>();
-
-function stubCharacterProfile(name: string, goal: string): CharacterProfile {
-  return {
-    name,
-    className: '冒険者',
-    title: '見習い',
-    stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
-    prologue: `目標: ${goal}`,
-    startingSkill: '基礎',
-    themeColor: '#4a90d9',
-    level: 1,
-    currentXp: 0,
-    nextLevelXp: 100,
-    hp: 100,
-    maxHp: 100,
-    gold: 0,
-  };
-}
 
 function stubNarrativeResult(): NarrativeResult {
   return {
@@ -50,7 +31,8 @@ aiRouter.post(
   zValidator('json', genesisFormDataSchema),
   async (c) => {
     const data = c.req.valid('json');
-    const profile = stubCharacterProfile(data.name, data.goal);
+    const service = createAiService(c.env);
+    const profile = await service.generateCharacter(data);
     return c.json(profile);
   }
 );
