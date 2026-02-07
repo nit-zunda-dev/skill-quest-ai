@@ -1,0 +1,162 @@
+import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from '@skill-quest/shared';
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+import type { Bindings } from '../types';
+import type { AuthUser } from '../types';
+import { schema } from '../db/schema';
+import {
+  createQuestSchema,
+  updateQuestSchema,
+  type CreateQuestRequest,
+  type UpdateQuestRequest,
+} from '@skill-quest/shared';
+import { Difficulty, TaskType } from '@skill-quest/shared';
+import { HTTPException } from 'hono/http-exception';
+
+const DIFFICULTY_TO_NUM: Record<Difficulty, number> = {
+  [Difficulty.EASY]: 1,
+  [Difficulty.MEDIUM]: 2,
+  [Difficulty.HARD]: 3,
+};
+
+const NUM_TO_DIFFICULTY: Record<number, Difficulty> = {
+  1: Difficulty.EASY,
+  2: Difficulty.MEDIUM,
+  3: Difficulty.HARD,
+};
+
+const idParamSchema = z.object({
+  id: z.string().min(1, 'IDは必須です'),
+});
+
+type QuestVariables = { user: AuthUser };
+
+/**
+ * クエスト管理ルート
+ * GET, POST, PUT, DELETE /api/quests
+ * 認証ミドルウェア適用後にマウントすること
+ */
+export const questsRouter = new Hono<{
+  Bindings: Bindings;
+  Variables: QuestVariables;
+}>();
+
+questsRouter.get('/', async (c) => {
+  const db = drizzle(c.env.DB, { schema });
+  const rows = await db.select().from(schema.quests).orderBy(schema.quests.createdAt);
+  const body = rows.map((row) => toQuestResponse(row));
+  return c.json(body);
+});
+
+questsRouter.post(
+  '/',
+  zValidator('json', createQuestSchema),
+  async (c) => {
+    const db = drizzle(c.env.DB, { schema });
+    const data = c.req.valid('json') as CreateQuestRequest;
+    const id = crypto.randomUUID();
+    const now = new Date();
+    const difficultyNum = DIFFICULTY_TO_NUM[data.difficulty];
+    const winCondition = data.winCondition
+      ? { ...data.winCondition, type: data.type }
+      : { type: data.type };
+
+    await db.insert(schema.quests).values({
+      id,
+      skillId: data.skillId ?? null,
+      title: data.title,
+      scenario: data.scenario ?? null,
+      difficulty: difficultyNum,
+      winCondition: winCondition as Record<string, unknown>,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const rows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const row = rows[0];
+    if (row) return c.json(toQuestResponse(row), 201);
+    return c.json(
+      {
+        id,
+        title: data.title,
+        type: data.type,
+        difficulty: data.difficulty,
+        completed: false,
+        skillId: data.skillId,
+        scenario: data.scenario,
+        winCondition: data.winCondition ? { ...data.winCondition, type: data.type } : undefined,
+      },
+      201
+    );
+  }
+);
+
+questsRouter.put(
+  '/:id',
+  zValidator('param', idParamSchema),
+  zValidator('json', updateQuestSchema),
+  async (c) => {
+    const db = drizzle(c.env.DB, { schema });
+    const { id } = c.req.valid('param');
+    const data = c.req.valid('json') as UpdateQuestRequest;
+
+    const existingRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const existing = existingRows[0];
+    if (!existing) throw new HTTPException(404, { message: 'Quest not found' });
+
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (data.title !== undefined) updates.title = data.title;
+    if (data.scenario !== undefined) updates.scenario = data.scenario;
+    if (data.difficulty !== undefined) updates.difficulty = DIFFICULTY_TO_NUM[data.difficulty];
+    if (data.winCondition !== undefined) {
+      const wc = { ...(existing.winCondition as Record<string, unknown>) ?? {}, ...data.winCondition };
+      if (data.type !== undefined) wc.type = data.type;
+      updates.winCondition = wc;
+    } else if (data.type !== undefined) {
+      const wc = { ...((existing.winCondition as Record<string, unknown>) ?? {}), type: data.type };
+      updates.winCondition = wc;
+    }
+
+    await db.update(schema.quests).set(updates as Record<string, unknown>).where(eq(schema.quests.id, id));
+
+    const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const row = updatedRows[0];
+    if (!row) throw new HTTPException(500, { message: 'Failed to update quest' });
+    return c.json(toQuestResponse(row));
+  }
+);
+
+questsRouter.delete(
+  '/:id',
+  zValidator('param', idParamSchema),
+  async (c) => {
+    const db = drizzle(c.env.DB, { schema });
+    const { id } = c.req.valid('param');
+
+    const existingRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const existing = existingRows[0];
+    if (!existing) throw new HTTPException(404, { message: 'Quest not found' });
+
+    await db.delete(schema.quests).where(eq(schema.quests.id, id));
+    return c.body(null, 204);
+  }
+);
+
+function toQuestResponse(row: typeof schema.quests.$inferSelect) {
+  const winCondition = (row.winCondition as Record<string, unknown> | null) ?? {};
+  const type = (winCondition.type as TaskType) ?? TaskType.TODO;
+  const difficulty =
+    NUM_TO_DIFFICULTY[row.difficulty] ?? Difficulty.MEDIUM;
+  return {
+    id: row.id,
+    title: row.title,
+    type,
+    difficulty,
+    completed: false,
+    skillId: row.skillId ?? undefined,
+    scenario: row.scenario ?? undefined,
+    winCondition: Object.keys(winCondition).length ? winCondition : undefined,
+  };
+}
