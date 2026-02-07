@@ -12,7 +12,7 @@ import { createAiService } from '../services/ai';
  * AI生成ルート
  * - POST /generate-character … Workers AI (Llama 3.1 8B) でキャラクター生成
  * - POST /generate-narrative … Workers AI (Llama 3.1 8B) でナラティブ・報酬生成
- * - POST /generate-partner-message … スタブ（タスク7.4で実装）
+ * - POST /generate-partner-message … Workers AI (Llama 3.1 8B) でパートナーセリフ生成
  */
 export const aiRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -42,7 +42,9 @@ aiRouter.post(
   '/generate-partner-message',
   zValidator('json', partnerMessageRequestSchema),
   async (c) => {
-    const result = { message: '一緒に頑張ろう。' };
-    return c.json(result);
+    const data = c.req.valid('json');
+    const service = createAiService(c.env);
+    const message = await service.generatePartnerMessage(data);
+    return c.json({ message });
   }
 );

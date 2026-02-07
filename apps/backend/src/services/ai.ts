@@ -1,6 +1,6 @@
 import type { Bindings } from '../types';
 import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
-import type { NarrativeRequest } from '@skill-quest/shared';
+import type { NarrativeRequest, PartnerMessageRequest } from '@skill-quest/shared';
 import { Difficulty } from '@skill-quest/shared';
 
 /**
@@ -52,6 +52,7 @@ export interface AiService {
   runWithLlama33_70b(prompt: string): Promise<string>;
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
   generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
+  generatePartnerMessage(request: PartnerMessageRequest): Promise<string>;
 }
 
 /**
@@ -72,6 +73,9 @@ export function createAiService(env: Bindings): AiService {
     },
     generateNarrative(request: NarrativeRequest) {
       return generateNarrative(ai, request);
+    },
+    generatePartnerMessage(request: PartnerMessageRequest) {
+      return generatePartnerMessage(ai, request);
     },
   };
 }
@@ -248,4 +252,43 @@ export async function generateNarrative(
     rewardXp: rewards.rewardXp,
     rewardGold: rewards.rewardGold,
   };
+}
+
+const DEFAULT_PARTNER_MESSAGE = '一緒に頑張ろう。';
+
+function buildPartnerMessagePrompt(request: PartnerMessageRequest): string {
+  const lines = [
+    'あなたはRPGの相棒キャラクターです。プレイヤーに短く（1文）声をかけてください。',
+    '【状況】',
+  ];
+  if (request.timeOfDay) {
+    lines.push(`時間帯: ${request.timeOfDay}`);
+  }
+  if (request.progressSummary) {
+    lines.push(`進捗状況: ${request.progressSummary}`);
+  }
+  if (request.currentTaskTitle) {
+    lines.push(`現在のタスク: ${request.currentTaskTitle}`);
+  }
+  lines.push('【性格】頼れる相棒。です・ます調ではなく、砕けた口調で。');
+  return lines.join('\n');
+}
+
+/**
+ * Llama 3.1 8B でパートナーの動的セリフを生成する。
+ * 時間帯・進捗状況・タスク状態をプロンプトに含める。
+ */
+export async function generatePartnerMessage(
+  ai: AiRunBinding,
+  request: PartnerMessageRequest
+): Promise<string> {
+  const prompt = buildPartnerMessagePrompt(request);
+  try {
+    const raw = await runWithLlama31_8b(ai, prompt);
+    const trimmed = typeof raw === 'string' ? raw.trim() : '';
+    if (trimmed.length > 0) return trimmed;
+  } catch {
+    // fall through to fallback
+  }
+  return DEFAULT_PARTNER_MESSAGE;
 }

@@ -7,6 +7,7 @@ import {
   runWithLlama33_70b,
   generateCharacter,
   generateNarrative,
+  generatePartnerMessage,
   MODEL_LLAMA_31_8B,
   MODEL_LLAMA_33_70B,
 } from './ai';
@@ -189,6 +190,62 @@ describe('AI service', () => {
       expect(result.narrative).toBeTruthy();
       expect(result.rewardXp).toBeGreaterThan(0);
       expect(result.rewardGold).toBeGreaterThan(0);
+    });
+  });
+
+  describe('generatePartnerMessage', () => {
+    it('uses Llama 3.1 8B and returns AI message when AI returns text', async () => {
+      const run = vi.fn().mockResolvedValue({ response: '今日も一緒に頑張ろう。' });
+      const ai = { run };
+      const request = {
+        progressSummary: '完了2、未完了3',
+        timeOfDay: '朝',
+        currentTaskTitle: '毎日勉強',
+      };
+
+      const result = await generatePartnerMessage(ai, request);
+
+      expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, expect.objectContaining({ prompt: expect.any(String) }));
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('朝');
+      expect(prompt.prompt).toContain('完了2、未完了3');
+      expect(prompt.prompt).toContain('毎日勉強');
+      expect(result).toBe('今日も一緒に頑張ろう。');
+    });
+
+    it('includes all optional context in prompt when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: '調子はどうだ？' });
+      const ai = { run };
+      const request = {
+        progressSummary: '進捗良好',
+        timeOfDay: '夜',
+        currentTaskTitle: '習慣を続ける',
+      };
+
+      await generatePartnerMessage(ai, request);
+
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('夜');
+      expect(prompt.prompt).toContain('進捗良好');
+      expect(prompt.prompt).toContain('習慣を続ける');
+    });
+
+    it('returns fallback message when AI returns empty', async () => {
+      const run = vi.fn().mockResolvedValue({ response: '   \n' });
+      const ai = { run };
+      const result = await generatePartnerMessage(ai, {});
+
+      expect(result).toBeTruthy();
+      expect(typeof result).toBe('string');
+    });
+
+    it('returns fallback message when AI throws', async () => {
+      const run = vi.fn().mockRejectedValue(new Error('AI error'));
+      const ai = { run };
+      const result = await generatePartnerMessage(ai, {});
+
+      expect(result).toBeTruthy();
+      expect(typeof result).toBe('string');
     });
   });
 });
