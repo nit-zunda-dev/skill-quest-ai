@@ -8,23 +8,13 @@ import {
 } from '@skill-quest/shared';
 import { createAiService } from '../services/ai';
 
-type NarrativeResult = { narrative: string; rewardXp: number; rewardGold: number };
-
 /**
  * AI生成ルート
  * - POST /generate-character … Workers AI (Llama 3.1 8B) でキャラクター生成
- * - POST /generate-narrative … スタブ（タスク7.3で実装）
+ * - POST /generate-narrative … Workers AI (Llama 3.1 8B) でナラティブ・報酬生成
  * - POST /generate-partner-message … スタブ（タスク7.4で実装）
  */
 export const aiRouter = new Hono<{ Bindings: Bindings }>();
-
-function stubNarrativeResult(): NarrativeResult {
-  return {
-    narrative: 'クエストを達成した。',
-    rewardXp: 10,
-    rewardGold: 5,
-  };
-}
 
 aiRouter.post(
   '/generate-character',
@@ -41,7 +31,9 @@ aiRouter.post(
   '/generate-narrative',
   zValidator('json', narrativeRequestSchema),
   async (c) => {
-    const result = stubNarrativeResult();
+    const data = c.req.valid('json');
+    const service = createAiService(c.env);
+    const result = await service.generateNarrative(data);
     return c.json(result);
   }
 );

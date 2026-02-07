@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Bindings } from '../types';
-import { Genre } from '@skill-quest/shared';
+import { Genre, Difficulty, TaskType } from '@skill-quest/shared';
 import {
   createAiService,
   runWithLlama31_8b,
   runWithLlama33_70b,
   generateCharacter,
+  generateNarrative,
   MODEL_LLAMA_31_8B,
   MODEL_LLAMA_33_70B,
 } from './ai';
@@ -103,6 +104,91 @@ describe('AI service', () => {
 
       expect(result.name).toBe('エラー時');
       expect(result.prologue).toContain('目標');
+    });
+  });
+
+  describe('generateNarrative', () => {
+    const validNarrativeJson = JSON.stringify({
+      narrative: '険しい道のりを乗り越え、ついに目標を達成した。',
+      rewardXp: 25,
+      rewardGold: 12,
+    });
+
+    it('uses Llama 3.1 8B and returns parsed result when AI returns valid JSON', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validNarrativeJson });
+      const ai = { run };
+      const request = {
+        taskId: 't1',
+        taskTitle: '毎日勉強',
+        taskType: TaskType.DAILY,
+        difficulty: Difficulty.MEDIUM,
+        userComment: '30分集中できた',
+      };
+
+      const result = await generateNarrative(ai, request);
+
+      expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, expect.objectContaining({ prompt: expect.any(String) }));
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('毎日勉強');
+      expect(prompt.prompt).toContain('30分集中できた');
+      expect(prompt.prompt).toContain('MEDIUM');
+      expect(result.narrative).toBe('険しい道のりを乗り越え、ついに目標を達成した。');
+      expect(result.rewardXp).toBe(25);
+      expect(result.rewardGold).toBe(12);
+    });
+
+    it('includes taskType and difficulty in prompt', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validNarrativeJson });
+      const ai = { run };
+      const request = {
+        taskId: 't2',
+        taskTitle: '習慣',
+        taskType: TaskType.HABIT,
+        difficulty: Difficulty.HARD,
+      };
+
+      await generateNarrative(ai, request);
+
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('習慣');
+      expect(prompt.prompt).toContain('HABIT');
+      expect(prompt.prompt).toContain('HARD');
+    });
+
+    it('returns fallback with difficulty-based rewards when AI returns invalid JSON', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'not json' });
+      const ai = { run };
+      const request = {
+        taskId: 't1',
+        taskTitle: 'タスク',
+        taskType: TaskType.TODO,
+        difficulty: Difficulty.HARD,
+      };
+
+      const result = await generateNarrative(ai, request);
+
+      expect(result.narrative).toContain('タスク');
+      expect(typeof result.rewardXp).toBe('number');
+      expect(typeof result.rewardGold).toBe('number');
+      expect(result.rewardXp).toBeGreaterThan(0);
+      expect(result.rewardGold).toBeGreaterThan(0);
+    });
+
+    it('returns fallback when AI throws', async () => {
+      const run = vi.fn().mockRejectedValue(new Error('AI error'));
+      const ai = { run };
+      const request = {
+        taskId: 't1',
+        taskTitle: 'タスク',
+        taskType: TaskType.DAILY,
+        difficulty: Difficulty.EASY,
+      };
+
+      const result = await generateNarrative(ai, request);
+
+      expect(result.narrative).toBeTruthy();
+      expect(result.rewardXp).toBeGreaterThan(0);
+      expect(result.rewardGold).toBeGreaterThan(0);
     });
   });
 });

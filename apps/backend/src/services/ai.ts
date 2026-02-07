@@ -1,5 +1,7 @@
 import type { Bindings } from '../types';
 import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
+import type { NarrativeRequest } from '@skill-quest/shared';
+import { Difficulty } from '@skill-quest/shared';
 
 /**
  * Workers AI モデルID（design.md / docs/architecture/06_AI設計.md に準拠）
@@ -38,10 +40,18 @@ export async function runWithLlama33_70b(ai: AiRunBinding, prompt: string): Prom
   return result?.response ?? '';
 }
 
+/** ナラティブ生成の戻り値（物語セグメントと報酬） */
+export interface NarrativeResult {
+  narrative: string;
+  rewardXp: number;
+  rewardGold: number;
+}
+
 export interface AiService {
   runWithLlama31_8b(prompt: string): Promise<string>;
   runWithLlama33_70b(prompt: string): Promise<string>;
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
+  generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
 }
 
 /**
@@ -59,6 +69,9 @@ export function createAiService(env: Bindings): AiService {
     },
     generateCharacter(data: GenesisFormData) {
       return generateCharacter(ai, data);
+    },
+    generateNarrative(request: NarrativeRequest) {
+      return generateNarrative(ai, request);
     },
   };
 }
@@ -164,4 +177,75 @@ function buildCharacterPrompt(data: GenesisFormData): string {
     `必須フィールド: name, className, title, stats(strength,intelligence,charisma,willpower,luck), prologue, startingSkill, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, hp, maxHp, gold.`,
     `statsの各値は0以上100以下、合計250にすること。nameは「${data.name}」にすること。`,
   ].join('\n');
+}
+
+/** 難易度に応じた報酬（フォールバック用）。Req 5.2 / geminiService の範囲に合わせる。 */
+function difficultyBasedRewards(difficulty: Difficulty): { rewardXp: number; rewardGold: number } {
+  switch (difficulty) {
+    case Difficulty.EASY:
+      return { rewardXp: 15, rewardGold: 8 };
+    case Difficulty.MEDIUM:
+      return { rewardXp: 30, rewardGold: 18 };
+    case Difficulty.HARD:
+      return { rewardXp: 60, rewardGold: 35 };
+    default:
+      return { rewardXp: 20, rewardGold: 10 };
+  }
+}
+
+function isNarrativeResult(obj: unknown): obj is NarrativeResult {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.narrative === 'string' &&
+    typeof o.rewardXp === 'number' &&
+    typeof o.rewardGold === 'number'
+  );
+}
+
+function buildNarrativePrompt(request: NarrativeRequest): string {
+  const comment = request.userComment ? `ユーザーのコメント: ${request.userComment}` : 'ユーザーのコメント: なし';
+  return [
+    'RPGのタスク完了イベントを生成し、JSONのみで返してください。',
+    `完了したタスク: ${request.taskTitle} (タスク種別: ${request.taskType}, 難易度: ${request.difficulty})`,
+    comment,
+    '【出力ルール】',
+    '1. narrative: タスク完了をRPGのアクションとして描写する（2文程度）。大袈裟すぎず、達成感のある表現で。',
+    '2. rewardXp: 難易度に応じた経験値 (EASY: 10-20, MEDIUM: 25-40, HARD: 50-80)',
+    '3. rewardGold: 難易度に応じた報酬 (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
+    '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
+  ].join('\n');
+}
+
+/**
+ * Llama 3.1 8B で物語セグメントと報酬を生成する。
+ * タスク情報とユーザーコメントをプロンプトに含め、難易度に応じた報酬はAIまたはフォールバックで算出する。
+ */
+export async function generateNarrative(
+  ai: AiRunBinding,
+  request: NarrativeRequest
+): Promise<NarrativeResult> {
+  const prompt = buildNarrativePrompt(request);
+  try {
+    const raw = await runWithLlama31_8b(ai, prompt);
+    let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
+    if (parsed === null && typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+    }
+    if (isNarrativeResult(parsed)) {
+      return parsed;
+    }
+  } catch {
+    // fall through to fallback
+  }
+  const rewards = difficultyBasedRewards(request.difficulty);
+  return {
+    narrative: `${request.taskTitle}を達成した。心地よい疲労感と共に、力が湧いてくるのを感じる。`,
+    rewardXp: rewards.rewardXp,
+    rewardGold: rewards.rewardGold,
+  };
 }
