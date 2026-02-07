@@ -92,7 +92,26 @@ Workerをデプロイしている場合：
 
 ※ `wrangler dev` のリクエストはローカル処理のため、このWorkerのMetricsにはカウントされません。あくまでデプロイ済みWorkerの確認用です。
 
-### 5. 利用モデルの確認
+### 5. AI Gateway の作成と設定（キャッシュでニューロン節約）
+
+同一プロンプトの再リクエストをキャッシュし、ニューロン消費を抑えるために **Cloudflare AI Gateway** を利用する（任意だが推奨）。
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/) で **AI** > **Gateway**（または AI Gateway の作成ページ）を開く。
+2. **Create Gateway** で新しい Gateway を作成し、名前を付ける（例: `skill-quest-ai`）。
+3. 作成後に表示される **Gateway ID**（英数字のラベル）を控える。
+4. `apps/backend/wrangler.toml` の `[vars]` に `AI_GATEWAY_ID` を追加する（本番では `wrangler secret put AI_GATEWAY_ID` でも可）:
+   ```toml
+   [vars]
+   FRONTEND_URL = "http://localhost:5173"
+   AI_GATEWAY_ID = "あなたのGateway ID"
+   ```
+5. または `.dev.vars`（ローカル開発用、git に含めない）に `AI_GATEWAY_ID=あなたのGateway ID` を追加する。
+
+バックエンドは `AI_GATEWAY_ID` が設定されている場合、Workers AI の `run()` 呼び出しに `gateway: { id: AI_GATEWAY_ID }` を渡し、Gateway 経由で推論を行う。Gateway 経由にすると同じプロンプトにはキャッシュが返り、ニューロンが消費されない。
+
+- 参考: [Workers AI と AI Gateway の連携](https://developers.cloudflare.com/ai-gateway/integrations/aig-workers-ai-binding/)
+
+### 6. 利用モデルの確認
 
 本プロジェクトでは、以下のWorkers AIモデルを利用します（実装状況に応じて参照してください）。
 
