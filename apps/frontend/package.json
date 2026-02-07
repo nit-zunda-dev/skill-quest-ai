@@ -16,7 +16,8 @@
     "@google/genai": "^1.38.0",
     "recharts": "^3.7.0",
     "lucide-react": "^0.563.0",
-    "@skill-quest/shared": "workspace:*"
+    "@skill-quest/shared": "workspace:*",
+    "@skill-quest/backend": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

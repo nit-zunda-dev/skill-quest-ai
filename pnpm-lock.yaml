@@ -60,6 +60,9 @@ importers:
       '@google/genai':
         specifier: ^1.38.0
         version: 1.39.0
+      '@skill-quest/backend':
+        specifier: workspace:*
+        version: link:../backend
       '@skill-quest/shared':
         specifier: workspace:*
         version: link:../../packages/shared
