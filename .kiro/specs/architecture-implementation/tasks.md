@@ -274,7 +274,7 @@
     - 時間帯、進捗状況、タスク状態がプロンプトに含まれていることを確認
     - `/api/ai/generate-partner-message`エンドポイントから呼び出され、正常に動作することを確認（環境変数が設定されている場合）
 
-- [ ] 7.5 Function Calling機能を実装する
+- [x] 7.5 Function Calling機能を実装する
   - ツール定義（`submit_answer`、`request_hint`、`search_docs`）をJSONスキーマ形式で定義する
   - Llama 3.1のFunction Calling機能を使用してツール実行を処理する
   - ツール実行結果を再度LLMに入力して最終回答を生成する
