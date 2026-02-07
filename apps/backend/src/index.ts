@@ -5,6 +5,7 @@ import { setupMiddleware } from './middleware';
 import { auth } from './auth';
 import { authMiddleware } from './middleware/auth';
 import { questsRouter } from './routes/quests';
+import { aiRouter } from './routes/ai';
 
 // Honoアプリケーションを初期化
 // Bindings型を適用して、c.envで型安全にアクセスできるようにする
@@ -78,6 +79,9 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
 // クエスト管理ルート（認証必須）
 app.use('/api/quests/*', authMiddleware);
 app.route('/api/quests', questsRouter);
+
+// AI生成ルート
+app.route('/api/ai', aiRouter);
 
 // 認証が必要なエンドポイントのテスト用ルート
 // 認証ミドルウェアの動作確認用

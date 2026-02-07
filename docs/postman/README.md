@@ -93,9 +93,33 @@
    - `Quests > Delete Quest` を実行
    - エンドポイント: `DELETE /api/quests/{{quest_id}}`
 
+### AI生成（AI）
+
+認証は不要です。現状はスタブ応答（Workers AI 統合はタスク7で予定）です。
+
+1. **キャラクター生成**
+   - `AI > Generate Character` を実行
+   - エンドポイント: `POST /api/ai/generate-character`
+   - 必須: `name`, `goal`, `genre`（FANTASY | CYBERPUNK | MODERN | HORROR | SCI_FI）
+   - レスポンス: CharacterProfile（name, className, stats, prologue など）
+
+2. **ナラティブ生成**
+   - `AI > Generate Narrative` を実行
+   - エンドポイント: `POST /api/ai/generate-narrative`
+   - 必須: `taskId`, `taskTitle`, `taskType`（DAILY | HABIT | TODO）, `difficulty`（EASY | MEDIUM | HARD）
+   - 任意: `userComment`
+   - レスポンス: `narrative`, `rewardXp`, `rewardGold`
+
+3. **パートナーメッセージ生成**
+   - `AI > Generate Partner Message` を実行
+   - エンドポイント: `POST /api/ai/generate-partner-message`
+   - すべて任意: `progressSummary`, `timeOfDay`, `currentTaskTitle`, `context`
+   - レスポンス: `message`（文字列）
+
 ## 注意事項
 
 - 認証が必要なエンドポイント（Quests、Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
+- AI エンドポイントは認証不要です（現状はスタブ応答）
 - セッションはCookieに保存されるため、PostmanのCookie管理が有効になっていることを確認してください
 - Quests の PUT/DELETE では、コレクション変数 `quest_id` が使われます。Get Quests または Create Quest を先に実行すると自動で設定されます
 

@@ -194,7 +194,7 @@
     - ローカルで`wrangler dev`を実行し、`/api/quests`にGETリクエストを送信してエラーが発生しないことを確認（認証が必要な場合は認証トークンを付与）
     - 不正な入力でバリデーションエラーが返されることを確認
 
-- [ ] 6.2 AI生成ルートを実装する
+- [x] 6.2 AI生成ルートを実装する
   - `apps/backend/src/routes/ai.ts`を作成し、`/api/ai`ルートを定義する
   - `/api/ai/generate-character`エンドポイントを実装する
   - `/api/ai/generate-narrative`エンドポイントを実装する

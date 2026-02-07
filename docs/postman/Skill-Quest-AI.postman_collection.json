@@ -502,6 +502,123 @@
 				}
 			],
 			"description": "クエスト管理API。すべて認証必須。GET: 一覧、POST: 作成、PUT: 更新、DELETE: 削除。quest_id は Get/Create のレスポンスから自動でコレクション変数に保存されます。"
+		},
+		{
+			"name": "AI",
+			"item": [
+				{
+					"name": "Generate Character",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has CharacterProfile shape\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('className');",
+									"    pm.expect(jsonData).to.have.property('stats');",
+									"    pm.expect(jsonData).to.have.property('prologue');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"冒険者\",\n  \"goal\": \"世界を救う\",\n  \"genre\": \"FANTASY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/generate-character",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "generate-character"]
+						}
+					},
+					"description": "キャラクター（CharacterProfile）を生成します。必須: name, goal, genre (FANTASY|CYBERPUNK|MODERN|HORROR|SCI_FI)。",
+					"response": []
+				},
+				{
+					"name": "Generate Narrative",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has narrative and rewards\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('narrative');",
+									"    pm.expect(jsonData).to.have.property('rewardXp');",
+									"    pm.expect(jsonData).to.have.property('rewardGold');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"taskId\": \"task-1\",\n  \"taskTitle\": \"朝のルーティン\",\n  \"taskType\": \"DAILY\",\n  \"difficulty\": \"EASY\",\n  \"userComment\": \"完了した\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/generate-narrative",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "generate-narrative"]
+						}
+					},
+					"description": "タスク完了時のナラティブと報酬を生成します。必須: taskId, taskTitle, taskType (DAILY|HABIT|TODO), difficulty (EASY|MEDIUM|HARD)。任意: userComment。",
+					"response": []
+				},
+				{
+					"name": "Generate Partner Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has message\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"    pm.expect(jsonData.message).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"progressSummary\": \"今日の進捗\",\n  \"timeOfDay\": \"morning\",\n  \"currentTaskTitle\": \"朝のストレッチ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/generate-partner-message",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "generate-partner-message"]
+						}
+					},
+					"description": "AIパートナーのメッセージを生成します。すべて任意: progressSummary, timeOfDay, currentTaskTitle, context。",
+					"response": []
+				}
+			],
+			"description": "AI生成API。generate-character: キャラプロフィール、generate-narrative: ナラティブと報酬、generate-partner-message: パートナーのセリフ。現状はスタブ応答（Workers AI はタスク7で統合予定）。"
 		}
 	],
 	"event": [
