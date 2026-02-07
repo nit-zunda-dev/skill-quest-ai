@@ -9,7 +9,10 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "type-check": "tsc --noEmit",
-    "build": "tsc"
+    "build": "tsc",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply skill-quest-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply skill-quest-db"
   },
   "dependencies": {
     "hono": "^4.0.0",
