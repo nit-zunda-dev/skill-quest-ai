@@ -6,16 +6,20 @@
 import React, { useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
+import { useAiUsage } from '@/hooks/useAiUsage';
 
 const PartnerWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const { messages, isLoading, sendMessage, error } = useChat();
+  const { data: usage } = useAiUsage();
+  const chatRemaining = usage?.chatRemaining ?? null;
+  const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = inputValue.trim();
-    if (!text || isLoading) return;
+    if (!text || isLoading || isChatLimitReached) return;
     sendMessage(text);
     setInputValue('');
   };
@@ -59,6 +63,13 @@ const PartnerWidget: React.FC = () => {
               {error.message}
             </p>
           )}
+          {chatRemaining !== null && (
+            <p className="text-xs text-slate-400 mb-2">
+              {isChatLimitReached
+                ? '本日のチャット回数を使い切りました。明日またお試しください。'
+                : `チャット 残り${chatRemaining}回`}
+            </p>
+          )}
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
               type="text"
@@ -66,12 +77,12 @@ const PartnerWidget: React.FC = () => {
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="メッセージを入力"
               className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none"
-              disabled={isLoading}
+              disabled={isLoading || isChatLimitReached}
               aria-label="メッセージ入力"
             />
             <button
               type="submit"
-              disabled={isLoading || !inputValue.trim()}
+              disabled={isLoading || !inputValue.trim() || isChatLimitReached}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:pointer-events-none rounded-lg text-sm font-medium text-white transition-colors"
               aria-label="送信"
             >

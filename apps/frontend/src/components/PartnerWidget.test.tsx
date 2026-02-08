@@ -16,6 +16,10 @@ vi.mock('@/hooks/useChat', () => ({
   useChat: vi.fn(),
 }));
 
+vi.mock('@/hooks/useAiUsage', () => ({
+  useAiUsage: vi.fn(),
+}));
+
 describe('PartnerWidget', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -25,6 +29,10 @@ describe('PartnerWidget', () => {
       isLoading: false,
       sendMessage: mockSendMessage,
       error: undefined,
+    });
+    const { useAiUsage } = await import('@/hooks/useAiUsage');
+    (useAiUsage as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { chatRemaining: 10, limits: { chat: 10 } },
     });
   });
 
@@ -74,5 +82,17 @@ describe('PartnerWidget', () => {
     const sendButton = screen.getByRole('button', { name: /送信/ });
     fireEvent.click(sendButton);
     expect(mockSendMessage).toHaveBeenCalledWith('テストメッセージ');
+  });
+
+  it('残り回数を表示し、制限到達時はメッセージ表示と送信ボタン無効', async () => {
+    const { useAiUsage } = await import('@/hooks/useAiUsage');
+    (useAiUsage as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: { chatRemaining: 0, limits: { chat: 10 } },
+    });
+    render(<PartnerWidget />);
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(screen.getByText(/本日のチャット回数を使い切りました/)).toBeTruthy();
+    const sendButton = screen.getByRole('button', { name: /送信/ });
+    expect((sendButton as HTMLButtonElement).disabled).toBe(true);
   });
 });

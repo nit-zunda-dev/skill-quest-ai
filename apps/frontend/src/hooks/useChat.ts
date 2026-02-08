@@ -5,6 +5,7 @@
  * - Workers AI のストリーム形式（テキストチャンク）に合わせたアダプタ
  */
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/client';
 
 export type ChatMessage = {
@@ -29,6 +30,7 @@ async function readStreamAsText(body: ReadableStream<Uint8Array>): Promise<strin
 }
 
 export function useChat() {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
@@ -51,6 +53,7 @@ export function useChat() {
       }
       const fullText = await readStreamAsText(body);
       setMessages((prev) => [...prev, { role: 'assistant', content: fullText }]);
+      await queryClient.invalidateQueries({ queryKey: ['ai', 'usage'] });
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
       setMessages((prev) => [...prev, { role: 'assistant', content: '申し訳ありません。応答を取得できませんでした。' }]);

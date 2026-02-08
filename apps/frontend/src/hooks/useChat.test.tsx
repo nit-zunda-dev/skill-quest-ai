@@ -6,9 +6,22 @@
  */
 /// <reference types="vitest" />
 // @vitest-environment jsdom
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useChat } from './useChat';
+
+function createWrapper() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    );
+  };
+}
 
 function createStreamResponse(textChunks: string[]): Response {
   const stream = new ReadableStream({
@@ -42,7 +55,7 @@ describe('useChat', () => {
   });
 
   it('初期状態で messages が空・isLoading が false である', () => {
-    const { result } = renderHook(() => useChat());
+    const { result } = renderHook(() => useChat(), { wrapper: createWrapper() });
     expect(result.current.messages).toEqual([]);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeUndefined();
@@ -54,7 +67,7 @@ describe('useChat', () => {
     // 解決しない Promise でローディング中の状態を維持
     mockPost.mockImplementation(() => new Promise<Response>(() => {}));
 
-    const { result } = renderHook(() => useChat());
+    const { result } = renderHook(() => useChat(), { wrapper: createWrapper() });
 
     await act(async () => {
       result.current.sendMessage('テスト');
@@ -72,7 +85,7 @@ describe('useChat', () => {
     const mockPost = client.api.ai.chat.$post as ReturnType<typeof vi.fn>;
     mockPost.mockResolvedValue(createStreamResponse(['Hello', ' ', 'world']));
 
-    const { result } = renderHook(() => useChat());
+    const { result } = renderHook(() => useChat(), { wrapper: createWrapper() });
 
     await act(async () => {
       result.current.sendMessage('hi');
@@ -91,7 +104,7 @@ describe('useChat', () => {
     const mockPost = client.api.ai.chat.$post as ReturnType<typeof vi.fn>;
     mockPost.mockResolvedValue(new Response(JSON.stringify({ error: 'Too Many Requests' }), { status: 429 }));
 
-    const { result } = renderHook(() => useChat());
+    const { result } = renderHook(() => useChat(), { wrapper: createWrapper() });
 
     await act(async () => {
       result.current.sendMessage('hi');
@@ -108,7 +121,7 @@ describe('useChat', () => {
     const mockPost = client.api.ai.chat.$post as ReturnType<typeof vi.fn>;
     mockPost.mockResolvedValue(createStreamResponse(['OK']));
 
-    const { result } = renderHook(() => useChat());
+    const { result } = renderHook(() => useChat(), { wrapper: createWrapper() });
     await act(async () => {
       result.current.sendMessage('送信テキスト');
     });
