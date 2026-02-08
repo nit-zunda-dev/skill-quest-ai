@@ -4,7 +4,7 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative, generatePartnerMessage } from '@/lib/api-client';
+import { generateTaskNarrative } from '@/lib/api-client';
 import { X, Sparkles } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
 
@@ -112,10 +112,6 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
     setNarrativeResult(null);
   };
 
-  const handlePartnerChat = async () => {
-    return await generatePartnerMessage(profile, tasks);
-  };
-
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 p-4 md:p-8 flex flex-col md:flex-row gap-6 relative overflow-hidden">
       {/* Background Ambience */}
@@ -155,7 +151,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
       </div>
 
       {/* Floating Partner Widget */}
-      <PartnerWidget onChat={handlePartnerChat} />
+      <PartnerWidget />
 
       {/* Narrative Completion Modal */}
       {completedTask && (

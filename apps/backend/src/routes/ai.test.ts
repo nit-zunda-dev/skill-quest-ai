@@ -269,4 +269,51 @@ describe('ai router', () => {
       expect(body.error).toBe('Too Many Requests');
     });
   });
+
+  describe('GET /usage', () => {
+    it('returns 200 with usage and limits when authenticated', async () => {
+      const { app, env } = createTestApp(mockEnv);
+      const res = await app.request('/usage', { method: 'GET' }, env);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        characterGenerated: boolean;
+        narrativeRemaining: number;
+        partnerRemaining: number;
+        chatRemaining: number;
+        limits: { narrative: number; partner: number; chat: number };
+      };
+      expect(body.characterGenerated).toBe(false);
+      expect(body.narrativeRemaining).toBe(1);
+      expect(body.partnerRemaining).toBe(1);
+      expect(body.chatRemaining).toBe(10);
+      expect(body.limits).toEqual({ narrative: 1, partner: 1, chat: 10 });
+    });
+
+    it('returns correct remaining when usage recorded', async () => {
+      const envWithUsage = {
+        ...mockEnv,
+        DB: createMockD1ForAiUsage({
+          hasCharacter: true,
+          narrativeCount: 1,
+          partnerCount: 1,
+          chatCount: 3,
+        }) as unknown as Bindings['DB'],
+      };
+      const { app, env } = createTestApp(envWithUsage);
+      const res = await app.request('/usage', { method: 'GET' }, env);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        characterGenerated: boolean;
+        narrativeRemaining: number;
+        partnerRemaining: number;
+        chatRemaining: number;
+        limits: { narrative: number; partner: number; chat: number };
+      };
+      expect(body.characterGenerated).toBe(true);
+      expect(body.narrativeRemaining).toBe(0);
+      expect(body.partnerRemaining).toBe(0);
+      expect(body.chatRemaining).toBe(7);
+      expect(body.limits.chat).toBe(10);
+    });
+  });
 });

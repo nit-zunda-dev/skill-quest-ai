@@ -35,6 +35,26 @@ export const aiRouter = new Hono<{ Bindings: Bindings; Variables: AiVariables }>
 const limitExceeded = (c: { json: (body: unknown, status: number) => Response }, message: string) =>
   c.json({ error: 'Too Many Requests', message }, 429);
 
+/** AI利用残り回数・制限情報（タスク 9.3） */
+aiRouter.get('/usage', async (c) => {
+  const user = c.get('user');
+  const today = getTodayUtc();
+  const [characterGenerated, usage] = await Promise.all([
+    hasCharacterGenerated(c.env.DB, user.id),
+    getDailyUsage(c.env.DB, user.id, today),
+  ]);
+  const narrativeRemaining = Math.max(0, 1 - usage.narrativeCount);
+  const partnerRemaining = Math.max(0, 1 - usage.partnerCount);
+  const chatRemaining = Math.max(0, CHAT_DAILY_LIMIT - usage.chatCount);
+  return c.json({
+    characterGenerated,
+    narrativeRemaining,
+    partnerRemaining,
+    chatRemaining,
+    limits: { narrative: 1, partner: 1, chat: CHAT_DAILY_LIMIT },
+  });
+});
+
 aiRouter.post(
   '/generate-character',
   zValidator('json', genesisFormDataSchema),
