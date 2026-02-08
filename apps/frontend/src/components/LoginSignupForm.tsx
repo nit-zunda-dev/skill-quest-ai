@@ -11,7 +11,12 @@ type Mode = 'login' | 'signup';
 
 const MIN_PASSWORD_LENGTH = 8;
 
-const LoginSignupForm: React.FC = () => {
+interface LoginSignupFormProps {
+  /** ログイン/サインアップ成功時に呼ばれる（認証状態の再取得用） */
+  onSuccess?: () => void;
+}
+
+const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess }) => {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,8 +68,8 @@ const LoginSignupForm: React.FC = () => {
           setError(result.error.message ?? 'ログインに失敗しました');
           return;
         }
-        // 成功時は親で onSuccess などがあれば呼ぶ。ここでは状態のみリセット
         setPassword('');
+        onSuccess?.();
       } else {
         const result = await authClient.signUp.email({
           name: name.trim(),
@@ -77,6 +82,7 @@ const LoginSignupForm: React.FC = () => {
         }
         setPassword('');
         setName('');
+        onSuccess?.();
       }
     } finally {
       setIsSubmitting(false);
