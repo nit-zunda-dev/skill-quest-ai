@@ -3,11 +3,12 @@
  * - アプリ起動時に getSession でセッションを取得
  * - 認証状態に基づくルーティング用に isAuthenticated / isLoading を提供
  * - ログアウト用 signOut を提供
+ * - AuthProvider で状態を共有し、サインアウト時に全コンポーネントでログイン画面へ遷移
  */
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { getSession, signOut as authSignOut } from '@/lib/auth-client';
 
-type SessionData = { user: { id: string; email?: string; name?: string }; session: { id: string; token: string; expiresAt: number } } | null;
+export type SessionData = { user: { id: string; email?: string; name?: string }; session: { id: string; token: string; expiresAt: number } } | null;
 
 const SESSION_FETCH_TIMEOUT_MS = 12_000;
 
@@ -20,7 +21,17 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-export function useAuth() {
+type AuthContextValue = {
+  session: SessionData | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  signOut: () => Promise<void>;
+  refetch: () => void;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,11 +54,21 @@ export function useAuth() {
     setSession(null);
   }, []);
 
-  return {
+  const value: AuthContextValue = {
     session,
     isLoading,
     isAuthenticated: session != null,
     signOut,
     refetch,
   };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (ctx == null) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return ctx;
 }

@@ -128,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
         <button
           type="button"
           onClick={() => signOut()}
-          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-slate-100 rounded-lg text-sm transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-slate-600 hover:bg-slate-500 border border-slate-500 text-slate-100 rounded-lg text-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
           aria-label="ログアウト"
         >
           <LogOut className="w-4 h-4" />
