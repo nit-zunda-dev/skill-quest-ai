@@ -319,7 +319,7 @@
   - **確認方法:** 各エンドポイントで制限内なら200、超過で429またはスタブとなることをテストで確認する
 
 - [ ] 8. フロントエンド統合（Hono RPCとTanStack Query）
-- [ ] 8.1 Hono RPCクライアントを実装する
+- [x] 8.1 Hono RPCクライアントを実装する
   - `apps/frontend/src/lib/client.ts`を作成し、Hono RPCクライアントを初期化する
   - `@skill-quest/backend`から`AppType`を型のみインポートする（`import type`）
   - 環境変数からAPI URLを取得し、クライアントを生成する
