@@ -319,7 +319,7 @@
   - **確認方法:** 各エンドポイントで制限内なら200、超過で429またはスタブとなることをテストで確認する
 
 - [ ] 8. フロントエンド統合（Hono RPCとTanStack Query）
-- [ ] 8.1 Hono RPCクライアントを実装する
+- [x] 8.1 Hono RPCクライアントを実装する
   - `apps/frontend/src/lib/client.ts`を作成し、Hono RPCクライアントを初期化する
   - `@skill-quest/backend`から`AppType`を型のみインポートする（`import type`）
   - 環境変数からAPI URLを取得し、クライアントを生成する
@@ -333,7 +333,7 @@
     - `client.api.quests.$get()`などの呼び出しで型推論が動作することを確認（IDEで型が表示されることを確認）
     - TypeScriptの型チェックが通ることを確認
 
-- [ ] 8.2 TanStack Queryをセットアップする
+- [x] 8.2 TanStack Queryをセットアップする
   - `@tanstack/react-query`をインストールする
   - `QueryClientProvider`をアプリケーションのルートに追加する
   - クエリクライアントの設定（キャッシュ、リフェッチ設定など）を実装する
@@ -344,7 +344,7 @@
     - クエリクライアントの設定が実装されていることを確認
     - アプリケーションが正常に起動することを確認（`pnpm --filter @skill-quest/frontend dev`）
 
-- [ ] 8.3 (P) クエスト管理用のカスタムフックを実装する
+- [x] 8.3 (P) クエスト管理用のカスタムフックを実装する
   - `apps/frontend/src/hooks/useQuests.ts`を作成し、`useQuery`を使用してクエスト一覧を取得する
   - Hono RPCクライアントと組み合わせて型安全なデータフェッチを実装する
   - ローディング状態とエラー状態を適切に処理する
@@ -355,7 +355,7 @@
     - `isLoading`と`isError`が適切に処理されていることを確認
     - コンポーネントで`useQuests()`を呼び出し、正常に動作することを確認（ブラウザで確認）
 
-- [ ] 8.4 (P) プロフィール管理用のカスタムフックを実装する
+- [x] 8.4 (P) プロフィール管理用のカスタムフックを実装する
   - `apps/frontend/src/hooks/useProfile.ts`を作成し、ユーザープロフィールを取得・更新する
   - TanStack Queryの`useMutation`を使用して更新操作を実装する
   - _Requirements: 7.1, 7.4, 7.5, 7.6_
@@ -364,7 +364,7 @@
     - プロフィール取得と更新の機能が実装されていることを確認
     - コンポーネントで`useProfile()`を呼び出し、正常に動作することを確認（ブラウザで確認）
 
-- [ ] 8.5 既存コンポーネントをTanStack Queryに移行する
+- [x] 8.5 既存コンポーネントをTanStack Queryに移行する
   - `Dashboard.tsx`の状態管理を`useState`からTanStack Queryフックに移行する
   - `QuestBoard.tsx`のデータフェッチングをTanStack Queryに移行する
   - キャッシュと自動リフェッチの動作を確認する
@@ -436,15 +436,6 @@
     - アプリケーション起動時にセッションが取得されることを確認（ブラウザの開発者ツールで確認）
     - 認証状態に基づいてルーティングが制御されることを確認（ログインしていない場合はログインページにリダイレクト）
     - ログアウト機能が正常に動作することを確認（実際にログアウトを試す）
-
-- [ ] 10.4 GitHub OAuth UIを実装する（オプション）
-  - GitHub OAuthログインボタンを作成する
-  - OAuthフローを適切に処理する
-  - _Requirements: 9.5a_
-  - **確認方法:**
-    - GitHub OAuthログインボタンが実装されていることを確認
-    - OAuthフローが正常に動作することを確認（実際にGitHub OAuthでログインを試す）
-    - 認証後に適切にリダイレクトされることを確認
 
 - [ ] 11. 既存Gemini API呼び出しの置き換え
 - [ ] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える

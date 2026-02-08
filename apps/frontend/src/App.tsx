@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AppMode, CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
-import { generateCharacter } from './services/geminiService';
-import { IntroStep, QuestionStep, LoadingStep } from './components/GenesisStep';
-import ResultStep from './components/ResultStep';
-import Dashboard from './components/Dashboard';
+import { generateCharacter } from '@/lib/api-client';
+import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
+import ResultStep from '@/components/ResultStep';
+import Dashboard from '@/components/Dashboard';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.GENESIS);
@@ -81,7 +81,7 @@ const App: React.FC = () => {
 
       {/* Footer */}
       <div className="p-4 text-center text-slate-600 text-xs z-10">
-        Chronicle v1.1.0 &bull; Powered by Gemini
+        Chronicle v1.1.0 &bull; Powered by Workers AI
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { UserState, Task, GrimoireEntry, CharacterProfile, Difficulty } from '@skill-quest/shared';
+import React, { useState, useMemo } from 'react';
+import { Task, GrimoireEntry, CharacterProfile } from '@skill-quest/shared';
 import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative, generatePartnerMessage } from '../services/geminiService';
+import { generateTaskNarrative, generatePartnerMessage } from '@/lib/api-client';
 import { X, Sparkles } from 'lucide-react';
+import { useQuests } from '@/hooks/useQuests';
 
 interface DashboardProps {
   initialProfile: CharacterProfile;
@@ -13,9 +14,19 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const [profile, setProfile] = useState<CharacterProfile>(initialProfile);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest } = useQuests();
   const [grimoire, setGrimoire] = useState<GrimoireEntry[]>([]);
-  
+  /** 完了・ストリークはAPIにないためローカルで保持（quest id -> { completed, streak }） */
+  const [localCompletion, setLocalCompletion] = useState<Record<string, { completed: boolean; streak: number }>>({});
+
+  const tasks: Task[] = useMemo(() => {
+    return serverTasks.map((t) => ({
+      ...t,
+      completed: localCompletion[t.id]?.completed ?? t.completed ?? false,
+      streak: localCompletion[t.id]?.streak ?? t.streak ?? 0,
+    }));
+  }, [serverTasks, localCompletion]);
+
   // Narrative Modal State
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
   const [narrativeComment, setNarrativeComment] = useState('');
@@ -23,17 +34,11 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const [narrativeResult, setNarrativeResult] = useState<{narrative: string, xp: number, gold: number} | null>(null);
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed' | 'streak'>) => {
-    const newTask: Task = {
-      ...taskData,
-      id: Date.now().toString(),
-      completed: false,
-      streak: 0,
-    };
-    setTasks(prev => [...prev, newTask]);
+    addQuest({ title: taskData.title, type: taskData.type, difficulty: taskData.difficulty });
   };
 
   const deleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    deleteQuest(taskId);
   };
 
   const initiateCompleteTask = (taskId: string) => {
@@ -78,10 +83,11 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
         };
       });
 
-      // 3. Update Task
-      setTasks(prev => prev.map(t => 
-        t.id === completedTask.id ? { ...t, completed: true, streak: (t.streak || 0) + 1 } : t
-      ));
+      // 3. Update local completion (APIに完了状態がないためローカルで保持)
+      setLocalCompletion(prev => ({
+        ...prev,
+        [completedTask.id]: { completed: true, streak: (prev[completedTask.id]?.streak ?? completedTask.streak ?? 0) + 1 },
+      }));
 
       // 4. Add to Grimoire
       const newEntry: GrimoireEntry = {
@@ -126,12 +132,22 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
       {/* Center: Main Content */}
       <div className="flex-grow flex flex-col gap-6 z-10 min-h-0">
         <div className="flex-1 min-h-[400px]">
-           <QuestBoard 
-             tasks={tasks} 
-             onAddTask={addTask} 
-             onCompleteTask={initiateCompleteTask}
-             onDeleteTask={deleteTask}
-           />
+          {questsLoading ? (
+            <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex items-center justify-center text-slate-400">
+              クエストを読み込み中...
+            </div>
+          ) : questsError ? (
+            <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex items-center justify-center text-red-400">
+              クエストの読み込みに失敗しました
+            </div>
+          ) : (
+            <QuestBoard 
+              tasks={tasks} 
+              onAddTask={addTask} 
+              onCompleteTask={initiateCompleteTask}
+              onDeleteTask={deleteTask}
+            />
+          )}
         </div>
         <div className="h-64 md:h-80">
            <Grimoire entries={grimoire} />

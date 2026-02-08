@@ -90,6 +90,20 @@
 - `Health Check > Test CORS`: CORS設定の確認
 - `Health Check > Test Error`: エラーハンドリングの確認
 
+### プロフィール（Profile）
+
+いずれも**認証必須**です。先に `Auth > Sign In (Email/Password)` でログインしてください。
+
+1. **取得**
+   - `Profile > Get Profile` を実行
+   - エンドポイント: `GET /api/profile`
+   - レスポンス: `id`, `email`, `name`, `image`
+
+2. **更新**
+   - `Profile > Update Profile` を実行
+   - エンドポイント: `PATCH /api/profile`
+   - 任意: `name`（1〜256文字）, `image`（URL または null）
+
 ### クエスト管理（Quests）
 
 いずれも**認証必須**です。先に `Auth > Sign In (Email/Password)` でログインしてください。
@@ -159,7 +173,7 @@ Workers AI（Llama 3.1 8B）で実装され、利用制限ポリシー（06_AI�
 
 ## 注意事項
 
-- 認証が必要なエンドポイント（**Quests、AI、** Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
+- 認証が必要なエンドポイント（**Profile、Quests、AI、** Protected Endpoints、Delete Account）を使用する前に、必ずサインアップまたはログインを実行してください
 - AI エンドポイントは**認証必須**です。利用制限（キャラ1回/ナラティブ・パートナー1日1回/チャット1日10回）を超えると 429 が返ります
 - セッションはCookieに保存されるため、PostmanのCookie管理が有効になっていることを確認してください
 - Quests の PUT/DELETE では、コレクション変数 `quest_id` が使われます。Get Quests または Create Quest を先に実行すると自動で設定されます
