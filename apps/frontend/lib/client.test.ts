@@ -15,7 +15,8 @@ describe('Hono RPC client', () => {
 
   it('クライアントが初期化されている', () => {
     expect(client).toBeDefined();
-    expect(typeof client).toBe('object');
+    // Hono hc() は関数を返すため function または object を許容
+    expect(['object', 'function']).toContain(typeof client);
   });
 
   it('client.api.quests が存在する', () => {
