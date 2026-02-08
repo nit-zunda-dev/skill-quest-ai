@@ -19,9 +19,21 @@ type HcClient = {
       'generate-narrative': { $post: (opts: { json: object }) => Promise<Response> };
       'generate-partner-message': { $post: (opts: { json: object }) => Promise<Response> };
     };
+    users: {
+      ':userId': { $delete: (opts: { param: { userId: string } }) => Promise<Response> };
+    };
   };
 };
 const api = (client as HcClient).api;
+
+/** アカウント削除（本人のみ。削除後はログアウト扱い） */
+export async function deleteAccount(userId: string): Promise<void> {
+  const res = await (client as HcClient).api.users[':userId'].$delete({ param: { userId } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err?.message ?? `アカウント削除に失敗しました (${res.status})`);
+  }
+}
 
 /** プロフィールの数値フィールドを正規化（undefined/文字列で NaN を防ぐ）。GET character と Dashboard 初期化で利用。 */
 export function normalizeProfileNumbers(p: CharacterProfile): CharacterProfile {

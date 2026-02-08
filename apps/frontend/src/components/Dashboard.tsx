@@ -4,8 +4,8 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative, normalizeProfileNumbers } from '@/lib/api-client';
-import { X, Sparkles, LogOut } from 'lucide-react';
+import { generateTaskNarrative, normalizeProfileNumbers, deleteAccount } from '@/lib/api-client';
+import { X, Sparkles, LogOut, Trash2 } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,7 +14,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
   const [profile, setProfile] = useState<CharacterProfile>(() => normalizeProfileNumbers(initialProfile));
   const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest } = useQuests();
   const [grimoire, setGrimoire] = useState<GrimoireEntry[]>([]);
@@ -34,6 +34,12 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const [narrativeComment, setNarrativeComment] = useState('');
   const [isProcessingNarrative, setIsProcessingNarrative] = useState(false);
   const [narrativeResult, setNarrativeResult] = useState<{narrative: string, xp: number, gold: number} | null>(null);
+
+  /** アカウント削除確認モーダル */
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountConfirmText, setDeleteAccountConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed' | 'streak'>) => {
     addQuest({ title: taskData.title, type: taskData.type, difficulty: taskData.difficulty });
@@ -114,6 +120,35 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
     setNarrativeResult(null);
   };
 
+  const openDeleteAccountModal = () => {
+    setShowDeleteAccountModal(true);
+    setDeleteAccountConfirmText('');
+    setDeleteAccountError(null);
+  };
+
+  const closeDeleteAccountModal = () => {
+    if (isDeletingAccount) return;
+    setShowDeleteAccountModal(false);
+    setDeleteAccountConfirmText('');
+    setDeleteAccountError(null);
+  };
+
+  const CONFIRM_DELETE_TEXT = '削除する';
+  const handleDeleteAccount = async () => {
+    if (deleteAccountConfirmText !== CONFIRM_DELETE_TEXT || !session?.user?.id) return;
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+    try {
+      await deleteAccount(session.user.id);
+      await signOut();
+      closeDeleteAccountModal();
+    } catch (e) {
+      setDeleteAccountError(e instanceof Error ? e.message : 'アカウント削除に失敗しました');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 p-4 md:p-8 flex flex-col md:flex-row gap-6 relative overflow-hidden">
       {/* Background Ambience */}
@@ -133,6 +168,15 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
         >
           <LogOut className="w-4 h-4" />
           ログアウト
+        </button>
+        <button
+          type="button"
+          onClick={openDeleteAccountModal}
+          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-transparent hover:bg-red-950/30 border border-red-800/50 text-red-400 hover:text-red-300 rounded-lg text-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          aria-label="アカウントを削除"
+        >
+          <Trash2 className="w-4 h-4" />
+          アカウント削除
         </button>
       </div>
 
@@ -223,6 +267,59 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* アカウント削除確認モーダル */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-800 border border-red-900/50 rounded-xl max-w-md w-full p-6 shadow-2xl relative">
+            <button
+              onClick={closeDeleteAccountModal}
+              disabled={isDeletingAccount}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white disabled:opacity-50"
+              aria-label="閉じる"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="flex items-center gap-2 mb-4 text-red-400">
+              <Trash2 className="w-6 h-6 flex-shrink-0" />
+              <h3 className="text-xl font-bold text-white">アカウントを削除</h3>
+            </div>
+            <p className="text-slate-300 text-sm mb-4">
+              アカウントと紐づくすべてのデータ（プロフィール・クエスト・グリモワールなど）が完全に削除され、元に戻せません。本当に削除する場合は、下の欄に「<strong className="text-red-400">{CONFIRM_DELETE_TEXT}</strong>」と入力してください。
+            </p>
+            <input
+              type="text"
+              value={deleteAccountConfirmText}
+              onChange={(e) => setDeleteAccountConfirmText(e.target.value)}
+              placeholder={CONFIRM_DELETE_TEXT}
+              disabled={isDeletingAccount}
+              className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none mb-4"
+              aria-label="削除確認のため「削除する」と入力"
+            />
+            {deleteAccountError && (
+              <p className="text-red-400 text-sm mb-4" role="alert">{deleteAccountError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteAccountModal}
+                disabled={isDeletingAccount}
+                className="flex-1 py-2 px-4 bg-slate-600 hover:bg-slate-500 text-slate-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountConfirmText !== CONFIRM_DELETE_TEXT || isDeletingAccount}
+                className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeletingAccount ? '削除中...' : 'アカウントを削除する'}
+              </button>
+            </div>
           </div>
         </div>
       )}
