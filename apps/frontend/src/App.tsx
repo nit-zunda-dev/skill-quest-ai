@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
 import { generateCharacter } from '@/lib/api-client';
 import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
 
 const App: React.FC = () => {
-  const { isLoading: authLoading, isAuthenticated, refetch } = useAuth();
+  const { session, isLoading: authLoading, isAuthenticated, refetch } = useAuth();
   const genesisOrProfile = useGenesisOrProfile({ isAuthenticated, isLoading: authLoading });
 
   // Genesis 完了直後にダッシュボードへ渡すプロフィール（サインアップ時のみ使用）
@@ -22,6 +22,13 @@ const App: React.FC = () => {
     genre: Genre.FANTASY,
   });
   const [profile, setProfile] = useState<CharacterProfile | null>(null);
+
+  // 認証済み・Genesis 表示中はサインアップ時の名前を formData.name に同期（名前は1回だけ入力）
+  useEffect(() => {
+    if (isAuthenticated && session?.user?.name != null && session.user.name !== '') {
+      setFormData(prev => (prev.name === '' ? { ...prev, name: session.user.name ?? '' } : prev));
+    }
+  }, [isAuthenticated, session?.user?.name]);
 
   const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));

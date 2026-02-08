@@ -52,26 +52,24 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({ name, goal, genre, o
         プロフィールの作成
       </h2>
 
-      {/* Name Input */}
+      {/* Name: 表示専用（サインアップ時に入力済み） */}
       <div className={`transition-all duration-500 ${activeField >= 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <label className="block text-sm font-medium text-slate-400 mb-2">あなたのお名前は？</label>
+        <label className="block text-sm font-medium text-slate-400 mb-2">お名前</label>
         <div className="relative">
           <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
           <input
             type="text"
-            value={name}
-            onChange={(e) => onChange('name', e.target.value)}
-            onFocus={() => setActiveField(0)}
-            onKeyDown={handleKeyDown}
-            placeholder="名前を入力"
-            className="w-full bg-slate-800/50 border border-slate-700 text-slate-100 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-600"
+            value={name || '読み込み中...'}
+            readOnly
+            aria-readonly="true"
+            className="w-full bg-slate-800/30 border border-slate-700 text-slate-400 rounded-lg pl-10 pr-4 py-3 cursor-default"
           />
         </div>
       </div>
 
       {/* Goal Input */}
-      <div className={`transition-all duration-500 delay-100 ${activeField >= 0 && name ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <label className="block text-sm font-medium text-slate-400 mb-2">現在の主な目標は？</label>
+      <div className={`transition-all duration-500 delay-100 ${activeField >= 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <label className="block text-sm font-medium text-slate-400 mb-2">{name ? `${name}さん、現在の主な目標は？` : '現在の主な目標は？'}</label>
         <div className="relative">
           <Sword className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
           <input
