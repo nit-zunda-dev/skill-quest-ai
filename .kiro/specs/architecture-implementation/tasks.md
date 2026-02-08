@@ -355,7 +355,7 @@
     - `isLoading`と`isError`が適切に処理されていることを確認
     - コンポーネントで`useQuests()`を呼び出し、正常に動作することを確認（ブラウザで確認）
 
-- [ ] 8.4 (P) プロフィール管理用のカスタムフックを実装する
+- [x] 8.4 (P) プロフィール管理用のカスタムフックを実装する
   - `apps/frontend/src/hooks/useProfile.ts`を作成し、ユーザープロフィールを取得・更新する
   - TanStack Queryの`useMutation`を使用して更新操作を実装する
   - _Requirements: 7.1, 7.4, 7.5, 7.6_
