@@ -23,12 +23,28 @@ type HcClient = {
 };
 const api = (client as HcClient).api;
 
+/** プロフィールの数値フィールドを正規化（undefined/文字列で NaN を防ぐ）。GET character と Dashboard 初期化で利用。 */
+export function normalizeProfileNumbers(p: CharacterProfile): CharacterProfile {
+  const maxHp = Number(p.maxHp) || 100;
+  const hp = Number(p.hp);
+  return {
+    ...p,
+    level: Number(p.level) || 0,
+    currentXp: Number(p.currentXp) || 0,
+    nextLevelXp: Number(p.nextLevelXp) || 100,
+    hp: Number.isFinite(hp) ? hp : maxHp,
+    maxHp,
+    gold: Number(p.gold) || 0,
+  };
+}
+
 /** 保存済みキャラクタープロフィール取得（ログイン時用） */
 export async function getCharacterProfile(): Promise<CharacterProfile | null> {
   try {
     const res = await (client as HcClient).api.ai.character.$get();
     if (!res.ok) return null;
-    return (await res.json()) as CharacterProfile;
+    const profile = (await res.json()) as CharacterProfile;
+    return normalizeProfileNumbers(profile);
   } catch {
     return null;
   }
@@ -95,7 +111,12 @@ export async function generateTaskNarrative(
       console.warn('generateTaskNarrative API error:', res.status);
       return createFallbackNarrative(task);
     }
-    return (await res.json()) as NarrativeResult;
+    const raw = (await res.json()) as { narrative?: string; rewardXp?: number; rewardGold?: number };
+    return {
+      narrative: raw.narrative ?? '',
+      xp: Number(raw.rewardXp) || 0,
+      gold: Number(raw.rewardGold) || 0,
+    };
   } catch (e) {
     console.error('generateTaskNarrative error:', e);
     return createFallbackNarrative(task);

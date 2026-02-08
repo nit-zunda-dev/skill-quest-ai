@@ -4,7 +4,7 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative } from '@/lib/api-client';
+import { generateTaskNarrative, normalizeProfileNumbers } from '@/lib/api-client';
 import { X, Sparkles, LogOut } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +15,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const { signOut } = useAuth();
-  const [profile, setProfile] = useState<CharacterProfile>(initialProfile);
+  const [profile, setProfile] = useState<CharacterProfile>(() => normalizeProfileNumbers(initialProfile));
   const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest } = useQuests();
   const [grimoire, setGrimoire] = useState<GrimoireEntry[]>([]);
   /** 完了・ストリークはAPIにないためローカルで保持（quest id -> { completed, streak }） */
