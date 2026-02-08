@@ -405,7 +405,7 @@
   - **確認方法:** ブラウザで残り回数が変わること、制限時にボタンが無効になることを確認する
 
 - [ ] 10. 認証UIの実装
-- [ ] 10.1 Better Authクライアントライブラリを実装する
+- [x] 10.1 Better Authクライアントライブラリを実装する
   - `apps/frontend/src/lib/auth-client.ts`を作成し、Better AuthのReact用クライアントを初期化する
   - `signIn`、`signOut`、`getSession`メソッドをエクスポートする
   - 環境変数からAPI URLを取得する
