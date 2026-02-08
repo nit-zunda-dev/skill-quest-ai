@@ -18,6 +18,7 @@ const mockQuests = [
     type: 'TODO',
     difficulty: 'EASY',
     completed: false,
+    streak: 0,
   },
 ];
 
@@ -86,5 +87,17 @@ describe('useQuests', () => {
 
     expect(result.current.error).toBeDefined();
     expect(result.current.isLoading).toBe(false);
+  });
+
+  it('addQuest と deleteQuest を返す（タスク 8.5）', async () => {
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useQuests(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(typeof result.current.addQuest).toBe('function');
+    expect(typeof result.current.deleteQuest).toBe('function');
   });
 });

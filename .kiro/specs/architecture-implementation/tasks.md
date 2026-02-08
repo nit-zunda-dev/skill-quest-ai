@@ -364,7 +364,7 @@
     - プロフィール取得と更新の機能が実装されていることを確認
     - コンポーネントで`useProfile()`を呼び出し、正常に動作することを確認（ブラウザで確認）
 
-- [ ] 8.5 既存コンポーネントをTanStack Queryに移行する
+- [x] 8.5 既存コンポーネントをTanStack Queryに移行する
   - `Dashboard.tsx`の状態管理を`useState`からTanStack Queryフックに移行する
   - `QuestBoard.tsx`のデータフェッチングをTanStack Queryに移行する
   - キャッシュと自動リフェッチの動作を確認する
