@@ -333,7 +333,7 @@
     - `client.api.quests.$get()`などの呼び出しで型推論が動作することを確認（IDEで型が表示されることを確認）
     - TypeScriptの型チェックが通ることを確認
 
-- [ ] 8.2 TanStack Queryをセットアップする
+- [x] 8.2 TanStack Queryをセットアップする
   - `@tanstack/react-query`をインストールする
   - `QueryClientProvider`をアプリケーションのルートに追加する
   - クエリクライアントの設定（キャッシュ、リフェッチ設定など）を実装する

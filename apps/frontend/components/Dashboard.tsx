@@ -4,7 +4,7 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative, generatePartnerMessage } from '../services/geminiService';
+import { generateTaskNarrative, generatePartnerMessage } from '../lib/api-client';
 import { X, Sparkles } from 'lucide-react';
 
 interface DashboardProps {
