@@ -4,9 +4,9 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative, generatePartnerMessage } from '../lib/api-client';
+import { generateTaskNarrative, generatePartnerMessage } from '@/lib/api-client';
 import { X, Sparkles } from 'lucide-react';
-import { useQuests } from '@/src/hooks/useQuests';
+import { useQuests } from '@/hooks/useQuests';
 
 interface DashboardProps {
   initialProfile: CharacterProfile;

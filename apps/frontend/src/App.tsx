@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AppMode, CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
-import { generateCharacter } from './lib/api-client';
-import { IntroStep, QuestionStep, LoadingStep } from './components/GenesisStep';
-import ResultStep from './components/ResultStep';
-import Dashboard from './components/Dashboard';
+import { generateCharacter } from '@/lib/api-client';
+import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
+import ResultStep from '@/components/ResultStep';
+import Dashboard from '@/components/Dashboard';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.GENESIS);

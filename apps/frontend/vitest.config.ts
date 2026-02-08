@@ -3,11 +3,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
-    alias: { '@': path.resolve(__dirname, '.') },
+    alias: { '@': path.resolve(__dirname, 'src') },
   },
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['lib/**/*.test.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx', '**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
 });
