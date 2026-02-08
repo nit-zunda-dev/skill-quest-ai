@@ -9,13 +9,24 @@ import { getSession, signOut as authSignOut } from '@/lib/auth-client';
 
 type SessionData = { user: { id: string; email?: string; name?: string }; session: { id: string; token: string; expiresAt: number } } | null;
 
+const SESSION_FETCH_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Session fetch timeout')), ms)
+    ),
+  ]);
+}
+
 export function useAuth() {
   const [session, setSession] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refetch = useCallback(() => {
     setIsLoading(true);
-    getSession()
+    withTimeout(getSession(), SESSION_FETCH_TIMEOUT_MS)
       .then((res: { data?: SessionData }) => {
         setSession(res?.data ?? null);
       })

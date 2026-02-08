@@ -1,1 +1,1 @@
-{"version":"7","dialect":"sqlite","entries":[{"idx":0,"version":"6","when":1769943986999,"tag":"0000_misty_nomad","breakpoints":true},{"idx":1,"version":"6","when":1769950000000,"tag":"0001_ai_usage","breakpoints":true}]}
+{"version":"7","dialect":"sqlite","entries":[{"idx":0,"version":"6","when":1769943986999,"tag":"0000_misty_nomad","breakpoints":true},{"idx":1,"version":"6","when":1769950000000,"tag":"0001_ai_usage","breakpoints":true},{"idx":2,"version":"6","when":1769951000000,"tag":"0002_user_character_profile","breakpoints":true}]}

@@ -30,6 +30,37 @@ export async function recordCharacterGenerated(db: D1Database, userId: string): 
     .run();
 }
 
+/** キャラクタープロフィールを保存（サインアップ時1回のみ） */
+export async function saveCharacterProfile(
+  db: D1Database,
+  userId: string,
+  profile: unknown
+): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
+  const profileJson = JSON.stringify(profile);
+  await db
+    .prepare('INSERT INTO user_character_profile (user_id, profile, created_at) VALUES (?, ?, ?)')
+    .bind(userId, profileJson, now)
+    .run();
+}
+
+/** キャラクタープロフィールを取得（未生成の場合は null） */
+export async function getCharacterProfile(
+  db: D1Database,
+  userId: string
+): Promise<unknown | null> {
+  const row = await db
+    .prepare('SELECT profile FROM user_character_profile WHERE user_id = ?')
+    .bind(userId)
+    .first<{ profile: string }>();
+  if (!row?.profile) return null;
+  try {
+    return JSON.parse(row.profile) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 /** 指定日の利用回数を取得（レコードがなければ 0） */
 export async function getDailyUsage(
   db: D1Database,

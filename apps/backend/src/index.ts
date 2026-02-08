@@ -7,6 +7,7 @@ import { authMiddleware } from './middleware/auth';
 import { questsRouter } from './routes/quests';
 import { aiRouter } from './routes/ai';
 import { profileRouter } from './routes/profile';
+import { deleteAccountByUserId } from './services/account-delete';
 
 // Honoアプリケーションを初期化
 // Bindings型を適用して、c.envで型安全にアクセスできるようにする
@@ -106,18 +107,24 @@ app.get('/api/test-protected', authMiddleware, (c) => {
 
 /**
  * アカウント削除エンドポイント
- * 認証済みユーザーのアカウントを削除する
+ * ユーザーIDを指定し、認証済みユーザー本人のみ自分のアカウントと関連する全データを削除できる。
+ * DELETE /api/users/:userId — :userId は認証ユーザーの id と一致している必要がある。
  */
-app.post('/api/account/delete', authMiddleware, async (c) => {
+app.delete('/api/users/:userId', authMiddleware, async (c) => {
   const user = c.get('user');
-  
+  const userId = c.req.param('userId');
+
+  if (userId !== user.id) {
+    throw new HTTPException(403, { message: 'Forbidden: You can only delete your own account' });
+  }
+
   try {
-    // Better Authのデータベースからユーザーを削除
-    // 関連するセッション、アカウント情報も削除される（外部キー制約による）
-    await c.env.DB.prepare('DELETE FROM user WHERE id = ?').bind(user.id).run();
-    
-    return c.json({ success: true, message: 'Account deleted successfully' });
+    await deleteAccountByUserId(c.env.DB, userId);
+    return c.json({ success: true, message: 'Account and all related data deleted successfully' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
+      throw new HTTPException(404, { message: 'User not found' });
+    }
     console.error('Account deletion error:', error);
     throw new HTTPException(500, { message: 'Failed to delete account' });
   }

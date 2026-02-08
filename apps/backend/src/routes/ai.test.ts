@@ -7,19 +7,40 @@ import { Difficulty, TaskType } from '@skill-quest/shared';
 
 const testUser: AuthUser = { id: 'test-user-id', email: 'test@example.com', name: 'Test User' };
 
+/** テスト用の最小 CharacterProfile 形 */
+const stubProfile = {
+  name: 'Test',
+  className: 'Warrior',
+  title: 'Brave',
+  stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
+  prologue: 'Prologue.',
+  startingSkill: 'Slash',
+  themeColor: '#6366f1',
+  level: 1,
+  currentXp: 0,
+  nextLevelXp: 100,
+  hp: 100,
+  maxHp: 100,
+  gold: 0,
+};
+
 /** AI利用制限用のD1モック（未使用=0、記録は何もしない） */
 function createMockD1ForAiUsage(overrides?: {
   hasCharacter?: boolean;
+  storedProfile?: unknown | null;
   narrativeCount?: number;
   partnerCount?: number;
   chatCount?: number;
 }) {
   const hasCharacter = overrides?.hasCharacter ?? false;
+  const storedProfile = overrides?.storedProfile ?? null;
   const narrativeCount = overrides?.narrativeCount ?? 0;
   const partnerCount = overrides?.partnerCount ?? 0;
   const chatCount = overrides?.chatCount ?? 0;
   const first = async (sql: string, ...params: unknown[]) => {
     if (sql.includes('user_character_generated')) return hasCharacter ? { user_id: params[0] } : null;
+    if (sql.includes('user_character_profile') && sql.includes('profile'))
+      return storedProfile != null ? { profile: JSON.stringify(storedProfile) } : null;
     if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
       return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount };
     return null;
@@ -112,6 +133,29 @@ describe('ai router', () => {
       expect(res.status).toBe(429);
       const body = (await res.json()) as Record<string, unknown>;
       expect(body.error).toBe('Too Many Requests');
+    });
+  });
+
+  describe('GET /character', () => {
+    it('returns 404 when user has not generated character', async () => {
+      const { app, env } = createTestApp(mockEnv);
+      const res = await app.request('/character', { method: 'GET' }, env);
+      expect(res.status).toBe(404);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.error).toBe('Character not generated');
+    });
+
+    it('returns 200 with profile when character exists', async () => {
+      const envWithProfile = {
+        ...mockEnv,
+        DB: createMockD1ForAiUsage({ hasCharacter: true, storedProfile: stubProfile }) as unknown as Bindings['DB'],
+      };
+      const { app, env } = createTestApp(envWithProfile);
+      const res = await app.request('/character', { method: 'GET' }, env);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.name).toBe(stubProfile.name);
+      expect(body.className).toBe(stubProfile.className);
     });
   });
 

@@ -15,12 +15,13 @@ export type AiUsage = {
 };
 
 const AI_USAGE_QUERY_KEY = ['ai', 'usage'] as const;
+const USAGE_FETCH_TIMEOUT_MS = 12_000;
 
 type AiUsageClient = {
   api: {
     ai: {
       usage: {
-        $get: () => Promise<Response>;
+        $get: (opts?: { signal?: AbortSignal }) => Promise<Response>;
       };
     };
   };
@@ -35,9 +36,25 @@ async function fetchAiUsage(): Promise<AiUsage> {
   return res.json();
 }
 
-export function useAiUsage() {
+function delay(ms: number): Promise<never> {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Request timeout')), ms)
+  );
+}
+
+/** タイムアウト付きで GET /api/ai/usage を呼ぶ（認証後ハング対策） */
+async function fetchAiUsageWithTimeout(): Promise<AiUsage> {
+  return Promise.race([
+    fetchAiUsage(),
+    delay(USAGE_FETCH_TIMEOUT_MS),
+  ]);
+}
+
+export function useAiUsage(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: AI_USAGE_QUERY_KEY,
-    queryFn: fetchAiUsage,
+    queryFn: fetchAiUsageWithTimeout,
+    enabled: options?.enabled !== false,
+    retry: false,
   });
 }

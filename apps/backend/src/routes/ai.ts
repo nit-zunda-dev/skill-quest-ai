@@ -13,6 +13,8 @@ import { prepareUserPrompt } from '../services/prompt-safety';
 import {
   hasCharacterGenerated,
   recordCharacterGenerated,
+  saveCharacterProfile,
+  getCharacterProfile,
   getDailyUsage,
   recordNarrative,
   recordPartner,
@@ -55,6 +57,16 @@ aiRouter.get('/usage', async (c) => {
   });
 });
 
+/** 保存済みキャラクタープロフィール取得（ログイン時ダッシュボード表示用） */
+aiRouter.get('/character', async (c) => {
+  const user = c.get('user');
+  const profile = await getCharacterProfile(c.env.DB, user.id);
+  if (profile == null) {
+    return c.json({ error: 'Character not generated' }, 404);
+  }
+  return c.json(profile);
+});
+
 aiRouter.post(
   '/generate-character',
   zValidator('json', genesisFormDataSchema),
@@ -72,6 +84,7 @@ aiRouter.post(
     const service = createAiService(c.env);
     const profile = await service.generateCharacter(sanitized);
     await recordCharacterGenerated(c.env.DB, user.id);
+    await saveCharacterProfile(c.env.DB, user.id, profile);
     return c.json(profile);
   }
 );

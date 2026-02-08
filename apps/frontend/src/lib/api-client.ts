@@ -14,6 +14,7 @@ import {
 type HcClient = {
   api: {
     ai: {
+      character: { $get: () => Promise<Response> };
       'generate-character': { $post: (opts: { json: GenesisFormData }) => Promise<Response> };
       'generate-narrative': { $post: (opts: { json: object }) => Promise<Response> };
       'generate-partner-message': { $post: (opts: { json: object }) => Promise<Response> };
@@ -21,6 +22,17 @@ type HcClient = {
   };
 };
 const api = (client as HcClient).api;
+
+/** 保存済みキャラクタープロフィール取得（ログイン時用） */
+export async function getCharacterProfile(): Promise<CharacterProfile | null> {
+  try {
+    const res = await (client as HcClient).api.ai.character.$get();
+    if (!res.ok) return null;
+    return (await res.json()) as CharacterProfile;
+  } catch {
+    return null;
+  }
+}
 
 interface NarrativeResult {
   narrative: string;

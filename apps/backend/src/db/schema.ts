@@ -99,6 +99,13 @@ export const userCharacterGenerated = sqliteTable('user_character_generated', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+/** ユーザーキャラクタープロフィール（サインアップ時生成・ログイン時に取得） */
+export const userCharacterProfile = sqliteTable('user_character_profile', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  profile: text('profile', { mode: 'json' }).notNull(), // CharacterProfile を JSON で保存
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
 /** 日次AI利用回数（ナラティブ・パートナー・チャット） */
 export const aiDailyUsage = sqliteTable('ai_daily_usage', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -174,5 +181,6 @@ export const schema = {
   userProgress,
   interactionLogs,
   userCharacterGenerated,
+  userCharacterProfile,
   aiDailyUsage,
 };

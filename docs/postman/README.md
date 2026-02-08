@@ -78,9 +78,9 @@
    - セッションCookieが削除されます
 
 5. **アカウント削除**
-   - `Auth > Delete Account`リクエストを実行
-   - エンドポイント: `/api/account/delete`
-   - 現在ログイン中のユーザーアカウントが完全に削除されます
+   - 先に `Profile > Get Profile` で `id` を確認し、Postmanの `user_id` 変数に設定
+   - `Auth > Delete Account` リクエストを実行（`DELETE /api/users/:userId`）
+   - 指定したユーザーIDのアカウントと関連する全データ（セッション・進捗・AI利用履歴など）が削除されます。本人のIDのみ指定可能です
    - **注意:** この操作は取り消せません
 
 ### ヘルスチェック
