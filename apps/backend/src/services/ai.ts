@@ -210,11 +210,11 @@ function isNarrativeResult(obj: unknown): obj is NarrativeResult {
 function buildNarrativePrompt(request: NarrativeRequest): string {
   const comment = request.userComment ? `ユーザーのコメント: ${request.userComment}` : 'ユーザーのコメント: なし';
   return [
-    'RPGのタスク完了イベントを生成し、JSONのみで返してください。',
+    'あなたはTRPGのゲームマスターです。TRPGのタスク完了イベントを生成し、JSONのみで返してください。',
     `完了したタスク: ${request.taskTitle} (タスク種別: ${request.taskType}, 難易度: ${request.difficulty})`,
     comment,
     '【出力ルール】',
-    '1. narrative: タスク完了をRPGのアクションとして描写する（2文程度）。大袈裟すぎず、達成感のある表現で。',
+    '1. narrative: タスク完了をクトゥルフ神話TRPGのアクションとして誇張的に描写する（2文程度）。',
     '2. rewardXp: 難易度に応じた経験値 (EASY: 10-20, MEDIUM: 25-40, HARD: 50-80)',
     '3. rewardGold: 難易度に応じた報酬 (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
     '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',

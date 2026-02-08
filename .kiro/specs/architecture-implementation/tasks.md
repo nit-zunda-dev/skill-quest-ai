@@ -437,15 +437,6 @@
     - 認証状態に基づいてルーティングが制御されることを確認（ログインしていない場合はログインページにリダイレクト）
     - ログアウト機能が正常に動作することを確認（実際にログアウトを試す）
 
-- [ ] 10.4 GitHub OAuth UIを実装する（オプション）
-  - GitHub OAuthログインボタンを作成する
-  - OAuthフローを適切に処理する
-  - _Requirements: 9.5a_
-  - **確認方法:**
-    - GitHub OAuthログインボタンが実装されていることを確認
-    - OAuthフローが正常に動作することを確認（実際にGitHub OAuthでログインを試す）
-    - 認証後に適切にリダイレクトされることを確認
-
 - [ ] 11. 既存Gemini API呼び出しの置き換え
 - [ ] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える
   - `apps/frontend/services/geminiService.ts`を`apps/frontend/lib/api-client.ts`に置き換える
