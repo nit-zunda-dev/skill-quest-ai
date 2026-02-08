@@ -4,11 +4,14 @@ import { generateCharacter } from '@/lib/api-client';
 import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
 import Dashboard from '@/components/Dashboard';
+import LoginSignupForm from '@/components/LoginSignupForm';
+import { useAuth } from '@/hooks/useAuth';
 
 const App: React.FC = () => {
+  const { isLoading, isAuthenticated, refetch } = useAuth();
   const [mode, setMode] = useState<AppMode>(AppMode.GENESIS);
   const [genesisStep, setGenesisStep] = useState<'INTRO' | 'QUESTIONS' | 'LOADING' | 'RESULT'>('INTRO');
-  
+
   // Form State
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
@@ -31,7 +34,7 @@ const App: React.FC = () => {
       setGenesisStep('RESULT');
     } catch (error) {
       console.error("Failed to generate", error);
-      setGenesisStep('QUESTIONS'); 
+      setGenesisStep('QUESTIONS');
     }
   };
 
@@ -39,7 +42,31 @@ const App: React.FC = () => {
     setMode(AppMode.DASHBOARD);
   };
 
-  // Render Dashboard
+  // 認証状態: ローディング中
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex items-center justify-center">
+        <div className="text-slate-400 animate-pulse">読み込み中...</div>
+      </div>
+    );
+  }
+
+  // 認証状態: 未認証の場合はログイン/サインアップ画面を表示
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Chronicle</h1>
+          <LoginSignupForm onSuccess={refetch} />
+        </div>
+        <div className="p-4 text-center text-slate-600 text-xs mt-8">
+          Chronicle v1.1.0 &bull; Powered by Workers AI
+        </div>
+      </div>
+    );
+  }
+
+  // 認証済み: ダッシュボード
   if (mode === AppMode.DASHBOARD && profile) {
     return <Dashboard initialProfile={profile} />;
   }

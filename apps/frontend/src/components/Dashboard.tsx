@@ -5,14 +5,16 @@ import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
 import { generateTaskNarrative } from '@/lib/api-client';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, LogOut } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardProps {
   initialProfile: CharacterProfile;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<CharacterProfile>(initialProfile);
   const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest } = useQuests();
   const [grimoire, setGrimoire] = useState<GrimoireEntry[]>([]);
@@ -121,8 +123,17 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
       </div>
 
       {/* Left: Status (Fixed on Desktop, Top on Mobile) */}
-      <div className="w-full md:w-80 flex-shrink-0 z-10">
+      <div className="w-full md:w-80 flex-shrink-0 z-10 flex flex-col gap-4">
         <StatusPanel profile={profile} />
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-slate-100 rounded-lg text-sm transition-colors"
+          aria-label="ログアウト"
+        >
+          <LogOut className="w-4 h-4" />
+          ログアウト
+        </button>
       </div>
 
       {/* Center: Main Content */}
