@@ -44,6 +44,22 @@ export async function saveCharacterProfile(
     .run();
 }
 
+/** キャラクタープロフィールを部分更新（XP、ゴールド、レベル等） */
+export async function updateCharacterProfile(
+  db: D1Database,
+  userId: string,
+  partialProfile: Record<string, unknown>
+): Promise<void> {
+  const current = await getCharacterProfile(db, userId);
+  if (!current || typeof current !== 'object') return;
+  const merged = { ...(current as Record<string, unknown>), ...partialProfile };
+  const profileJson = JSON.stringify(merged);
+  await db
+    .prepare('UPDATE user_character_profile SET profile = ? WHERE user_id = ?')
+    .bind(profileJson, userId)
+    .run();
+}
+
 /** キャラクタープロフィールを取得（未生成の場合は null） */
 export async function getCharacterProfile(
   db: D1Database,
@@ -117,4 +133,56 @@ export async function recordChat(db: D1Database, userId: string, dateUtc: string
     )
     .bind(userId, dateUtc)
     .run();
+}
+
+/** グリモワールエントリを作成 */
+export async function createGrimoireEntry(
+  db: D1Database,
+  userId: string,
+  entry: { taskTitle: string; narrative: string; rewardXp: number; rewardGold: number }
+): Promise<{ id: string }> {
+  const id = crypto.randomUUID();
+  const now = Math.floor(Date.now() / 1000);
+  await db
+    .prepare(
+      'INSERT INTO grimoire_entries (id, user_id, task_title, narrative, reward_xp, reward_gold, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )
+    .bind(id, userId, entry.taskTitle, entry.narrative, entry.rewardXp, entry.rewardGold, now)
+    .run();
+  return { id };
+}
+
+/** ユーザーのグリモワール一覧を取得（新しい順） */
+export async function getGrimoireEntries(
+  db: D1Database,
+  userId: string
+): Promise<Array<{ id: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number; createdAt: number }>> {
+  const { results } = await db
+    .prepare(
+      'SELECT id, task_title, narrative, reward_xp, reward_gold, created_at FROM grimoire_entries WHERE user_id = ? ORDER BY created_at DESC'
+    )
+    .bind(userId)
+    .all<{ id: string; task_title: string; narrative: string; reward_xp: number; reward_gold: number; created_at: number }>();
+  if (!results) return [];
+  return results.map((r) => ({
+    id: r.id,
+    taskTitle: r.task_title,
+    narrative: r.narrative,
+    rewardXp: r.reward_xp ?? 0,
+    rewardGold: r.reward_gold ?? 0,
+    createdAt: r.created_at,
+  }));
+}
+
+/** クエストを完了状態に更新（ナラティブ完了時） */
+export async function completeQuest(
+  db: D1Database,
+  userId: string,
+  questId: string
+): Promise<boolean> {
+  const result = await db
+    .prepare('UPDATE quests SET completed_at = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+    .bind(Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000), questId, userId)
+    .run();
+  return (result.meta.changes ?? 0) > 0;
 }

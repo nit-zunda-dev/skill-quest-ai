@@ -17,22 +17,28 @@ export async function deleteAccountByUserId(db: D1Database, userId: string): Pro
   // 2. user_progress
   await db.prepare('DELETE FROM user_progress WHERE user_id = ?').bind(userId).run();
 
-  // 3. session, account (Better Auth)
+  // 3. grimoire_entries (user_id に紐づく)
+  await db.prepare('DELETE FROM grimoire_entries WHERE user_id = ?').bind(userId).run();
+
+  // 4. quests (user_id に紐づく)
+  await db.prepare('DELETE FROM quests WHERE user_id = ?').bind(userId).run();
+
+  // 5. session, account (Better Auth)
   await db.prepare('DELETE FROM session WHERE user_id = ?').bind(userId).run();
   await db.prepare('DELETE FROM account WHERE user_id = ?').bind(userId).run();
 
-  // 4. アプリケーション用ユーザー関連
+  // 6. アプリケーション用ユーザー関連
   await db.prepare('DELETE FROM user_character_generated WHERE user_id = ?').bind(userId).run();
   await db.prepare('DELETE FROM user_character_profile WHERE user_id = ?').bind(userId).run();
   await db.prepare('DELETE FROM ai_daily_usage WHERE user_id = ?').bind(userId).run();
 
-  // 5. verification（identifier にメールが入る場合があるため、該当ユーザーのメールで削除）
+  // 7. verification（identifier にメールが入る場合があるため、該当ユーザーのメールで削除）
   await db
     .prepare('DELETE FROM verification WHERE identifier = (SELECT email FROM user WHERE id = ?)')
     .bind(userId)
     .run();
 
-  // 6. user（最後に削除）
+  // 8. user（最後に削除）
   const result = await db.prepare('DELETE FROM user WHERE id = ?').bind(userId).run();
 
   if (result.meta.changes === 0) {

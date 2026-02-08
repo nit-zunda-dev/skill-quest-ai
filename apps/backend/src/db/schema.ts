@@ -62,13 +62,25 @@ export const skills = sqliteTable('skills', {
 
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   skillId: text('skill_id').references(() => skills.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   scenario: text('scenario'),
   difficulty: integer('difficulty').notNull(), // 1-5の範囲
   winCondition: text('win_condition', { mode: 'json' }), // JSON形式で勝利条件を格納
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
+});
+
+export const grimoireEntries = sqliteTable('grimoire_entries', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  taskTitle: text('task_title').notNull(),
+  narrative: text('narrative').notNull(),
+  rewardXp: integer('reward_xp').notNull().default(0),
+  rewardGold: integer('reward_gold').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const userProgress = sqliteTable('user_progress', {
@@ -123,6 +135,8 @@ export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   progress: many(userProgress),
+  quests: many(quests),
+  grimoireEntries: many(grimoireEntries),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -144,11 +158,22 @@ export const skillsRelations = relations(skills, ({ many }) => ({
 }));
 
 export const questsRelations = relations(quests, ({ one, many }) => ({
+  user: one(user, {
+    fields: [quests.userId],
+    references: [user.id],
+  }),
   skill: one(skills, {
     fields: [quests.skillId],
     references: [skills.id],
   }),
   progress: many(userProgress),
+}));
+
+export const grimoireEntriesRelations = relations(grimoireEntries, ({ one }) => ({
+  user: one(user, {
+    fields: [grimoireEntries.userId],
+    references: [user.id],
+  }),
 }));
 
 export const userProgressRelations = relations(userProgress, ({ one, many }) => ({
@@ -178,6 +203,7 @@ export const schema = {
   verification,
   skills,
   quests,
+  grimoireEntries,
   userProgress,
   interactionLogs,
   userCharacterGenerated,

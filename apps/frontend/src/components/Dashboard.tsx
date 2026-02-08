@@ -7,6 +7,7 @@ import PartnerWidget from './PartnerWidget';
 import { generateTaskNarrative, normalizeProfileNumbers, deleteAccount } from '@/lib/api-client';
 import { X, Sparkles, LogOut, Trash2 } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
+import { useGrimoire } from '@/hooks/useGrimoire';
 import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardProps {
@@ -16,18 +17,16 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const { signOut, session } = useAuth();
   const [profile, setProfile] = useState<CharacterProfile>(() => normalizeProfileNumbers(initialProfile));
-  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest } = useQuests();
-  const [grimoire, setGrimoire] = useState<GrimoireEntry[]>([]);
-  /** 完了・ストリークはAPIにないためローカルで保持（quest id -> { completed, streak }） */
-  const [localCompletion, setLocalCompletion] = useState<Record<string, { completed: boolean; streak: number }>>({});
+  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest, invalidate: invalidateQuests } = useQuests();
+  const { data: grimoire = [], isLoading: grimoireLoading, invalidate: invalidateGrimoire } = useGrimoire();
 
   const tasks: Task[] = useMemo(() => {
     return serverTasks.map((t) => ({
       ...t,
-      completed: localCompletion[t.id]?.completed ?? t.completed ?? false,
-      streak: localCompletion[t.id]?.streak ?? t.streak ?? 0,
+      completed: t.completed ?? false,
+      streak: t.streak ?? 0,
     }));
-  }, [serverTasks, localCompletion]);
+  }, [serverTasks]);
 
   // Narrative Modal State
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
@@ -60,54 +59,18 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
 
   const confirmCompletion = async () => {
     if (!completedTask) return;
-    
+
     setIsProcessingNarrative(true);
     try {
-      // 1. Generate Narrative
       const result = await generateTaskNarrative(completedTask, narrativeComment, profile);
       setNarrativeResult(result);
 
-      // 2. Update Profile (XP, Level, Gold)
-      setProfile(prev => {
-        let newXp = prev.currentXp + result.xp;
-        let newLevel = prev.level;
-        let nextXp = prev.nextLevelXp;
-        let newGold = prev.gold + result.gold;
-
-        // Level Up Logic
-        if (newXp >= nextXp) {
-          newXp -= nextXp;
-          newLevel += 1;
-          nextXp = Math.floor(nextXp * 1.2); // Simple exponential curve
-          // Maybe restore HP on level up
-        }
-
-        return {
-          ...prev,
-          level: newLevel,
-          currentXp: newXp,
-          nextLevelXp: nextXp,
-          gold: newGold
-        };
-      });
-
-      // 3. Update local completion (APIに完了状態がないためローカルで保持)
-      setLocalCompletion(prev => ({
-        ...prev,
-        [completedTask.id]: { completed: true, streak: (prev[completedTask.id]?.streak ?? completedTask.streak ?? 0) + 1 },
-      }));
-
-      // 4. Add to Grimoire
-      const newEntry: GrimoireEntry = {
-        id: Date.now().toString(),
-        date: new Date().toLocaleDateString('ja-JP'),
-        taskTitle: completedTask.title,
-        narrative: result.narrative,
-        rewardXp: result.xp,
-        rewardGold: result.gold
-      };
-      setGrimoire(prev => [...prev, newEntry]);
-
+      // バックエンドで永続化済み。レスポンスからローカル状態を更新
+      if (result.profile) {
+        setProfile(normalizeProfileNumbers(result.profile));
+      }
+      invalidateQuests();
+      invalidateGrimoire();
     } catch (e) {
       console.error(e);
     } finally {
@@ -201,7 +164,13 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
           )}
         </div>
         <div className="h-64 md:h-80">
-           <Grimoire entries={grimoire} />
+          {grimoireLoading ? (
+            <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-4 h-full flex items-center justify-center text-slate-400 text-sm">
+              グリモワールを読み込み中...
+            </div>
+          ) : (
+            <Grimoire entries={grimoire} />
+          )}
         </div>
       </div>
 

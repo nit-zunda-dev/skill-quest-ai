@@ -15,10 +15,14 @@ import {
   recordCharacterGenerated,
   saveCharacterProfile,
   getCharacterProfile,
+  updateCharacterProfile,
   getDailyUsage,
   recordNarrative,
   recordPartner,
   recordChat,
+  createGrimoireEntry,
+  getGrimoireEntries,
+  completeQuest,
   getTodayUtc,
   CHAT_DAILY_LIMIT,
 } from '../services/ai-usage';
@@ -109,8 +113,62 @@ aiRouter.post(
     }
     const service = createAiService(c.env);
     const result = await service.generateNarrative(sanitized);
+
+    // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let updatedProfile = profileRaw as Record<string, unknown> | null;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      let newXp = (Number(p.currentXp) || 0) + result.rewardXp;
+      let newLevel = Number(p.level) || 1;
+      let nextXp = Number(p.nextLevelXp) || 100;
+      const newGold = (Number(p.gold) || 0) + result.rewardGold;
+
+      while (newXp >= nextXp) {
+        newXp -= nextXp;
+        newLevel += 1;
+        nextXp = Math.floor(nextXp * 1.2);
+      }
+
+      await updateCharacterProfile(c.env.DB, user.id, {
+        currentXp: newXp,
+        nextLevelXp: nextXp,
+        level: newLevel,
+        gold: newGold,
+      });
+      updatedProfile = { ...p, currentXp: newXp, nextLevelXp: nextXp, level: newLevel, gold: newGold };
+    }
+
+    // クエスト完了マーク
+    await completeQuest(c.env.DB, user.id, data.taskId);
+
+    // グリモワールに記録
+    const grimoireResult = await createGrimoireEntry(c.env.DB, user.id, {
+      taskTitle: sanitized.taskTitle,
+      narrative: result.narrative,
+      rewardXp: result.rewardXp,
+      rewardGold: result.rewardGold,
+    });
+
     await recordNarrative(c.env.DB, user.id, today);
-    return c.json(result);
+
+    const grimoireEntry = {
+      id: grimoireResult.id,
+      date: new Date().toLocaleDateString('ja-JP'),
+      taskTitle: sanitized.taskTitle,
+      narrative: result.narrative,
+      rewardXp: result.rewardXp,
+      rewardGold: result.rewardGold,
+    };
+
+    return c.json({
+      narrative: result.narrative,
+      rewardXp: result.rewardXp,
+      rewardGold: result.rewardGold,
+      profile: updatedProfile ?? undefined,
+      grimoireEntry,
+      questCompletedAt: Date.now(),
+    });
   }
 );
 

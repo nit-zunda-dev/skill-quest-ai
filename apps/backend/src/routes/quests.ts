@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from '@skill-quest/shared';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import type { Bindings } from '../types';
 import type { AuthUser } from '../types';
@@ -35,7 +35,7 @@ type QuestVariables = { user: AuthUser };
 
 /**
  * クエスト管理ルート
- * GET, POST, PUT, DELETE /api/quests
+ * GET, POST, PUT, DELETE, PATCH /:id/complete /api/quests
  * 認証ミドルウェア適用後にマウントすること
  */
 export const questsRouter = new Hono<{
@@ -44,8 +44,13 @@ export const questsRouter = new Hono<{
 }>();
 
 questsRouter.get('/', async (c) => {
+  const user = c.get('user');
   const db = drizzle(c.env.DB, { schema });
-  const rows = await db.select().from(schema.quests).orderBy(schema.quests.createdAt);
+  const rows = await db
+    .select()
+    .from(schema.quests)
+    .where(eq(schema.quests.userId, user.id))
+    .orderBy(schema.quests.createdAt);
   const body = rows.map((row) => toQuestResponse(row));
   return c.json(body);
 });
@@ -54,6 +59,7 @@ questsRouter.post(
   '/',
   zValidator('json', createQuestSchema),
   async (c) => {
+    const user = c.get('user');
     const db = drizzle(c.env.DB, { schema });
     const data = c.req.valid('json') as CreateQuestRequest;
     const id = crypto.randomUUID();
@@ -65,6 +71,7 @@ questsRouter.post(
 
     await db.insert(schema.quests).values({
       id,
+      userId: user.id,
       skillId: data.skillId ?? null,
       title: data.title,
       scenario: data.scenario ?? null,
@@ -98,11 +105,16 @@ questsRouter.put(
   zValidator('param', idParamSchema),
   zValidator('json', updateQuestSchema),
   async (c) => {
+    const user = c.get('user');
     const db = drizzle(c.env.DB, { schema });
     const { id } = c.req.valid('param');
     const data = c.req.valid('json') as UpdateQuestRequest;
 
-    const existingRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const existingRows = await db
+      .select()
+      .from(schema.quests)
+      .where(and(eq(schema.quests.id, id), eq(schema.quests.userId, user.id)))
+      .limit(1);
     const existing = existingRows[0];
     if (!existing) throw new HTTPException(404, { message: 'Quest not found' });
 
@@ -132,15 +144,49 @@ questsRouter.delete(
   '/:id',
   zValidator('param', idParamSchema),
   async (c) => {
+    const user = c.get('user');
     const db = drizzle(c.env.DB, { schema });
     const { id } = c.req.valid('param');
 
-    const existingRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const existingRows = await db
+      .select()
+      .from(schema.quests)
+      .where(and(eq(schema.quests.id, id), eq(schema.quests.userId, user.id)))
+      .limit(1);
     const existing = existingRows[0];
     if (!existing) throw new HTTPException(404, { message: 'Quest not found' });
 
     await db.delete(schema.quests).where(eq(schema.quests.id, id));
     return c.body(null, 204);
+  }
+);
+
+questsRouter.patch(
+  '/:id/complete',
+  zValidator('param', idParamSchema),
+  async (c) => {
+    const user = c.get('user');
+    const db = drizzle(c.env.DB, { schema });
+    const { id } = c.req.valid('param');
+
+    const existingRows = await db
+      .select()
+      .from(schema.quests)
+      .where(and(eq(schema.quests.id, id), eq(schema.quests.userId, user.id)))
+      .limit(1);
+    const existing = existingRows[0];
+    if (!existing) throw new HTTPException(404, { message: 'Quest not found' });
+
+    const now = new Date();
+    await db
+      .update(schema.quests)
+      .set({ completedAt: now, updatedAt: now })
+      .where(eq(schema.quests.id, id));
+
+    const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const row = updatedRows[0];
+    if (!row) throw new HTTPException(500, { message: 'Failed to update quest' });
+    return c.json(toQuestResponse(row));
   }
 );
 
@@ -154,7 +200,8 @@ function toQuestResponse(row: typeof schema.quests.$inferSelect) {
     title: row.title,
     type,
     difficulty,
-    completed: false,
+    completed: row.completedAt != null,
+    completedAt: row.completedAt ?? undefined,
     skillId: row.skillId ?? undefined,
     scenario: row.scenario ?? undefined,
     winCondition: Object.keys(winCondition).length ? winCondition : undefined,

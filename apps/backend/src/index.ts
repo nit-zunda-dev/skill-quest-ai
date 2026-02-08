@@ -7,6 +7,7 @@ import { authMiddleware } from './middleware/auth';
 import { questsRouter } from './routes/quests';
 import { aiRouter } from './routes/ai';
 import { profileRouter } from './routes/profile';
+import { grimoireRouter } from './routes/grimoire';
 import { deleteAccountByUserId } from './services/account-delete';
 
 // Honoアプリケーションを初期化
@@ -89,6 +90,10 @@ app.route('/api/ai', aiRouter);
 // プロフィールルート（認証必須）
 app.use('/api/profile/*', authMiddleware);
 app.route('/api/profile', profileRouter);
+
+// グリモワールルート（認証必須）
+app.use('/api/grimoire/*', authMiddleware);
+app.route('/api/grimoire', grimoireRouter);
 
 // 認証が必要なエンドポイントのテスト用ルート
 // 認証ミドルウェアの動作確認用

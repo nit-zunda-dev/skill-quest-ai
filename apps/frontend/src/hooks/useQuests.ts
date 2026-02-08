@@ -27,7 +27,14 @@ async function fetchQuests(): Promise<Task[]> {
     const err = await res.text();
     throw new Error(err || `Failed to fetch quests: ${res.status}`);
   }
-  const list = await res.json() as Array<{ id: string; title: string; type: string; difficulty: string; completed?: boolean }>;
+  const list = (await res.json()) as Array<{
+    id: string;
+    title: string;
+    type: string;
+    difficulty: string;
+    completed?: boolean;
+    completedAt?: number | string;
+  }>;
   return list.map((q) => ({
     ...q,
     completed: q.completed ?? false,
@@ -73,6 +80,7 @@ export function useQuests() {
     ...query,
     addQuest: addMutation.mutate,
     deleteQuest: deleteMutation.mutate,
+    invalidate: () => queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY }),
     isAdding: addMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };

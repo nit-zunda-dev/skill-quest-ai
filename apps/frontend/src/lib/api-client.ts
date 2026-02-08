@@ -62,10 +62,12 @@ export async function getCharacterProfile(): Promise<CharacterProfile | null> {
   }
 }
 
-interface NarrativeResult {
+export interface NarrativeResult {
   narrative: string;
   xp: number;
   gold: number;
+  profile?: CharacterProfile;
+  grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
 }
 
 const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
@@ -123,11 +125,20 @@ export async function generateTaskNarrative(
       console.warn('generateTaskNarrative API error:', res.status);
       return createFallbackNarrative(task);
     }
-    const raw = (await res.json()) as { narrative?: string; rewardXp?: number; rewardGold?: number };
+    const raw = (await res.json()) as {
+      narrative?: string;
+      rewardXp?: number;
+      rewardGold?: number;
+      profile?: CharacterProfile;
+      grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
+    };
+    const profile = raw.profile ? normalizeProfileNumbers(raw.profile) : undefined;
     return {
       narrative: raw.narrative ?? '',
       xp: Number(raw.rewardXp) || 0,
       gold: Number(raw.rewardGold) || 0,
+      profile,
+      grimoireEntry: raw.grimoireEntry,
     };
   } catch (e) {
     console.error('generateTaskNarrative error:', e);
