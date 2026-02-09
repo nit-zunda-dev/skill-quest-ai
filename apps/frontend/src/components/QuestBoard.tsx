@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Task, TaskType, Difficulty } from '@skill-quest/shared';
 import { Plus, Trash2, Repeat, Check } from 'lucide-react';
 
@@ -7,12 +7,33 @@ interface QuestBoardProps {
   onAddTask: (task: Omit<Task, 'id' | 'completed' | 'streak'>) => void;
   onCompleteTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onUpdateStatus?: (taskId: string, status: 'todo' | 'in_progress' | 'done') => void;
 }
 
-const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTask, onDeleteTask }) => {
+const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTask, onDeleteTask, onUpdateStatus }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDifficulty, setNewTaskDifficulty] = useState<Difficulty>(Difficulty.EASY);
+
+  // タスクをステータスごとに分類
+  const tasksByStatus = useMemo(() => {
+    const todo: Task[] = [];
+    const inProgress: Task[] = [];
+    const done: Task[] = [];
+    
+    tasks.forEach(task => {
+      const status = task.status || (task.completed ? 'done' : 'todo');
+      if (status === 'done') {
+        done.push(task);
+      } else if (status === 'in_progress') {
+        inProgress.push(task);
+      } else {
+        todo.push(task);
+      }
+    });
+    
+    return { todo, inProgress, done };
+  }, [tasks]);
 
   const handleAdd = () => {
     if (!newTaskTitle.trim()) return;
@@ -31,6 +52,76 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
       case Difficulty.MEDIUM: return 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10';
       case Difficulty.HARD: return 'text-red-400 border-red-400/30 bg-red-400/10';
     }
+  };
+
+  const handleStatusChange = (taskId: string, newStatus: 'todo' | 'in_progress' | 'done') => {
+    if (onUpdateStatus) {
+      onUpdateStatus(taskId, newStatus);
+    }
+  };
+
+  const handleTaskClick = (task: Task) => {
+    if (!onUpdateStatus) return;
+    const status = task.status || (task.completed ? 'done' : 'todo');
+    if (status === 'todo') {
+      handleStatusChange(task.id, 'in_progress');
+    } else if (status === 'in_progress') {
+      handleStatusChange(task.id, 'done');
+    } else {
+      handleStatusChange(task.id, 'todo');
+    }
+  };
+
+  const renderTaskCard = (task: Task) => {
+    const status = task.status || (task.completed ? 'done' : 'todo');
+    return (
+      <div 
+        key={task.id} 
+        onClick={() => handleTaskClick(task)}
+        className="group relative p-3 rounded-lg border bg-slate-800/80 border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800 transition-all duration-300 cursor-pointer active:scale-[0.98]"
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-2 flex-1">
+            <div
+              className={`mt-1 w-5 h-5 rounded border flex items-center justify-center transition-all flex-shrink-0 ${
+                status === 'done'
+                  ? 'bg-green-500/20 border-green-500 text-green-500'
+                  : status === 'in_progress'
+                  ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500'
+                  : 'border-slate-500 text-transparent'
+              }`}
+            >
+              {status === 'done' && <Check className="w-3 h-3" />}
+              {status === 'in_progress' && <div className="w-2 h-2 rounded-full bg-yellow-500" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`font-medium text-sm ${status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+                {task.title}
+              </h3>
+              <div className="flex items-center mt-1 space-x-2 flex-wrap">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getDifficultyColor(task.difficulty)}`}>
+                  {task.difficulty}
+                </span>
+                {task.type !== TaskType.TODO && (
+                  <span className="text-xs text-slate-500 flex items-center">
+                    <Repeat className="w-3 h-3 mr-1" /> {task.streak || 0}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteTask(task.id);
+            }}
+            className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity ml-2 flex-shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -57,6 +148,13 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
             placeholder="タスク名を入力..."
             className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white mb-3 focus:ring-2 focus:ring-indigo-500 outline-none"
             autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleAdd();
+              } else if (e.key === 'Escape') {
+                setIsAdding(false);
+              }
+            }}
           />
           <div className="flex justify-between items-center">
             <div className="flex space-x-2">
@@ -80,61 +178,55 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
         </div>
       )}
 
-      {/* Task List */}
-      <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-        {tasks.length === 0 ? (
-          <div className="text-center text-slate-500 py-10 italic">
-            タスクがありません
+      {/* Kanban Board */}
+      <div className="flex-grow grid grid-cols-3 gap-4 min-h-0">
+        {/* To Do Column */}
+        <div className="flex flex-col min-h-0">
+          <div className="mb-3 px-2 py-1 bg-slate-700/50 rounded text-sm font-semibold text-slate-300 text-center">
+            To Do ({tasksByStatus.todo.length})
           </div>
-        ) : (
-          tasks.map(task => (
-            <div 
-              key={task.id} 
-              className={`group relative p-4 rounded-lg border transition-all duration-300 ${
-                task.completed 
-                  ? 'bg-slate-800/30 border-slate-700/50 opacity-60' 
-                  : 'bg-slate-800/80 border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  <button
-                    onClick={() => !task.completed && onCompleteTask(task.id)}
-                    disabled={task.completed}
-                    className={`mt-1 w-6 h-6 rounded border flex items-center justify-center transition-all ${
-                      task.completed
-                        ? 'bg-green-500/20 border-green-500 text-green-500'
-                        : 'border-slate-500 text-transparent hover:border-indigo-400'
-                    }`}
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <div>
-                    <h3 className={`font-medium ${task.completed ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
-                      {task.title}
-                    </h3>
-                    <div className="flex items-center mt-1 space-x-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getDifficultyColor(task.difficulty)}`}>
-                        {task.difficulty}
-                      </span>
-                      {task.type !== TaskType.TODO && (
-                        <span className="text-xs text-slate-500 flex items-center">
-                          <Repeat className="w-3 h-3 mr-1" /> Streak: {task.streak || 0}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => onDeleteTask(task.id)}
-                  className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {tasksByStatus.todo.length === 0 ? (
+              <div className="text-center text-slate-500 py-8 text-xs italic">
+                タスクなし
               </div>
-            </div>
-          ))
-        )}
+            ) : (
+              tasksByStatus.todo.map(renderTaskCard)
+            )}
+          </div>
+        </div>
+
+        {/* In Progress Column */}
+        <div className="flex flex-col min-h-0">
+          <div className="mb-3 px-2 py-1 bg-yellow-900/30 border border-yellow-500/30 rounded text-sm font-semibold text-yellow-300 text-center">
+            In Progress ({tasksByStatus.inProgress.length})
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {tasksByStatus.inProgress.length === 0 ? (
+              <div className="text-center text-slate-500 py-8 text-xs italic">
+                タスクなし
+              </div>
+            ) : (
+              tasksByStatus.inProgress.map(renderTaskCard)
+            )}
+          </div>
+        </div>
+
+        {/* Done Column */}
+        <div className="flex flex-col min-h-0">
+          <div className="mb-3 px-2 py-1 bg-green-900/30 border border-green-500/30 rounded text-sm font-semibold text-green-300 text-center">
+            Done ({tasksByStatus.done.length})
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {tasksByStatus.done.length === 0 ? (
+              <div className="text-center text-slate-500 py-8 text-xs italic">
+                タスクなし
+              </div>
+            ) : (
+              tasksByStatus.done.map(renderTaskCard)
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

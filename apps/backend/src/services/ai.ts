@@ -49,12 +49,27 @@ export interface NarrativeResult {
   rewardStats?: Partial<CharacterStats>;
 }
 
+export interface CompletedTask {
+  id: string;
+  title: string;
+  type: string;
+  difficulty: string;
+  completedAt: number;
+}
+
+export interface GrimoireGenerationResult {
+  narrative: string;
+  rewardXp: number;
+  rewardGold: number;
+}
+
 export interface AiService {
   runWithLlama31_8b(prompt: string): Promise<string>;
   runWithLlama33_70b(prompt: string): Promise<string>;
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
   generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
   generatePartnerMessage(request: PartnerMessageRequest): Promise<string>;
+  generateGrimoire(completedTasks: CompletedTask[]): Promise<GrimoireGenerationResult>;
 }
 
 /**
@@ -78,6 +93,9 @@ export function createAiService(env: Bindings): AiService {
     },
     generatePartnerMessage(request: PartnerMessageRequest) {
       return generatePartnerMessage(ai, request);
+    },
+    generateGrimoire(completedTasks: CompletedTask[]) {
+      return generateGrimoire(ai, completedTasks);
     },
   };
 }
@@ -352,4 +370,107 @@ export async function generatePartnerMessage(
     // fall through to fallback
   }
   return DEFAULT_PARTNER_MESSAGE;
+}
+
+function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
+  if (completedTasks.length === 0) {
+    return '完了したタスクがありません。';
+  }
+  
+  const taskList = completedTasks.map((task, index) => {
+    const completedDate = new Date(task.completedAt * 1000).toLocaleDateString('ja-JP');
+    return `${index + 1}. ${task.title} (種別: ${task.type}, 難易度: ${task.difficulty}, 完了日: ${completedDate})`;
+  }).join('\n');
+  
+  return [
+    'あなたはTRPGのゲームマスターです。完了したタスクすべてを参考に、冒険の記録（グリモワールエントリ）を生成し、JSONのみで返してください。',
+    '【完了したタスク一覧】',
+    taskList,
+    '【出力ルール】',
+    '1. narrative: 完了したタスクすべてを統合した物語として、冒険の記録を2-3文で描写してください。',
+    '2. rewardXp: 完了したタスクの合計経験値（各タスクの難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
+    '3. rewardGold: 完了したタスクの合計報酬（各タスクの難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
+    '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
+  ].join('\n');
+}
+
+function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    typeof o.narrative === 'string' &&
+    typeof o.rewardXp === 'number' &&
+    typeof o.rewardGold === 'number'
+  );
+}
+
+/**
+ * Llama 3.1 8B でグリモワールエントリを生成する。
+ * 完了したタスクすべてを参考に、統合された物語と報酬を生成する。
+ */
+export async function generateGrimoire(
+  ai: AiRunBinding,
+  completedTasks: CompletedTask[]
+): Promise<GrimoireGenerationResult> {
+  if (completedTasks.length === 0) {
+    return {
+      narrative: 'まだ完了したタスクがありません。冒険を続けましょう。',
+      rewardXp: 0,
+      rewardGold: 0,
+    };
+  }
+  
+  const prompt = buildGrimoirePrompt(completedTasks);
+  
+  // フォールバック用の報酬計算
+  const totalRewards = completedTasks.reduce(
+    (acc, task) => {
+      let xp = 0;
+      let gold = 0;
+      switch (task.difficulty) {
+        case 'EASY':
+          xp = 15;
+          gold = 8;
+          break;
+        case 'MEDIUM':
+          xp = 30;
+          gold = 18;
+          break;
+        case 'HARD':
+          xp = 60;
+          gold = 35;
+          break;
+        default:
+          xp = 20;
+          gold = 10;
+      }
+      return { xp: acc.xp + xp, gold: acc.gold + gold };
+    },
+    { xp: 0, gold: 0 }
+  );
+  
+  try {
+    const raw = await runWithLlama31_8b(ai, prompt);
+    let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
+    if (parsed === null && typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+    }
+    if (isGrimoireResult(parsed)) {
+      return parsed;
+    }
+  } catch {
+    // fall through to fallback
+  }
+  
+  // フォールバック
+  const taskTitles = completedTasks.map(t => t.title).join('、');
+  return {
+    narrative: `今日は${completedTasks.length}つのタスクを達成した。${taskTitles}。これらの成果は、冒険者としての成長の証である。`,
+    rewardXp: totalRewards.xp,
+    rewardGold: totalRewards.gold,
+  };
 }

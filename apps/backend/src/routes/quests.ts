@@ -9,8 +9,10 @@ import { schema } from '../db/schema';
 import {
   createQuestSchema,
   updateQuestSchema,
+  updateQuestStatusSchema,
   type CreateQuestRequest,
   type UpdateQuestRequest,
+  type UpdateQuestStatusRequest,
 } from '@skill-quest/shared';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 import { HTTPException } from 'hono/http-exception';
@@ -77,6 +79,7 @@ questsRouter.post(
       scenario: data.scenario ?? null,
       difficulty: difficultyNum,
       winCondition: winCondition as Record<string, unknown>,
+      status: 'todo',
       createdAt: now,
       updatedAt: now,
     });
@@ -190,17 +193,68 @@ questsRouter.patch(
   }
 );
 
+questsRouter.patch(
+  '/:id/status',
+  zValidator('param', idParamSchema),
+  zValidator('json', updateQuestStatusSchema),
+  async (c) => {
+    const user = c.get('user');
+    const db = drizzle(c.env.DB, { schema });
+    const { id } = c.req.valid('param');
+    const { status } = c.req.valid('json') as UpdateQuestStatusRequest;
+
+    const existingRows = await db
+      .select()
+      .from(schema.quests)
+      .where(and(eq(schema.quests.id, id), eq(schema.quests.userId, user.id)))
+      .limit(1);
+    const existing = existingRows[0];
+    if (!existing) throw new HTTPException(404, { message: 'Quest not found' });
+
+    const now = new Date();
+    const updates: Record<string, unknown> = { status, updatedAt: now };
+    
+    // statusが'done'の場合はcompletedAtも設定、それ以外はnullに
+    if (status === 'done') {
+      updates.completedAt = now;
+    } else if (existing.completedAt != null) {
+      // 'done'以外に戻す場合はcompletedAtをクリア
+      updates.completedAt = null;
+    }
+
+    await db
+      .update(schema.quests)
+      .set(updates)
+      .where(eq(schema.quests.id, id));
+
+    const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+    const row = updatedRows[0];
+    if (!row) throw new HTTPException(500, { message: 'Failed to update quest status' });
+    return c.json(toQuestResponse(row));
+  }
+);
+
 function toQuestResponse(row: typeof schema.quests.$inferSelect) {
   const winCondition = (row.winCondition as Record<string, unknown> | null) ?? {};
   const type = (winCondition.type as TaskType) ?? TaskType.TODO;
   const difficulty =
     NUM_TO_DIFFICULTY[row.difficulty] ?? Difficulty.MEDIUM;
+  
+  // statusが設定されていない場合は、completedAtから推論
+  let status: 'todo' | 'in_progress' | 'done' = 'todo';
+  if (row.status) {
+    status = row.status as 'todo' | 'in_progress' | 'done';
+  } else if (row.completedAt != null) {
+    status = 'done';
+  }
+  
   return {
     id: row.id,
     title: row.title,
     type,
     difficulty,
     completed: row.completedAt != null,
+    status,
     completedAt: row.completedAt ?? undefined,
     skillId: row.skillId ?? undefined,
     scenario: row.scenario ?? undefined,

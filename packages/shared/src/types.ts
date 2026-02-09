@@ -58,6 +58,7 @@ export interface Task {
   type: TaskType;
   difficulty: Difficulty;
   completed: boolean;
+  status?: 'todo' | 'in_progress' | 'done';
   streak?: number; // For Habits/Dailies
 }
 

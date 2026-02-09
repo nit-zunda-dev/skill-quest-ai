@@ -68,6 +68,7 @@ export const quests = sqliteTable('quests', {
   scenario: text('scenario'),
   difficulty: integer('difficulty').notNull(), // 1-5の範囲
   winCondition: text('win_condition', { mode: 'json' }), // JSON形式で勝利条件を格納
+  status: text('status').default('todo'), // 'todo' | 'in_progress' | 'done'
   completedAt: integer('completed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
@@ -118,13 +119,14 @@ export const userCharacterProfile = sqliteTable('user_character_profile', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-/** 日次AI利用回数（ナラティブ・パートナー・チャット） */
+/** 日次AI利用回数（ナラティブ・パートナー・チャット・グリモワール） */
 export const aiDailyUsage = sqliteTable('ai_daily_usage', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   dateUtc: text('date_utc').notNull(), // YYYY-MM-DD (UTC)
   narrativeCount: integer('narrative_count').notNull().default(0),
   partnerCount: integer('partner_count').notNull().default(0),
   chatCount: integer('chat_count').notNull().default(0),
+  grimoireCount: integer('grimoire_count').notNull().default(0),
 }, (table) => ({
   pk: primaryKey({ columns: [table.userId, table.dateUtc] }),
 }));

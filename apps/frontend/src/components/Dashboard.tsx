@@ -17,13 +17,14 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const { signOut, session } = useAuth();
   const [profile, setProfile] = useState<CharacterProfile>(() => normalizeProfileNumbers(initialProfile));
-  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest, invalidate: invalidateQuests } = useQuests();
+  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest, updateQuestStatus, invalidate: invalidateQuests } = useQuests();
   const { data: grimoire = [], isLoading: grimoireLoading, invalidate: invalidateGrimoire } = useGrimoire();
 
   const tasks: Task[] = useMemo(() => {
     return serverTasks.map((t) => ({
       ...t,
       completed: t.completed ?? false,
+      status: t.status || (t.completed ? 'done' : 'todo'),
       streak: t.streak ?? 0,
     }));
   }, [serverTasks]);
@@ -166,6 +167,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
               onAddTask={addTask} 
               onCompleteTask={initiateCompleteTask}
               onDeleteTask={deleteTask}
+              onUpdateStatus={(taskId, status) => updateQuestStatus({ id: taskId, status })}
             />
           )}
         </div>

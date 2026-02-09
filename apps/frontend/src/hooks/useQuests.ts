@@ -16,7 +16,9 @@ type QuestsClient = {
     quests: {
       $get: () => Promise<Response>;
       $post: (opts: { json: CreateQuestRequest }) => Promise<Response>;
-      ':id': { $delete: (opts: { param: { id: string } }) => Promise<Response> };
+      ':id': {
+        $delete: (opts: { param: { id: string } }) => Promise<Response>;
+      };
     };
   };
 };
@@ -33,11 +35,13 @@ async function fetchQuests(): Promise<Task[]> {
     type: string;
     difficulty: string;
     completed?: boolean;
+    status?: 'todo' | 'in_progress' | 'done';
     completedAt?: number | string;
   }>;
   return list.map((q) => ({
     ...q,
     completed: q.completed ?? false,
+    status: q.status || (q.completed ? 'done' : 'todo'),
     streak: 0,
   })) as Task[];
 }
@@ -76,12 +80,38 @@ export function useQuests() {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'todo' | 'in_progress' | 'done' }) => {
+      // Hono RPCクライアントでネストされたパスパラメータルートにアクセスする場合、
+      // 直接fetch APIを使用する方が確実
+      const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8787';
+      const res = await fetch(`${apiUrl}/api/quests/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || `Failed to update quest status: ${res.status}`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY });
+    },
+  });
+
   return {
     ...query,
     addQuest: addMutation.mutate,
     deleteQuest: deleteMutation.mutate,
+    updateQuestStatus: updateStatusMutation.mutate,
     invalidate: () => queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY }),
     isAdding: addMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isUpdatingStatus: updateStatusMutation.isPending,
   };
 }

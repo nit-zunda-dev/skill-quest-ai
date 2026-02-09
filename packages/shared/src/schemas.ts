@@ -22,6 +22,11 @@ export const updateQuestSchema = z.object({
   winCondition: z.record(z.unknown()).optional(),
 });
 
+// クエストステータス更新リクエストスキーマ
+export const updateQuestStatusSchema = z.object({
+  status: z.enum(['todo', 'in_progress', 'done']),
+});
+
 // プロフィール更新リクエストスキーマ
 export const updateProfileSchema = z.object({
   name: z.string().min(1, '名前は必須です').max(100, '名前は100文字以内で入力してください').optional(),
@@ -82,6 +87,7 @@ export const signInRequestSchema = z.object({
 // 型推論用の型エクスポート
 export type CreateQuestRequest = z.infer<typeof createQuestSchema>;
 export type UpdateQuestRequest = z.infer<typeof updateQuestSchema>;
+export type UpdateQuestStatusRequest = z.infer<typeof updateQuestStatusSchema>;
 export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;
 export type NarrativeRequest = z.infer<typeof narrativeRequestSchema>;
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

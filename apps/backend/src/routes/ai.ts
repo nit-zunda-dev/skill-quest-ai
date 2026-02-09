@@ -20,8 +20,6 @@ import {
   recordNarrative,
   recordPartner,
   recordChat,
-  createGrimoireEntry,
-  getGrimoireEntries,
   completeQuest,
   getTodayUtc,
   CHAT_DAILY_LIMIT,
@@ -52,12 +50,14 @@ aiRouter.get('/usage', async (c) => {
   const narrativeRemaining = Math.max(0, 1 - usage.narrativeCount);
   const partnerRemaining = Math.max(0, 1 - usage.partnerCount);
   const chatRemaining = Math.max(0, CHAT_DAILY_LIMIT - usage.chatCount);
+  const grimoireRemaining = Math.max(0, 1 - usage.grimoireCount);
   return c.json({
     characterGenerated,
     narrativeRemaining,
     partnerRemaining,
     chatRemaining,
-    limits: { narrative: 1, partner: 1, chat: CHAT_DAILY_LIMIT },
+    grimoireRemaining,
+    limits: { narrative: 1, partner: 1, chat: CHAT_DAILY_LIMIT, grimoire: 1 },
   });
 });
 
@@ -169,24 +169,7 @@ aiRouter.post(
     // クエスト完了マーク
     await completeQuest(c.env.DB, user.id, data.taskId);
 
-    // グリモワールに記録
-    const grimoireResult = await createGrimoireEntry(c.env.DB, user.id, {
-      taskTitle: sanitized.taskTitle,
-      narrative: result.narrative,
-      rewardXp: result.rewardXp,
-      rewardGold: result.rewardGold,
-    });
-
     await recordNarrative(c.env.DB, user.id, today);
-
-    const grimoireEntry = {
-      id: grimoireResult.id,
-      date: new Date().toLocaleDateString('ja-JP'),
-      taskTitle: sanitized.taskTitle,
-      narrative: result.narrative,
-      rewardXp: result.rewardXp,
-      rewardGold: result.rewardGold,
-    };
 
     return c.json({
       narrative: result.narrative,
@@ -195,7 +178,6 @@ aiRouter.post(
       rewardHp: result.rewardHp ?? 0,
       rewardStats: result.rewardStats ?? {},
       profile: updatedProfile ?? undefined,
-      grimoireEntry,
       questCompletedAt: Date.now(),
     });
   }

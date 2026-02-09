@@ -82,20 +82,21 @@ export async function getDailyUsage(
   db: D1Database,
   userId: string,
   dateUtc: string
-): Promise<{ narrativeCount: number; partnerCount: number; chatCount: number }> {
+): Promise<{ narrativeCount: number; partnerCount: number; chatCount: number; grimoireCount: number }> {
   const row = await db
     .prepare(
-      'SELECT narrative_count, partner_count, chat_count FROM ai_daily_usage WHERE user_id = ? AND date_utc = ?'
+      'SELECT narrative_count, partner_count, chat_count, grimoire_count FROM ai_daily_usage WHERE user_id = ? AND date_utc = ?'
     )
     .bind(userId, dateUtc)
-    .first<{ narrative_count: number; partner_count: number; chat_count: number }>();
+    .first<{ narrative_count: number; partner_count: number; chat_count: number; grimoire_count: number }>();
   if (!row) {
-    return { narrativeCount: 0, partnerCount: 0, chatCount: 0 };
+    return { narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0 };
   }
   return {
     narrativeCount: row.narrative_count ?? 0,
     partnerCount: row.partner_count ?? 0,
     chatCount: row.chat_count ?? 0,
+    grimoireCount: row.grimoire_count ?? 0,
   };
 }
 
@@ -103,8 +104,8 @@ export async function getDailyUsage(
 export async function recordNarrative(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count)
-       VALUES (?, ?, 1, 0, 0)
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count)
+       VALUES (?, ?, 1, 0, 0, 0)
        ON CONFLICT(user_id, date_utc) DO UPDATE SET narrative_count = 1`
     )
     .bind(userId, dateUtc)
@@ -115,8 +116,8 @@ export async function recordNarrative(db: D1Database, userId: string, dateUtc: s
 export async function recordPartner(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count)
-       VALUES (?, ?, 0, 1, 0)
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count)
+       VALUES (?, ?, 0, 1, 0, 0)
        ON CONFLICT(user_id, date_utc) DO UPDATE SET partner_count = 1`
     )
     .bind(userId, dateUtc)
@@ -127,9 +128,21 @@ export async function recordPartner(db: D1Database, userId: string, dateUtc: str
 export async function recordChat(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count)
-       VALUES (?, ?, 0, 0, 1)
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count)
+       VALUES (?, ?, 0, 0, 1, 0)
        ON CONFLICT(user_id, date_utc) DO UPDATE SET chat_count = chat_count + 1`
+    )
+    .bind(userId, dateUtc)
+    .run();
+}
+
+/** グリモワール生成利用を1回記録（日次1回のため 1 にセット） */
+export async function recordGrimoireGeneration(db: D1Database, userId: string, dateUtc: string): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count)
+       VALUES (?, ?, 0, 0, 0, 1)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET grimoire_count = 1`
     )
     .bind(userId, dateUtc)
     .run();
