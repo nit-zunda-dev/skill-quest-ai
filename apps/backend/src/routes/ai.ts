@@ -130,13 +130,40 @@ aiRouter.post(
         nextXp = Math.floor(nextXp * 1.2);
       }
 
+      // HPの更新（0以上maxHp以下に制限）
+      const maxHp = Number(p.maxHp) || 100;
+      const currentHp = Number(p.hp) || maxHp;
+      const rewardHp = result.rewardHp ?? 0;
+      const newHp = Math.max(0, Math.min(maxHp, currentHp + rewardHp));
+
+      // 能力値の更新（0以上100以下に制限）
+      const currentStats = (p.stats as Record<string, unknown>) || {};
+      const rewardStats = result.rewardStats || {};
+      const newStats: Record<string, number> = {};
+      const statKeys = ['strength', 'intelligence', 'charisma', 'willpower', 'luck'] as const;
+      for (const key of statKeys) {
+        const current = Number(currentStats[key]) || 50;
+        const reward = Number(rewardStats[key]) || 0;
+        newStats[key] = Math.max(0, Math.min(100, current + reward));
+      }
+
       await updateCharacterProfile(c.env.DB, user.id, {
         currentXp: newXp,
         nextLevelXp: nextXp,
         level: newLevel,
         gold: newGold,
+        hp: newHp,
+        stats: newStats,
       });
-      updatedProfile = { ...p, currentXp: newXp, nextLevelXp: nextXp, level: newLevel, gold: newGold };
+      updatedProfile = { 
+        ...p, 
+        currentXp: newXp, 
+        nextLevelXp: nextXp, 
+        level: newLevel, 
+        gold: newGold,
+        hp: newHp,
+        stats: newStats,
+      };
     }
 
     // クエスト完了マーク
@@ -165,6 +192,8 @@ aiRouter.post(
       narrative: result.narrative,
       rewardXp: result.rewardXp,
       rewardGold: result.rewardGold,
+      rewardHp: result.rewardHp ?? 0,
+      rewardStats: result.rewardStats ?? {},
       profile: updatedProfile ?? undefined,
       grimoireEntry,
       questCompletedAt: Date.now(),

@@ -66,6 +66,8 @@ export interface NarrativeResult {
   narrative: string;
   xp: number;
   gold: number;
+  rewardHp?: number;
+  rewardStats?: Partial<CharacterStats>;
   profile?: CharacterProfile;
   grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
 }
@@ -129,6 +131,8 @@ export async function generateTaskNarrative(
       narrative?: string;
       rewardXp?: number;
       rewardGold?: number;
+      rewardHp?: number;
+      rewardStats?: Partial<CharacterStats>;
       profile?: CharacterProfile;
       grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
     };
@@ -137,6 +141,8 @@ export async function generateTaskNarrative(
       narrative: raw.narrative ?? '',
       xp: Number(raw.rewardXp) || 0,
       gold: Number(raw.rewardGold) || 0,
+      rewardHp: Number(raw.rewardHp) || 0,
+      rewardStats: raw.rewardStats || {},
       profile,
       grimoireEntry: raw.grimoireEntry,
     };
@@ -149,10 +155,57 @@ export async function generateTaskNarrative(
 function createFallbackNarrative(task: Task): NarrativeResult {
   const baseReward =
     task.difficulty === Difficulty.HARD ? 50 : task.difficulty === Difficulty.MEDIUM ? 30 : 15;
+  
+  // フォールバック時もランダムなHPと能力値の変化を生成
+  const generateRandomRewards = (difficulty: Difficulty) => {
+    let hpRange: [number, number];
+    let statRange: [number, number];
+
+    switch (difficulty) {
+      case Difficulty.EASY:
+        hpRange = [5, 10];
+        statRange = [1, 2];
+        break;
+      case Difficulty.MEDIUM:
+        hpRange = [8, 15];
+        statRange = [1, 3];
+        break;
+      case Difficulty.HARD:
+        hpRange = [12, 20];
+        statRange = [2, 5];
+        break;
+      default:
+        hpRange = [5, 10];
+        statRange = [1, 2];
+    }
+
+    const randomInRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randomSignedRange = (min: number, max: number) => {
+      const absValue = randomInRange(min, max);
+      const sign = Math.random() < 0.5 ? -1 : 1;
+      return sign * absValue;
+    };
+
+    const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
+    const rewardStats: Partial<CharacterStats> = {
+      strength: randomSignedRange(statRange[0], statRange[1]),
+      intelligence: randomSignedRange(statRange[0], statRange[1]),
+      charisma: randomSignedRange(statRange[0], statRange[1]),
+      willpower: randomSignedRange(statRange[0], statRange[1]),
+      luck: randomSignedRange(statRange[0], statRange[1]),
+    };
+
+    return { rewardHp, rewardStats };
+  };
+
+  const randomRewards = generateRandomRewards(task.difficulty);
+
   return {
     narrative: `${task.title}を達成した！心地よい疲労感と共に、力が湧いてくるのを感じる。`,
     xp: baseReward,
     gold: Math.floor(baseReward / 2),
+    rewardHp: randomRewards.rewardHp,
+    rewardStats: randomRewards.rewardStats,
   };
 }
 

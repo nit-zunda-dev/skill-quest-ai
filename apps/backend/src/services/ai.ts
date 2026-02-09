@@ -1,5 +1,5 @@
 import type { Bindings } from '../types';
-import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
+import type { CharacterProfile, GenesisFormData, CharacterStats } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest } from '@skill-quest/shared';
 import { Difficulty } from '@skill-quest/shared';
 
@@ -45,6 +45,8 @@ export interface NarrativeResult {
   narrative: string;
   rewardXp: number;
   rewardGold: number;
+  rewardHp?: number;
+  rewardStats?: Partial<CharacterStats>;
 }
 
 export interface AiService {
@@ -183,6 +185,57 @@ function buildCharacterPrompt(data: GenesisFormData): string {
   ].join('\n');
 }
 
+/** ランダムな整数を生成する（min以上max以下、マイナスも含む） */
+function randomInRange(min: number, max: number): number {
+  const range = max - min + 1;
+  return Math.floor(Math.random() * range) + min;
+}
+
+/** ランダムに増減する値を生成（minからmaxの範囲で、符号もランダム） */
+function randomSignedRange(min: number, max: number): number {
+  const absValue = randomInRange(min, max);
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  return sign * absValue;
+}
+
+/** 難易度に応じたHPと能力値のランダム報酬を生成 */
+function generateRandomRewards(difficulty: Difficulty): {
+  rewardHp: number;
+  rewardStats: Partial<CharacterStats>;
+} {
+  let hpRange: [number, number];
+  let statRange: [number, number];
+
+  switch (difficulty) {
+    case Difficulty.EASY:
+      hpRange = [5, 10];
+      statRange = [1, 2];
+      break;
+    case Difficulty.MEDIUM:
+      hpRange = [8, 15];
+      statRange = [1, 3];
+      break;
+    case Difficulty.HARD:
+      hpRange = [12, 20];
+      statRange = [2, 5];
+      break;
+    default:
+      hpRange = [5, 10];
+      statRange = [1, 2];
+  }
+
+  const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
+  const rewardStats: Partial<CharacterStats> = {
+    strength: randomSignedRange(statRange[0], statRange[1]),
+    intelligence: randomSignedRange(statRange[0], statRange[1]),
+    charisma: randomSignedRange(statRange[0], statRange[1]),
+    willpower: randomSignedRange(statRange[0], statRange[1]),
+    luck: randomSignedRange(statRange[0], statRange[1]),
+  };
+
+  return { rewardHp, rewardStats };
+}
+
 /** 難易度に応じた報酬（フォールバック用）。Req 5.2 / geminiService の範囲に合わせる。 */
 function difficultyBasedRewards(difficulty: Difficulty): { rewardXp: number; rewardGold: number } {
   switch (difficulty) {
@@ -230,6 +283,8 @@ export async function generateNarrative(
   request: NarrativeRequest
 ): Promise<NarrativeResult> {
   const prompt = buildNarrativePrompt(request);
+  const randomRewards = generateRandomRewards(request.difficulty);
+  
   try {
     const raw = await runWithLlama31_8b(ai, prompt);
     let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
@@ -241,7 +296,11 @@ export async function generateNarrative(
       }
     }
     if (isNarrativeResult(parsed)) {
-      return parsed;
+      return {
+        ...parsed,
+        rewardHp: randomRewards.rewardHp,
+        rewardStats: randomRewards.rewardStats,
+      };
     }
   } catch {
     // fall through to fallback
@@ -251,6 +310,8 @@ export async function generateNarrative(
     narrative: `${request.taskTitle}を達成した。心地よい疲労感と共に、力が湧いてくるのを感じる。`,
     rewardXp: rewards.rewardXp,
     rewardGold: rewards.rewardGold,
+    rewardHp: randomRewards.rewardHp,
+    rewardStats: randomRewards.rewardStats,
   };
 }
 

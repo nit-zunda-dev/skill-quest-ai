@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Task, GrimoireEntry, CharacterProfile } from '@skill-quest/shared';
+import { Task, GrimoireEntry, CharacterProfile, CharacterStats } from '@skill-quest/shared';
 import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
@@ -32,7 +32,13 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
   const [narrativeComment, setNarrativeComment] = useState('');
   const [isProcessingNarrative, setIsProcessingNarrative] = useState(false);
-  const [narrativeResult, setNarrativeResult] = useState<{narrative: string, xp: number, gold: number} | null>(null);
+  const [narrativeResult, setNarrativeResult] = useState<{
+    narrative: string;
+    xp: number;
+    gold: number;
+    rewardHp?: number;
+    rewardStats?: Partial<CharacterStats>;
+  } | null>(null);
 
   /** アカウント削除確認モーダル */
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -218,7 +224,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
                 <p className="text-slate-300 italic mb-6 leading-relaxed bg-slate-900/50 p-4 rounded border border-slate-700/50">
                   "{narrativeResult.narrative}"
                 </p>
-                <div className="flex justify-center space-x-8 mb-8">
+                <div className="flex justify-center space-x-6 mb-6 flex-wrap">
                   <div className="text-center">
                     <div className="text-sm text-slate-500 uppercase">EXP</div>
                     <div className="text-2xl font-bold text-yellow-400">+{narrativeResult.xp}</div>
@@ -227,7 +233,41 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
                     <div className="text-sm text-slate-500 uppercase">GOLD</div>
                     <div className="text-2xl font-bold text-yellow-400">+{narrativeResult.gold}</div>
                   </div>
+                  {narrativeResult.rewardHp !== undefined && (
+                    <div className="text-center">
+                      <div className="text-sm text-slate-500 uppercase">HP</div>
+                      <div className={`text-2xl font-bold ${narrativeResult.rewardHp >= 0 ? 'text-red-400' : 'text-red-600'}`}>
+                        {narrativeResult.rewardHp >= 0 ? '+' : ''}{narrativeResult.rewardHp}
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {narrativeResult.rewardStats && Object.keys(narrativeResult.rewardStats).length > 0 && (
+                  <div className="mb-6 p-3 bg-slate-900/50 rounded border border-slate-700">
+                    <div className="text-xs text-slate-500 uppercase mb-2 text-center">能力値変化</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {Object.entries(narrativeResult.rewardStats)
+                        .filter(([_, value]) => value !== undefined && value !== 0)
+                        .map(([key, value]) => {
+                          const statNames: Record<string, string> = {
+                            strength: '筋力',
+                            intelligence: '知力',
+                            charisma: '魅力',
+                            willpower: '意思',
+                            luck: '幸運',
+                          };
+                          return (
+                            <div key={key} className="flex justify-between">
+                              <span className="text-slate-400">{statNames[key] || key}</span>
+                              <span className={value >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                {value >= 0 ? '+' : ''}{value}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={closeNarrativeModal}
                   className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-8 rounded-lg"
