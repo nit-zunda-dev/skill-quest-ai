@@ -39,6 +39,7 @@ export interface CharacterProfile {
   currentXp: number;
   nextLevelXp: number;
   gold: number;
+  genre: Genre;
 }
 
 export interface Task {

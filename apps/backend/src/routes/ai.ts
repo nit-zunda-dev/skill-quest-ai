@@ -7,6 +7,7 @@ import {
   narrativeRequestSchema,
   partnerMessageRequestSchema,
   chatRequestSchema,
+  Genre,
 } from '@skill-quest/shared';
 import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
 import { prepareUserPrompt } from '../services/prompt-safety';
@@ -123,11 +124,20 @@ aiRouter.post(
       if (!commentResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: commentResult.reason }, 400);
       sanitized.userComment = commentResult.sanitized;
     }
+    // プロフィール取得（genreを取得するため）
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let genre: Genre | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+        genre = p.genre as Genre;
+      }
+    }
+
     const service = createAiService(c.env);
-    const result = await service.generateNarrative(sanitized);
+    const result = await service.generateNarrative(sanitized, genre);
 
     // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
-    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
     let updatedProfile = profileRaw as Record<string, unknown> | null;
     if (profileRaw && typeof profileRaw === 'object') {
       const p = profileRaw as Record<string, unknown>;
@@ -191,8 +201,18 @@ aiRouter.post(
         sanitized[key] = result.sanitized;
       }
     }
+    // プロフィール取得（genreを取得するため）
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let genre: Genre | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+        genre = p.genre as Genre;
+      }
+    }
+
     const service = createAiService(c.env);
-    const message = await service.generatePartnerMessage(sanitized);
+    const message = await service.generatePartnerMessage(sanitized, genre);
     await recordPartner(c.env.DB, user.id, today);
     return c.json({ message });
   }
@@ -210,7 +230,25 @@ aiRouter.post(
     const data = c.req.valid('json');
     const msgResult = prepareUserPrompt(data.message);
     if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
-    const messages = [{ role: 'user' as const, content: msgResult.sanitized }];
+
+    // プロフィール取得（genreを取得するため）
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let genre: Genre | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+        genre = p.genre as Genre;
+      }
+    }
+
+    // システムメッセージに世界観を含める
+    const systemMessage = genre 
+      ? `あなたは${genre}世界観のRPGのゲームマスターです。プレイヤーの質問に答えてください。`
+      : 'あなたはRPGのゲームマスターです。プレイヤーの質問に答えてください。';
+    const messages = [
+      { role: 'system' as const, content: systemMessage },
+      { role: 'user' as const, content: msgResult.sanitized }
+    ];
 
     await recordChat(c.env.DB, user.id, today);
 

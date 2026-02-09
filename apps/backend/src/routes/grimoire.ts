@@ -5,7 +5,7 @@ import type { Bindings, AuthUser } from '../types';
 import { schema } from '../db/schema';
 import { getGrimoireEntries, createGrimoireEntry, getDailyUsage, recordGrimoireGeneration, getTodayUtc, getCharacterProfile, updateCharacterProfile } from '../services/ai-usage';
 import { createAiService } from '../services/ai';
-import { Difficulty, TaskType } from '@skill-quest/shared';
+import { Difficulty, TaskType, Genre } from '@skill-quest/shared';
 
 type GrimoireVariables = { user: AuthUser };
 
@@ -79,12 +79,21 @@ grimoireRouter.post('/generate', async (c) => {
     };
   });
   
+  // プロフィール取得（genreを取得するため）
+  const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+  let genre: Genre | undefined;
+  if (profileRaw && typeof profileRaw === 'object') {
+    const p = profileRaw as Record<string, unknown>;
+    if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+      genre = p.genre as Genre;
+    }
+  }
+
   // AIサービスでグリモワールを生成
   const service = createAiService(c.env);
-  const result = await service.generateGrimoire(completedTasks);
+  const result = await service.generateGrimoire(completedTasks, genre);
   
   // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
-  const profileRaw = await getCharacterProfile(c.env.DB, user.id);
   let updatedProfile = profileRaw as Record<string, unknown> | null;
   let oldProfile = profileRaw as Record<string, unknown> | null;
   
