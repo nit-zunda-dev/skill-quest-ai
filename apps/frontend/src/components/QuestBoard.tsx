@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Task, TaskType, Difficulty } from '@skill-quest/shared';
-import { Plus, Trash2, CheckSquare, Repeat, Calendar, Check } from 'lucide-react';
+import { Plus, Trash2, Repeat, Check } from 'lucide-react';
 
 interface QuestBoardProps {
   tasks: Task[];
@@ -10,7 +10,6 @@ interface QuestBoardProps {
 }
 
 const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTask, onDeleteTask }) => {
-  const [activeTab, setActiveTab] = useState<TaskType>(TaskType.DAILY);
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDifficulty, setNewTaskDifficulty] = useState<Difficulty>(Difficulty.EASY);
@@ -19,14 +18,12 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
     if (!newTaskTitle.trim()) return;
     onAddTask({
       title: newTaskTitle,
-      type: activeTab,
+      type: TaskType.TODO, // デフォルトでTODOとして追加
       difficulty: newTaskDifficulty,
     });
     setNewTaskTitle('');
     setIsAdding(false);
   };
-
-  const filteredTasks = tasks.filter(t => t.type === activeTab);
 
   const getDifficultyColor = (diff: Difficulty) => {
     switch (diff) {
@@ -40,7 +37,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
     <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex flex-col shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">クエストボード</span>
+          <span className="mr-2">タスクボード</span>
         </h2>
         <button 
           onClick={() => setIsAdding(true)}
@@ -48,25 +45,6 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
         >
           <Plus className="w-5 h-5" />
         </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex space-x-2 mb-6 bg-slate-900/50 p-1 rounded-lg">
-        {[TaskType.DAILY, TaskType.HABIT, TaskType.TODO].map((type) => (
-          <button
-            key={type}
-            onClick={() => setActiveTab(type)}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-              activeTab === type
-                ? 'bg-slate-700 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {type === TaskType.DAILY && 'デイリー'}
-            {type === TaskType.HABIT && '習慣'}
-            {type === TaskType.TODO && 'To-Do'}
-          </button>
-        ))}
       </div>
 
       {/* Add Task Form */}
@@ -104,12 +82,12 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
 
       {/* Task List */}
       <div className="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-        {filteredTasks.length === 0 ? (
+        {tasks.length === 0 ? (
           <div className="text-center text-slate-500 py-10 italic">
-            クエストがありません
+            タスクがありません
           </div>
         ) : (
-          filteredTasks.map(task => (
+          tasks.map(task => (
             <div 
               key={task.id} 
               className={`group relative p-4 rounded-lg border transition-all duration-300 ${
