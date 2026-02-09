@@ -23,6 +23,7 @@ import {
   completeQuest,
   getTodayUtc,
   CHAT_DAILY_LIMIT,
+  createGrimoireEntry,
 } from '../services/ai-usage';
 
 type AiVariables = { user: AuthUser };
@@ -89,6 +90,17 @@ aiRouter.post(
     const profile = await service.generateCharacter(sanitized);
     await recordCharacterGenerated(c.env.DB, user.id);
     await saveCharacterProfile(c.env.DB, user.id, profile);
+    
+    // プロローグを第一回のグリモワールとして保存
+    if (profile.prologue) {
+      await createGrimoireEntry(c.env.DB, user.id, {
+        taskTitle: 'プロローグ',
+        narrative: profile.prologue,
+        rewardXp: 0,
+        rewardGold: 0,
+      });
+    }
+    
     return c.json(profile);
   }
 );

@@ -79,26 +79,32 @@ const App: React.FC = () => {
     return <Dashboard initialProfile={justCompletedProfile} />;
   }
 
-  // 認証済み: キャラ取得中 or エラー
-  if (genesisOrProfile.kind === 'loading') {
-    return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex items-center justify-center">
-        <div className="text-slate-400 animate-pulse">読み込み中...</div>
-      </div>
-    );
-  }
+  // Genesis の RESULT ステップ中は、genesisOrProfile の結果を無視して Genesis 画面を表示し続ける
+  // （プロフィール生成後、useGenesisOrProfile が再評価されて dashboard を返しても、RESULT 画面を表示し続ける）
+  const isShowingGenesisResult = genesisStep === 'RESULT';
+  
+  if (!isShowingGenesisResult) {
+    // 認証済み: キャラ取得中 or エラー
+    if (genesisOrProfile.kind === 'loading') {
+      return (
+        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex items-center justify-center">
+          <div className="text-slate-400 animate-pulse">読み込み中...</div>
+        </div>
+      );
+    }
 
-  if (genesisOrProfile.kind === 'error') {
-    return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-        <p className="text-red-400" role="alert">{genesisOrProfile.message}</p>
-      </div>
-    );
-  }
+    if (genesisOrProfile.kind === 'error') {
+      return (
+        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
+          <p className="text-red-400" role="alert">{genesisOrProfile.message}</p>
+        </div>
+      );
+    }
 
-  // 認証済み・キャラ生成済み → ダッシュボード（ログイン時）
-  if (genesisOrProfile.kind === 'dashboard') {
-    return <Dashboard initialProfile={genesisOrProfile.profile} />;
+    // 認証済み・キャラ生成済み → ダッシュボード（ログイン時）
+    if (genesisOrProfile.kind === 'dashboard') {
+      return <Dashboard initialProfile={genesisOrProfile.profile} />;
+    }
   }
 
   // 認証済み・キャラ未生成 → Genesis（サインアップ時のみここに来る）
