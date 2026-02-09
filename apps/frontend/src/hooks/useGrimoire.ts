@@ -31,14 +31,21 @@ async function fetchGrimoire(): Promise<GrimoireEntry[]> {
   return list;
 }
 
-async function generateGrimoire(): Promise<GrimoireEntry> {
+interface GrimoireGenerationResult {
+  grimoireEntry: GrimoireEntry;
+  profile?: Record<string, unknown>;
+  oldProfile?: Record<string, unknown>;
+  rewardHp?: number;
+}
+
+async function generateGrimoire(): Promise<GrimoireGenerationResult> {
   const res = await (client as GrimoireClient).api.grimoire.generate.$post();
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: `Failed to generate grimoire: ${res.status}` }));
     throw new Error(err.message || `Failed to generate grimoire: ${res.status}`);
   }
-  const data = (await res.json()) as { grimoireEntry: GrimoireEntry };
-  return data.grimoireEntry;
+  const data = (await res.json()) as GrimoireGenerationResult;
+  return data;
 }
 
 export function useGrimoire() {
@@ -62,5 +69,8 @@ export function useGrimoire() {
     generateGrimoire: generateMutation.mutate,
     isGenerating: generateMutation.isPending,
     generateError: generateMutation.error,
+    generateResult: generateMutation.data,
   };
 }
+
+export type { GrimoireGenerationResult };

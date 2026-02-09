@@ -3,7 +3,7 @@ import { eq, and, isNotNull } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import type { Bindings, AuthUser } from '../types';
 import { schema } from '../db/schema';
-import { getGrimoireEntries, createGrimoireEntry, getDailyUsage, recordGrimoireGeneration, getTodayUtc } from '../services/ai-usage';
+import { getGrimoireEntries, createGrimoireEntry, getDailyUsage, recordGrimoireGeneration, getTodayUtc, getCharacterProfile, updateCharacterProfile } from '../services/ai-usage';
 import { createAiService } from '../services/ai';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 
@@ -83,6 +83,49 @@ grimoireRouter.post('/generate', async (c) => {
   const service = createAiService(c.env);
   const result = await service.generateGrimoire(completedTasks);
   
+  // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
+  const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+  let updatedProfile = profileRaw as Record<string, unknown> | null;
+  let oldProfile = profileRaw as Record<string, unknown> | null;
+  
+  if (profileRaw && typeof profileRaw === 'object') {
+    const p = profileRaw as Record<string, unknown>;
+    let newXp = (Number(p.currentXp) || 0) + result.rewardXp;
+    let newLevel = Number(p.level) || 1;
+    let nextXp = Number(p.nextLevelXp) || 100;
+    const newGold = (Number(p.gold) || 0) + result.rewardGold;
+
+    while (newXp >= nextXp) {
+      newXp -= nextXp;
+      newLevel += 1;
+      nextXp = Math.floor(nextXp * 1.2);
+    }
+
+    // HPの更新（0以上maxHp以下に制限）
+    const maxHp = Number(p.maxHp) || 100;
+    const currentHp = Number(p.hp) || maxHp;
+    // グリモワール生成時はHPを少し回復（完了タスク数に応じて）
+    const hpRecovery = Math.min(completedTasks.length * 5, maxHp - currentHp);
+    const newHp = Math.max(0, Math.min(maxHp, currentHp + hpRecovery));
+
+    await updateCharacterProfile(c.env.DB, user.id, {
+      currentXp: newXp,
+      nextLevelXp: nextXp,
+      level: newLevel,
+      gold: newGold,
+      hp: newHp,
+    });
+    
+    updatedProfile = { 
+      ...p, 
+      currentXp: newXp, 
+      nextLevelXp: nextXp, 
+      level: newLevel, 
+      gold: newGold,
+      hp: newHp,
+    };
+  }
+  
   // グリモワールエントリを作成
   const taskTitles = completedTasks.map(t => t.title).join('、');
   const grimoireResult = await createGrimoireEntry(c.env.DB, user.id, {
@@ -106,5 +149,8 @@ grimoireRouter.post('/generate', async (c) => {
   
   return c.json({
     grimoireEntry,
+    profile: updatedProfile ?? undefined,
+    oldProfile: oldProfile ?? undefined,
+    rewardHp: updatedProfile && oldProfile ? (Number(updatedProfile.hp) || 0) - (Number(oldProfile.hp) || 0) : 0,
   });
 });

@@ -6,11 +6,16 @@ import { useAiUsage } from '@/hooks/useAiUsage';
 
 interface GrimoireProps {
   entries: GrimoireEntry[];
+  onGenerate?: () => void;
+  isGenerating?: boolean;
 }
 
-const Grimoire: React.FC<GrimoireProps> = ({ entries }) => {
-  const { generateGrimoire, isGenerating, generateError } = useGrimoire();
+const Grimoire: React.FC<GrimoireProps> = ({ entries, onGenerate, isGenerating: externalIsGenerating }) => {
+  const { generateGrimoire: internalGenerateGrimoire, isGenerating: internalIsGenerating, generateError } = useGrimoire();
   const { canGenerateGrimoire, grimoireRemaining, isLoading: usageLoading } = useAiUsage();
+
+  const isGenerating = externalIsGenerating ?? internalIsGenerating;
+  const generateGrimoire = onGenerate ?? internalGenerateGrimoire;
 
   const handleGenerate = () => {
     if (canGenerateGrimoire && !isGenerating) {
