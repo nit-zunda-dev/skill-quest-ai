@@ -12,14 +12,11 @@ const stubProfile = {
   name: 'Test',
   className: 'Warrior',
   title: 'Brave',
-  stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
   prologue: 'Prologue.',
   themeColor: '#6366f1',
   level: 1,
   currentXp: 0,
   nextLevelXp: 100,
-  hp: 100,
-  maxHp: 100,
   gold: 0,
 };
 
@@ -97,7 +94,6 @@ describe('ai router', () => {
       const body = (await res.json()) as Record<string, unknown>;
       expect(body).toHaveProperty('name');
       expect(body).toHaveProperty('className');
-      expect(body).toHaveProperty('stats');
       expect(body).toHaveProperty('prologue');
     });
 

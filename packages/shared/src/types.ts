@@ -29,26 +29,15 @@ export interface GenesisFormData {
   genre: Genre;
 }
 
-export interface CharacterStats {
-  strength: number; // Health/Fitness
-  intelligence: number; // Learning/Work
-  charisma: number; // Social/Connection
-  willpower: number; // Consistency/Habits
-  luck: number; // Random factor
-}
-
 export interface CharacterProfile {
   name: string;
   className: string;
   title: string;
-  stats: CharacterStats;
   prologue: string;
   themeColor: string;
   level: number;
   currentXp: number;
   nextLevelXp: number;
-  hp: number;
-  maxHp: number;
   gold: number;
 }
 

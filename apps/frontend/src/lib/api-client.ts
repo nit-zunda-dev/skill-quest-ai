@@ -8,7 +8,6 @@ import {
   type CharacterProfile,
   type GenesisFormData,
   type Task,
-  type CharacterStats,
 } from '@skill-quest/shared';
 
 type HcClient = {
@@ -37,28 +36,12 @@ export async function deleteAccount(userId: string): Promise<void> {
 
 /** プロフィールの数値フィールドを正規化（undefined/文字列で NaN を防ぐ）。GET character と Dashboard 初期化で利用。 */
 export function normalizeProfileNumbers(p: CharacterProfile): CharacterProfile {
-  const maxHp = Number(p.maxHp) || 100;
-  const hp = Number(p.hp);
-  
-  // statsの正規化
-  const stats = p.stats || {};
-  const normalizedStats: CharacterStats = {
-    strength: Number(stats.strength) || 50,
-    intelligence: Number(stats.intelligence) || 50,
-    charisma: Number(stats.charisma) || 50,
-    willpower: Number(stats.willpower) || 50,
-    luck: Number(stats.luck) || 50,
-  };
-  
   return {
     ...p,
     level: Number(p.level) || 0,
     currentXp: Number(p.currentXp) || 0,
     nextLevelXp: Number(p.nextLevelXp) || 100,
-    hp: Number.isFinite(hp) ? hp : maxHp,
-    maxHp,
     gold: Number(p.gold) || 0,
-    stats: normalizedStats,
   };
 }
 
@@ -78,8 +61,6 @@ export interface NarrativeResult {
   narrative: string;
   xp: number;
   gold: number;
-  rewardHp?: number;
-  rewardStats?: Partial<CharacterStats>;
   profile?: CharacterProfile;
   grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
 }
@@ -88,20 +69,11 @@ const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
   name,
   className: '冒険者',
   title: '始まりの旅人',
-  stats: {
-    strength: 50,
-    intelligence: 50,
-    charisma: 50,
-    willpower: 50,
-    luck: 50,
-  } satisfies CharacterStats,
   prologue: '新たな冒険の幕が開けます。',
   themeColor: '#6366f1',
   level: 1,
   currentXp: 0,
   nextLevelXp: 100,
-  hp: 100,
-  maxHp: 100,
   gold: 0,
 });
 
@@ -142,8 +114,6 @@ export async function generateTaskNarrative(
       narrative?: string;
       rewardXp?: number;
       rewardGold?: number;
-      rewardHp?: number;
-      rewardStats?: Partial<CharacterStats>;
       profile?: CharacterProfile;
       grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
     };
@@ -152,8 +122,6 @@ export async function generateTaskNarrative(
       narrative: raw.narrative ?? '',
       xp: Number(raw.rewardXp) || 0,
       gold: Number(raw.rewardGold) || 0,
-      rewardHp: Number(raw.rewardHp) || 0,
-      rewardStats: raw.rewardStats || {},
       profile,
       grimoireEntry: raw.grimoireEntry,
     };
@@ -163,62 +131,14 @@ export async function generateTaskNarrative(
   }
 }
 
-// フォールバック用のランダム生成関数（バックエンドと同じロジック）
-function generateRandomRewards(difficulty: Difficulty) {
-  let hpRange: [number, number];
-  let statRange: [number, number];
-
-  switch (difficulty) {
-    case Difficulty.EASY:
-      hpRange = [5, 10];
-      statRange = [1, 2];
-      break;
-    case Difficulty.MEDIUM:
-      hpRange = [8, 15];
-      statRange = [1, 3];
-      break;
-    case Difficulty.HARD:
-      hpRange = [12, 20];
-      statRange = [2, 5];
-      break;
-    default:
-      hpRange = [5, 10];
-      statRange = [1, 2];
-  }
-
-  const randomInRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-  const randomSignedRange = (min: number, max: number) => {
-    const absValue = randomInRange(min, max);
-    const sign = Math.random() < 0.5 ? -1 : 1;
-    return sign * absValue;
-  };
-
-  // HPは増減両方（ランダム）
-  const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
-  // 能力値はプラスのみ（ランダム）
-  const rewardStats: Partial<CharacterStats> = {
-    strength: randomInRange(statRange[0], statRange[1]),
-    intelligence: randomInRange(statRange[0], statRange[1]),
-    charisma: randomInRange(statRange[0], statRange[1]),
-    willpower: randomInRange(statRange[0], statRange[1]),
-    luck: randomInRange(statRange[0], statRange[1]),
-  };
-
-  return { rewardHp, rewardStats };
-}
-
 function createFallbackNarrative(task: Task): NarrativeResult {
   const baseReward =
     task.difficulty === Difficulty.HARD ? 50 : task.difficulty === Difficulty.MEDIUM ? 30 : 15;
-  
-  const randomRewards = generateRandomRewards(task.difficulty);
 
   return {
     narrative: `${task.title}を達成した！心地よい疲労感と共に、力が湧いてくるのを感じる。`,
     xp: baseReward,
     gold: Math.floor(baseReward / 2),
-    rewardHp: randomRewards.rewardHp,
-    rewardStats: randomRewards.rewardStats,
   };
 }
 

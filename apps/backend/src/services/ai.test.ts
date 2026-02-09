@@ -56,14 +56,11 @@ describe('AI service', () => {
       name: 'テスト',
       className: '戦士',
       title: '見習い',
-      stats: { strength: 60, intelligence: 40, charisma: 50, willpower: 50, luck: 50 },
       prologue: '目標に向かう',
       themeColor: '#c0392b',
       level: 1,
       currentXp: 0,
       nextLevelXp: 100,
-      hp: 100,
-      maxHp: 100,
       gold: 0,
     });
 
@@ -80,7 +77,6 @@ describe('AI service', () => {
       expect(prompt.prompt).toContain('目標');
       expect(result.name).toBe('テスト');
       expect(result.className).toBe('戦士');
-      expect(result.stats.strength).toBe(60);
     });
 
     it('returns fallback profile when AI returns invalid JSON', async () => {

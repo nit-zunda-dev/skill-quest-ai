@@ -101,19 +101,11 @@ grimoireRouter.post('/generate', async (c) => {
       nextXp = Math.floor(nextXp * 1.2);
     }
 
-    // HPの更新（0以上maxHp以下に制限）
-    const maxHp = Number(p.maxHp) || 100;
-    const currentHp = Number(p.hp) || maxHp;
-    // グリモワール生成時はHPを少し回復（完了タスク数に応じて）
-    const hpRecovery = Math.min(completedTasks.length * 5, maxHp - currentHp);
-    const newHp = Math.max(0, Math.min(maxHp, currentHp + hpRecovery));
-
     await updateCharacterProfile(c.env.DB, user.id, {
       currentXp: newXp,
       nextLevelXp: nextXp,
       level: newLevel,
       gold: newGold,
-      hp: newHp,
     });
     
     updatedProfile = { 
@@ -122,7 +114,6 @@ grimoireRouter.post('/generate', async (c) => {
       nextLevelXp: nextXp, 
       level: newLevel, 
       gold: newGold,
-      hp: newHp,
     };
   }
   
@@ -151,6 +142,5 @@ grimoireRouter.post('/generate', async (c) => {
     grimoireEntry,
     profile: updatedProfile ?? undefined,
     oldProfile: oldProfile ?? undefined,
-    rewardHp: updatedProfile && oldProfile ? (Number(updatedProfile.hp) || 0) - (Number(oldProfile.hp) || 0) : 0,
   });
 });

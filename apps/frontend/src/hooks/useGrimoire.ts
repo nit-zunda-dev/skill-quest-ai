@@ -35,7 +35,6 @@ interface GrimoireGenerationResult {
   grimoireEntry: GrimoireEntry;
   profile?: Record<string, unknown>;
   oldProfile?: Record<string, unknown>;
-  rewardHp?: number;
 }
 
 async function generateGrimoire(): Promise<GrimoireGenerationResult> {

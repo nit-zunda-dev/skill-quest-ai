@@ -1,5 +1,5 @@
 import type { Bindings } from '../types';
-import type { CharacterProfile, GenesisFormData, CharacterStats } from '@skill-quest/shared';
+import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest } from '@skill-quest/shared';
 import { Difficulty } from '@skill-quest/shared';
 
@@ -45,8 +45,6 @@ export interface NarrativeResult {
   narrative: string;
   rewardXp: number;
   rewardGold: number;
-  rewardHp?: number;
-  rewardStats?: Partial<CharacterStats>;
 }
 
 export interface CompletedTask {
@@ -106,14 +104,11 @@ function defaultCharacterProfile(name: string, goal: string): CharacterProfile {
     name,
     className: '冒険者',
     title: '見習い',
-    stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
     prologue: `目標: ${goal}`,
     themeColor: '#4a90d9',
     level: 1,
     currentXp: 0,
     nextLevelXp: 100,
-    hp: 100,
-    maxHp: 100,
     gold: 0,
   };
 }
@@ -125,15 +120,11 @@ function isCharacterProfile(obj: unknown): obj is CharacterProfile {
     typeof o.name === 'string' &&
     typeof o.className === 'string' &&
     typeof o.title === 'string' &&
-    o.stats != null &&
-    typeof (o.stats as Record<string, unknown>).strength === 'number' &&
     typeof o.prologue === 'string' &&
     typeof o.themeColor === 'string' &&
     typeof o.level === 'number' &&
     typeof o.currentXp === 'number' &&
     typeof o.nextLevelXp === 'number' &&
-    typeof o.hp === 'number' &&
-    typeof o.maxHp === 'number' &&
     typeof o.gold === 'number'
   );
 }
@@ -196,63 +187,11 @@ function buildCharacterPrompt(data: GenesisFormData): string {
     `名前: ${data.name}`,
     `目標: ${data.goal}`,
     `ジャンル: ${data.genre}`,
-    `必須フィールド: name, className, title, stats(strength,intelligence,charisma,willpower,luck), prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, hp, maxHp, gold.`,
-    `statsの各値は0以上100以下、合計250にすること。nameは「${data.name}」にすること。`,
+    `必須フィールド: name, className, title, prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, gold.`,
+    `nameは「${data.name}」にすること。`,
   ].join('\n');
 }
 
-/** ランダムな整数を生成する（min以上max以下、マイナスも含む） */
-function randomInRange(min: number, max: number): number {
-  const range = max - min + 1;
-  return Math.floor(Math.random() * range) + min;
-}
-
-/** ランダムに増減する値を生成（minからmaxの範囲で、符号もランダム） */
-function randomSignedRange(min: number, max: number): number {
-  const absValue = randomInRange(min, max);
-  const sign = Math.random() < 0.5 ? -1 : 1;
-  return sign * absValue;
-}
-
-/** 難易度に応じたHPと能力値のランダム報酬を生成 */
-function generateRandomRewards(difficulty: Difficulty): {
-  rewardHp: number;
-  rewardStats: Partial<CharacterStats>;
-} {
-  let hpRange: [number, number];
-  let statRange: [number, number];
-
-  switch (difficulty) {
-    case Difficulty.EASY:
-      hpRange = [5, 10];
-      statRange = [1, 2];
-      break;
-    case Difficulty.MEDIUM:
-      hpRange = [8, 15];
-      statRange = [1, 3];
-      break;
-    case Difficulty.HARD:
-      hpRange = [12, 20];
-      statRange = [2, 5];
-      break;
-    default:
-      hpRange = [5, 10];
-      statRange = [1, 2];
-  }
-
-  // HPは増減両方（ランダム）
-  const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
-  // 能力値はプラスのみ（ランダム）
-  const rewardStats: Partial<CharacterStats> = {
-    strength: randomInRange(statRange[0], statRange[1]),
-    intelligence: randomInRange(statRange[0], statRange[1]),
-    charisma: randomInRange(statRange[0], statRange[1]),
-    willpower: randomInRange(statRange[0], statRange[1]),
-    luck: randomInRange(statRange[0], statRange[1]),
-  };
-
-  return { rewardHp, rewardStats };
-}
 
 /** 難易度に応じた報酬（フォールバック用）。Req 5.2 / geminiService の範囲に合わせる。 */
 function difficultyBasedRewards(difficulty: Difficulty): { rewardXp: number; rewardGold: number } {
@@ -301,7 +240,6 @@ export async function generateNarrative(
   request: NarrativeRequest
 ): Promise<NarrativeResult> {
   const prompt = buildNarrativePrompt(request);
-  const randomRewards = generateRandomRewards(request.difficulty);
   
   try {
     const raw = await runWithLlama31_8b(ai, prompt);
@@ -314,11 +252,7 @@ export async function generateNarrative(
       }
     }
     if (isNarrativeResult(parsed)) {
-      return {
-        ...parsed,
-        rewardHp: randomRewards.rewardHp,
-        rewardStats: randomRewards.rewardStats,
-      };
+      return parsed;
     }
   } catch {
     // fall through to fallback
@@ -328,8 +262,6 @@ export async function generateNarrative(
     narrative: `${request.taskTitle}を達成した。心地よい疲労感と共に、力が湧いてくるのを感じる。`,
     rewardXp: rewards.rewardXp,
     rewardGold: rewards.rewardGold,
-    rewardHp: randomRewards.rewardHp,
-    rewardStats: randomRewards.rewardStats,
   };
 }
 
