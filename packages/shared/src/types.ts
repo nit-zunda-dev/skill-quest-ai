@@ -43,7 +43,6 @@ export interface CharacterProfile {
   title: string;
   stats: CharacterStats;
   prologue: string;
-  startingSkill: string;
   themeColor: string;
   level: number;
   currentXp: number;

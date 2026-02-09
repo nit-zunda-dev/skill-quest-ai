@@ -14,7 +14,6 @@ const stubProfile = {
   title: 'Brave',
   stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
   prologue: 'Prologue.',
-  startingSkill: 'Slash',
   themeColor: '#6366f1',
   level: 1,
   currentXp: 0,

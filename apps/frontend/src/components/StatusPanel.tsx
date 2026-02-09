@@ -68,12 +68,6 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ profile }) => {
           <StatsChart stats={profile.stats} color={profile.themeColor} />
         </div>
       </div>
-      
-      {/* Skill */}
-      <div className="mt-4 pt-4 border-t border-slate-700">
-         <h4 className="text-xs text-slate-500 uppercase mb-1">パッシブスキル</h4>
-         <p className="text-sm text-white font-medium">{profile.startingSkill}</p>
-      </div>
     </div>
   );
 };

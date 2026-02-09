@@ -58,7 +58,6 @@ describe('AI service', () => {
       title: '見習い',
       stats: { strength: 60, intelligence: 40, charisma: 50, willpower: 50, luck: 50 },
       prologue: '目標に向かう',
-      startingSkill: '剣術',
       themeColor: '#c0392b',
       level: 1,
       currentXp: 0,

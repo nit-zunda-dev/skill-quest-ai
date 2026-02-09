@@ -39,6 +39,17 @@ export async function deleteAccount(userId: string): Promise<void> {
 export function normalizeProfileNumbers(p: CharacterProfile): CharacterProfile {
   const maxHp = Number(p.maxHp) || 100;
   const hp = Number(p.hp);
+  
+  // statsの正規化
+  const stats = p.stats || {};
+  const normalizedStats: CharacterStats = {
+    strength: Number(stats.strength) || 50,
+    intelligence: Number(stats.intelligence) || 50,
+    charisma: Number(stats.charisma) || 50,
+    willpower: Number(stats.willpower) || 50,
+    luck: Number(stats.luck) || 50,
+  };
+  
   return {
     ...p,
     level: Number(p.level) || 0,
@@ -47,6 +58,7 @@ export function normalizeProfileNumbers(p: CharacterProfile): CharacterProfile {
     hp: Number.isFinite(hp) ? hp : maxHp,
     maxHp,
     gold: Number(p.gold) || 0,
+    stats: normalizedStats,
   };
 }
 
@@ -84,7 +96,6 @@ const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
     luck: 50,
   } satisfies CharacterStats,
   prologue: '新たな冒険の幕が開けます。',
-  startingSkill: '挑戦の心',
   themeColor: '#6366f1',
   level: 1,
   currentXp: 0,
@@ -152,52 +163,54 @@ export async function generateTaskNarrative(
   }
 }
 
+// フォールバック用のランダム生成関数（バックエンドと同じロジック）
+function generateRandomRewards(difficulty: Difficulty) {
+  let hpRange: [number, number];
+  let statRange: [number, number];
+
+  switch (difficulty) {
+    case Difficulty.EASY:
+      hpRange = [5, 10];
+      statRange = [1, 2];
+      break;
+    case Difficulty.MEDIUM:
+      hpRange = [8, 15];
+      statRange = [1, 3];
+      break;
+    case Difficulty.HARD:
+      hpRange = [12, 20];
+      statRange = [2, 5];
+      break;
+    default:
+      hpRange = [5, 10];
+      statRange = [1, 2];
+  }
+
+  const randomInRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const randomSignedRange = (min: number, max: number) => {
+    const absValue = randomInRange(min, max);
+    const sign = Math.random() < 0.5 ? -1 : 1;
+    return sign * absValue;
+  };
+
+  // HPは増減両方（ランダム）
+  const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
+  // 能力値はプラスのみ（ランダム）
+  const rewardStats: Partial<CharacterStats> = {
+    strength: randomInRange(statRange[0], statRange[1]),
+    intelligence: randomInRange(statRange[0], statRange[1]),
+    charisma: randomInRange(statRange[0], statRange[1]),
+    willpower: randomInRange(statRange[0], statRange[1]),
+    luck: randomInRange(statRange[0], statRange[1]),
+  };
+
+  return { rewardHp, rewardStats };
+}
+
 function createFallbackNarrative(task: Task): NarrativeResult {
   const baseReward =
     task.difficulty === Difficulty.HARD ? 50 : task.difficulty === Difficulty.MEDIUM ? 30 : 15;
   
-  // フォールバック時もランダムなHPと能力値の変化を生成
-  const generateRandomRewards = (difficulty: Difficulty) => {
-    let hpRange: [number, number];
-    let statRange: [number, number];
-
-    switch (difficulty) {
-      case Difficulty.EASY:
-        hpRange = [5, 10];
-        statRange = [1, 2];
-        break;
-      case Difficulty.MEDIUM:
-        hpRange = [8, 15];
-        statRange = [1, 3];
-        break;
-      case Difficulty.HARD:
-        hpRange = [12, 20];
-        statRange = [2, 5];
-        break;
-      default:
-        hpRange = [5, 10];
-        statRange = [1, 2];
-    }
-
-    const randomInRange = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const randomSignedRange = (min: number, max: number) => {
-      const absValue = randomInRange(min, max);
-      const sign = Math.random() < 0.5 ? -1 : 1;
-      return sign * absValue;
-    };
-
-    const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
-    const rewardStats: Partial<CharacterStats> = {
-      strength: randomSignedRange(statRange[0], statRange[1]),
-      intelligence: randomSignedRange(statRange[0], statRange[1]),
-      charisma: randomSignedRange(statRange[0], statRange[1]),
-      willpower: randomSignedRange(statRange[0], statRange[1]),
-      luck: randomSignedRange(statRange[0], statRange[1]),
-    };
-
-    return { rewardHp, rewardStats };
-  };
-
   const randomRewards = generateRandomRewards(task.difficulty);
 
   return {

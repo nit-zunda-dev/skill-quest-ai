@@ -259,8 +259,8 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
                           return (
                             <div key={key} className="flex justify-between">
                               <span className="text-slate-400">{statNames[key] || key}</span>
-                              <span className={value >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                {value >= 0 ? '+' : ''}{value}
+                              <span className="text-green-400">
+                                +{value}
                               </span>
                             </div>
                           );

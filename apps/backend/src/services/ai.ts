@@ -90,7 +90,6 @@ function defaultCharacterProfile(name: string, goal: string): CharacterProfile {
     title: '見習い',
     stats: { strength: 50, intelligence: 50, charisma: 50, willpower: 50, luck: 50 },
     prologue: `目標: ${goal}`,
-    startingSkill: '基礎',
     themeColor: '#4a90d9',
     level: 1,
     currentXp: 0,
@@ -111,7 +110,6 @@ function isCharacterProfile(obj: unknown): obj is CharacterProfile {
     o.stats != null &&
     typeof (o.stats as Record<string, unknown>).strength === 'number' &&
     typeof o.prologue === 'string' &&
-    typeof o.startingSkill === 'string' &&
     typeof o.themeColor === 'string' &&
     typeof o.level === 'number' &&
     typeof o.currentXp === 'number' &&
@@ -180,7 +178,7 @@ function buildCharacterPrompt(data: GenesisFormData): string {
     `名前: ${data.name}`,
     `目標: ${data.goal}`,
     `ジャンル: ${data.genre}`,
-    `必須フィールド: name, className, title, stats(strength,intelligence,charisma,willpower,luck), prologue, startingSkill, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, hp, maxHp, gold.`,
+    `必須フィールド: name, className, title, stats(strength,intelligence,charisma,willpower,luck), prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, hp, maxHp, gold.`,
     `statsの各値は0以上100以下、合計250にすること。nameは「${data.name}」にすること。`,
   ].join('\n');
 }
@@ -224,13 +222,15 @@ function generateRandomRewards(difficulty: Difficulty): {
       statRange = [1, 2];
   }
 
+  // HPは増減両方（ランダム）
   const rewardHp = randomSignedRange(hpRange[0], hpRange[1]);
+  // 能力値はプラスのみ（ランダム）
   const rewardStats: Partial<CharacterStats> = {
-    strength: randomSignedRange(statRange[0], statRange[1]),
-    intelligence: randomSignedRange(statRange[0], statRange[1]),
-    charisma: randomSignedRange(statRange[0], statRange[1]),
-    willpower: randomSignedRange(statRange[0], statRange[1]),
-    luck: randomSignedRange(statRange[0], statRange[1]),
+    strength: randomInRange(statRange[0], statRange[1]),
+    intelligence: randomInRange(statRange[0], statRange[1]),
+    charisma: randomInRange(statRange[0], statRange[1]),
+    willpower: randomInRange(statRange[0], statRange[1]),
+    luck: randomInRange(statRange[0], statRange[1]),
   };
 
   return { rewardHp, rewardStats };
