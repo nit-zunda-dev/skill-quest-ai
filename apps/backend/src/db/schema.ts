@@ -131,6 +131,14 @@ export const aiDailyUsage = sqliteTable('ai_daily_usage', {
   pk: primaryKey({ columns: [table.userId, table.dateUtc] }),
 }));
 
+/** レート制限ログ（短時間の連打防止用） */
+export const rateLimitLogs = sqliteTable('rate_limit_logs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull(), // エンドポイントパス（例: '/api/ai/generate-character'）
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
 // リレーション定義
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -211,4 +219,5 @@ export const schema = {
   userCharacterGenerated,
   userCharacterProfile,
   aiDailyUsage,
+  rateLimitLogs,
 };

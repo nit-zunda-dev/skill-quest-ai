@@ -1,14 +1,21 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import type { Bindings } from './types';
 import { setupMiddleware } from './middleware';
 import { auth } from './auth';
 import { authMiddleware } from './middleware/auth';
+import { rateLimitMiddleware } from './middleware/rate-limit';
 import { questsRouter } from './routes/quests';
 import { aiRouter } from './routes/ai';
 import { profileRouter } from './routes/profile';
 import { grimoireRouter } from './routes/grimoire';
 import { deleteAccountByUserId } from './services/account-delete';
+
+const userIdParamSchema = z.object({
+  userId: z.string().min(1, 'ユーザーIDは必須です'),
+});
 
 // Honoアプリケーションを初期化
 // Bindings型を適用して、c.envで型安全にアクセスできるようにする
@@ -83,8 +90,9 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
 app.use('/api/quests/*', authMiddleware);
 app.route('/api/quests', questsRouter);
 
-// AI生成ルート（認証必須・利用制限は各ハンドラで実施）
+// AI生成ルート（認証必須・レート制限・利用制限は各ハンドラで実施）
 app.use('/api/ai/*', authMiddleware);
+app.use('/api/ai/*', rateLimitMiddleware);
 app.route('/api/ai', aiRouter);
 
 // プロフィールルート（認証必須）
@@ -115,25 +123,30 @@ app.get('/api/test-protected', authMiddleware, (c) => {
  * ユーザーIDを指定し、認証済みユーザー本人のみ自分のアカウントと関連する全データを削除できる。
  * DELETE /api/users/:userId — :userId は認証ユーザーの id と一致している必要がある。
  */
-app.delete('/api/users/:userId', authMiddleware, async (c) => {
-  const user = c.get('user');
-  const userId = c.req.param('userId');
+app.delete(
+  '/api/users/:userId',
+  authMiddleware,
+  zValidator('param', userIdParamSchema),
+  async (c) => {
+    const user = c.get('user');
+    const { userId } = c.req.valid('param');
 
-  if (userId !== user.id) {
-    throw new HTTPException(403, { message: 'Forbidden: You can only delete your own account' });
-  }
-
-  try {
-    await deleteAccountByUserId(c.env.DB, userId);
-    return c.json({ success: true, message: 'Account and all related data deleted successfully' });
-  } catch (error) {
-    if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
-      throw new HTTPException(404, { message: 'User not found' });
+    if (userId !== user.id) {
+      throw new HTTPException(403, { message: 'Forbidden: You can only delete your own account' });
     }
-    console.error('Account deletion error:', error);
-    throw new HTTPException(500, { message: 'Failed to delete account' });
+
+    try {
+      await deleteAccountByUserId(c.env.DB, userId);
+      return c.json({ success: true, message: 'Account and all related data deleted successfully' });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
+        throw new HTTPException(404, { message: 'User not found' });
+      }
+      console.error('Account deletion error:', error);
+      throw new HTTPException(500, { message: 'Failed to delete account' });
+    }
   }
-});
+);
 
 // AppTypeをエクスポート（フロントエンドで型推論に使用）
 export type AppType = typeof app;
