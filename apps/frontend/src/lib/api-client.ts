@@ -8,45 +8,72 @@ import {
   type CharacterProfile,
   type GenesisFormData,
   type Task,
-  type CharacterStats,
 } from '@skill-quest/shared';
 
 type HcClient = {
   api: {
     ai: {
+      character: { $get: () => Promise<Response> };
       'generate-character': { $post: (opts: { json: GenesisFormData }) => Promise<Response> };
       'generate-narrative': { $post: (opts: { json: object }) => Promise<Response> };
       'generate-partner-message': { $post: (opts: { json: object }) => Promise<Response> };
+    };
+    users: {
+      ':userId': { $delete: (opts: { param: { userId: string } }) => Promise<Response> };
     };
   };
 };
 const api = (client as HcClient).api;
 
-interface NarrativeResult {
+/** アカウント削除（本人のみ。削除後はログアウト扱い） */
+export async function deleteAccount(userId: string): Promise<void> {
+  const res = await (client as HcClient).api.users[':userId'].$delete({ param: { userId } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err?.message ?? `アカウント削除に失敗しました (${res.status})`);
+  }
+}
+
+/** プロフィールの数値フィールドを正規化（undefined/文字列で NaN を防ぐ）。GET character と Dashboard 初期化で利用。 */
+export function normalizeProfileNumbers(p: CharacterProfile): CharacterProfile {
+  return {
+    ...p,
+    level: Number(p.level) || 0,
+    currentXp: Number(p.currentXp) || 0,
+    nextLevelXp: Number(p.nextLevelXp) || 100,
+    gold: Number(p.gold) || 0,
+  };
+}
+
+/** 保存済みキャラクタープロフィール取得（ログイン時用） */
+export async function getCharacterProfile(): Promise<CharacterProfile | null> {
+  try {
+    const res = await (client as HcClient).api.ai.character.$get();
+    if (!res.ok) return null;
+    const profile = (await res.json()) as CharacterProfile;
+    return normalizeProfileNumbers(profile);
+  } catch {
+    return null;
+  }
+}
+
+export interface NarrativeResult {
   narrative: string;
   xp: number;
   gold: number;
+  profile?: CharacterProfile;
+  grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
 }
 
 const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
   name,
   className: '冒険者',
   title: '始まりの旅人',
-  stats: {
-    strength: 50,
-    intelligence: 50,
-    charisma: 50,
-    willpower: 50,
-    luck: 50,
-  } satisfies CharacterStats,
   prologue: '新たな冒険の幕が開けます。',
-  startingSkill: '挑戦の心',
   themeColor: '#6366f1',
   level: 1,
   currentXp: 0,
   nextLevelXp: 100,
-  hp: 100,
-  maxHp: 100,
   gold: 0,
 });
 
@@ -83,7 +110,21 @@ export async function generateTaskNarrative(
       console.warn('generateTaskNarrative API error:', res.status);
       return createFallbackNarrative(task);
     }
-    return (await res.json()) as NarrativeResult;
+    const raw = (await res.json()) as {
+      narrative?: string;
+      rewardXp?: number;
+      rewardGold?: number;
+      profile?: CharacterProfile;
+      grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
+    };
+    const profile = raw.profile ? normalizeProfileNumbers(raw.profile) : undefined;
+    return {
+      narrative: raw.narrative ?? '',
+      xp: Number(raw.rewardXp) || 0,
+      gold: Number(raw.rewardGold) || 0,
+      profile,
+      grimoireEntry: raw.grimoireEntry,
+    };
   } catch (e) {
     console.error('generateTaskNarrative error:', e);
     return createFallbackNarrative(task);
@@ -93,6 +134,7 @@ export async function generateTaskNarrative(
 function createFallbackNarrative(task: Task): NarrativeResult {
   const baseReward =
     task.difficulty === Difficulty.HARD ? 50 : task.difficulty === Difficulty.MEDIUM ? 30 : 15;
+
   return {
     narrative: `${task.title}を達成した！心地よい疲労感と共に、力が湧いてくるのを感じる。`,
     xp: baseReward,

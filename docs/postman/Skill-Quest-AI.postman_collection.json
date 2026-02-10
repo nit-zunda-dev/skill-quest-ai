@@ -286,29 +286,20 @@
 					}
 				],
 				"request": {
-					"method": "POST",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "application/json"
-						}
-					],
-					"body": {
-						"mode": "raw",
-						"raw": "{}"
-					},
+					"method": "DELETE",
+					"header": [],
 					"url": {
-						"raw": "{{base_url}}/api/account/delete",
+						"raw": "{{base_url}}/api/users/{{user_id}}",
 						"host": [
 							"{{base_url}}"
 						],
 						"path": [
 							"api",
-							"account",
-							"delete"
+							"users",
+							"{{user_id}}"
 						]
 					},
-					"description": "現在ログイン中のユーザーアカウントを削除します。\n\n**注意:** この操作は取り消せません。実行前に必ずSign Inしてください。"
+					"description": "指定したユーザーIDのアカウントと関連する全データを削除します。認証ユーザー本人のIDのみ指定可能です。\n\n**手順:** 先に Sign In し、Get Profile で取得した `id` を `user_id` 変数に設定してください。\n\n**注意:** この操作は取り消せません。"
 				},
 				"response": []
 			}
@@ -384,8 +375,9 @@
 									"});",
 									"",
 									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('user_id', jsonData.id);",
 									"    pm.test(\"Response has profile fields\", function () {",
-									"        const jsonData = pm.response.json();",
 									"        pm.expect(jsonData).to.have.property('id');",
 									"        pm.expect(jsonData).to.have.property('email');",
 									"        pm.expect(jsonData).to.have.property('name');",
@@ -774,6 +766,11 @@
 		},
 		{
 			"key": "quest_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
 			"value": "",
 			"type": "string"
 		}

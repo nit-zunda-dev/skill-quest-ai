@@ -4,9 +4,10 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
-import { generateTaskNarrative } from '@/lib/api-client';
-import { X, Sparkles, LogOut } from 'lucide-react';
+import { generateTaskNarrative, normalizeProfileNumbers, deleteAccount } from '@/lib/api-client';
+import { X, Sparkles, LogOut, Trash2 } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
+import { useGrimoire } from '@/hooks/useGrimoire';
 import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardProps {
@@ -14,26 +15,53 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
-  const { signOut } = useAuth();
-  const [profile, setProfile] = useState<CharacterProfile>(initialProfile);
-  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest } = useQuests();
-  const [grimoire, setGrimoire] = useState<GrimoireEntry[]>([]);
-  /** 完了・ストリークはAPIにないためローカルで保持（quest id -> { completed, streak }） */
-  const [localCompletion, setLocalCompletion] = useState<Record<string, { completed: boolean; streak: number }>>({});
+  const { signOut, session } = useAuth();
+  const [profile, setProfile] = useState<CharacterProfile>(() => normalizeProfileNumbers(initialProfile));
+  const { data: serverTasks = [], isLoading: questsLoading, isError: questsError, addQuest, deleteQuest, updateQuestStatus, invalidate: invalidateQuests } = useQuests();
+  const { data: grimoire = [], isLoading: grimoireLoading, invalidate: invalidateGrimoire, generateGrimoire, isGenerating: isGeneratingGrimoire, generateResult: grimoireResult } = useGrimoire();
 
   const tasks: Task[] = useMemo(() => {
     return serverTasks.map((t) => ({
       ...t,
-      completed: localCompletion[t.id]?.completed ?? t.completed ?? false,
-      streak: localCompletion[t.id]?.streak ?? t.streak ?? 0,
+      completed: t.completed ?? false,
+      status: t.status || (t.completed ? 'done' : 'todo'),
+      streak: t.streak ?? 0,
     }));
-  }, [serverTasks, localCompletion]);
+  }, [serverTasks]);
 
   // Narrative Modal State
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
   const [narrativeComment, setNarrativeComment] = useState('');
   const [isProcessingNarrative, setIsProcessingNarrative] = useState(false);
-  const [narrativeResult, setNarrativeResult] = useState<{narrative: string, xp: number, gold: number} | null>(null);
+  const [narrativeResult, setNarrativeResult] = useState<{
+    narrative: string;
+    xp: number;
+    gold: number;
+  } | null>(null);
+
+  /** アカウント削除確認モーダル */
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountConfirmText, setDeleteAccountConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+
+  /** グリモワール生成結果モーダル */
+  const [showGrimoireModal, setShowGrimoireModal] = useState(false);
+
+  // グリモワール生成結果が来たらモーダルを表示
+  React.useEffect(() => {
+    if (grimoireResult) {
+      setShowGrimoireModal(true);
+      // プロフィールを更新
+      if (grimoireResult.profile) {
+        setProfile(normalizeProfileNumbers(grimoireResult.profile as CharacterProfile));
+      }
+    }
+  }, [grimoireResult]);
+
+  const closeGrimoireModal = () => {
+    setShowGrimoireModal(false);
+  };
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed' | 'streak'>) => {
     addQuest({ title: taskData.title, type: taskData.type, difficulty: taskData.difficulty });
@@ -54,56 +82,23 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
 
   const confirmCompletion = async () => {
     if (!completedTask) return;
-    
+
     setIsProcessingNarrative(true);
     try {
-      // 1. Generate Narrative
       const result = await generateTaskNarrative(completedTask, narrativeComment, profile);
       setNarrativeResult(result);
 
-      // 2. Update Profile (XP, Level, Gold)
-      setProfile(prev => {
-        let newXp = prev.currentXp + result.xp;
-        let newLevel = prev.level;
-        let nextXp = prev.nextLevelXp;
-        let newGold = prev.gold + result.gold;
-
-        // Level Up Logic
-        if (newXp >= nextXp) {
-          newXp -= nextXp;
-          newLevel += 1;
-          nextXp = Math.floor(nextXp * 1.2); // Simple exponential curve
-          // Maybe restore HP on level up
-        }
-
-        return {
-          ...prev,
-          level: newLevel,
-          currentXp: newXp,
-          nextLevelXp: nextXp,
-          gold: newGold
-        };
-      });
-
-      // 3. Update local completion (APIに完了状態がないためローカルで保持)
-      setLocalCompletion(prev => ({
-        ...prev,
-        [completedTask.id]: { completed: true, streak: (prev[completedTask.id]?.streak ?? completedTask.streak ?? 0) + 1 },
-      }));
-
-      // 4. Add to Grimoire
-      const newEntry: GrimoireEntry = {
-        id: Date.now().toString(),
-        date: new Date().toLocaleDateString('ja-JP'),
-        taskTitle: completedTask.title,
-        narrative: result.narrative,
-        rewardXp: result.xp,
-        rewardGold: result.gold
-      };
-      setGrimoire(prev => [...prev, newEntry]);
-
+      // バックエンドで永続化済み。レスポンスからローカル状態を更新
+      if (result.profile) {
+        setProfile(normalizeProfileNumbers(result.profile));
+      }
+      invalidateQuests();
+      invalidateGrimoire();
     } catch (e) {
-      console.error(e);
+      console.error('Failed to generate narrative', e);
+      // エラー時はフォールバックナラティブが返されるため、エラーをスローしない
+      // ただし、ユーザーにエラーが発生したことを通知するために、エラー状態を設定する
+      // （現在の実装ではgenerateTaskNarrativeがフォールバックを返すため、エラーは発生しない）
     } finally {
       setIsProcessingNarrative(false);
     }
@@ -112,6 +107,35 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
   const closeNarrativeModal = () => {
     setCompletedTask(null);
     setNarrativeResult(null);
+  };
+
+  const openDeleteAccountModal = () => {
+    setShowDeleteAccountModal(true);
+    setDeleteAccountConfirmText('');
+    setDeleteAccountError(null);
+  };
+
+  const closeDeleteAccountModal = () => {
+    if (isDeletingAccount) return;
+    setShowDeleteAccountModal(false);
+    setDeleteAccountConfirmText('');
+    setDeleteAccountError(null);
+  };
+
+  const CONFIRM_DELETE_TEXT = '削除する';
+  const handleDeleteAccount = async () => {
+    if (deleteAccountConfirmText !== CONFIRM_DELETE_TEXT || !session?.user?.id) return;
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+    try {
+      await deleteAccount(session.user.id);
+      await signOut();
+      closeDeleteAccountModal();
+    } catch (e) {
+      setDeleteAccountError(e instanceof Error ? e.message : 'アカウント削除に失敗しました');
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -128,11 +152,20 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
         <button
           type="button"
           onClick={() => signOut()}
-          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300 hover:text-slate-100 rounded-lg text-sm transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-slate-600 hover:bg-slate-500 border border-slate-500 text-slate-100 rounded-lg text-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
           aria-label="ログアウト"
         >
           <LogOut className="w-4 h-4" />
           ログアウト
+        </button>
+        <button
+          type="button"
+          onClick={openDeleteAccountModal}
+          className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-transparent hover:bg-red-950/30 border border-red-800/50 text-red-400 hover:text-red-300 rounded-lg text-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          aria-label="アカウントを削除"
+        >
+          <Trash2 className="w-4 h-4" />
+          アカウント削除
         </button>
       </div>
 
@@ -153,11 +186,18 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
               onAddTask={addTask} 
               onCompleteTask={initiateCompleteTask}
               onDeleteTask={deleteTask}
+              onUpdateStatus={(taskId, status) => updateQuestStatus({ id: taskId, status })}
             />
           )}
         </div>
         <div className="h-64 md:h-80">
-           <Grimoire entries={grimoire} />
+          {grimoireLoading ? (
+            <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-4 h-full flex items-center justify-center text-slate-400 text-sm">
+              グリモワールを読み込み中...
+            </div>
+          ) : (
+            <Grimoire entries={grimoire} onGenerate={generateGrimoire} isGenerating={isGeneratingGrimoire} />
+          )}
         </div>
       </div>
 
@@ -205,7 +245,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
                 <p className="text-slate-300 italic mb-6 leading-relaxed bg-slate-900/50 p-4 rounded border border-slate-700/50">
                   "{narrativeResult.narrative}"
                 </p>
-                <div className="flex justify-center space-x-8 mb-8">
+                <div className="flex justify-center space-x-6 mb-6 flex-wrap">
                   <div className="text-center">
                     <div className="text-sm text-slate-500 uppercase">EXP</div>
                     <div className="text-2xl font-bold text-yellow-400">+{narrativeResult.xp}</div>
@@ -223,6 +263,139 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* グリモワール生成結果モーダル */}
+      {showGrimoireModal && grimoireResult && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onClick={closeGrimoireModal} className="absolute top-4 right-4 text-slate-500 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+            
+            <div className="text-center animate-fade-in-up">
+              <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500">
+                <Sparkles className="w-8 h-8 text-indigo-400" />
+              </div>
+              <h3 className="text-2xl font-display font-bold text-white mb-2">冒険の記録</h3>
+              <p className="text-slate-300 italic mb-6 leading-relaxed bg-slate-900/50 p-4 rounded border border-slate-700/50">
+                "{grimoireResult.grimoireEntry.narrative}"
+              </p>
+              
+              {/* 報酬表示 */}
+              <div className="flex justify-center space-x-6 mb-6 flex-wrap">
+                <div className="text-center">
+                  <div className="text-sm text-slate-500 uppercase">EXP</div>
+                  <div className="text-2xl font-bold text-yellow-400">+{grimoireResult.grimoireEntry.rewardXp}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm text-slate-500 uppercase">GOLD</div>
+                  <div className="text-2xl font-bold text-yellow-400">+{grimoireResult.grimoireEntry.rewardGold}</div>
+                </div>
+              </div>
+
+              {/* プロフィール変化表示 */}
+              {grimoireResult.profile && grimoireResult.oldProfile && (
+                <div className="mb-6 p-4 bg-slate-900/50 rounded border border-slate-700">
+                  <div className="text-xs text-slate-500 uppercase mb-3 text-center">ステータス変化</div>
+                  <div className="space-y-2">
+                    {/* XP */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">経験値</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500">{Math.round(Number(grimoireResult.oldProfile.currentXp) || 0)}</span>
+                        <span className="text-slate-600">→</span>
+                        <span className="text-yellow-400 font-bold">{Math.round(Number(grimoireResult.profile.currentXp) || 0)}</span>
+                        <span className="text-yellow-400 text-sm">(+{grimoireResult.grimoireEntry.rewardXp})</span>
+                      </div>
+                    </div>
+                    {/* Level */}
+                    {Number(grimoireResult.profile.level) !== Number(grimoireResult.oldProfile.level) && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">レベル</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-500">Lv.{Math.round(Number(grimoireResult.oldProfile.level) || 1)}</span>
+                          <span className="text-slate-600">→</span>
+                          <span className="text-indigo-400 font-bold">Lv.{Math.round(Number(grimoireResult.profile.level) || 1)}</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Gold */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">ゴールド</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500">{Math.round(Number(grimoireResult.oldProfile.gold) || 0)}</span>
+                        <span className="text-slate-600">→</span>
+                        <span className="text-yellow-400 font-bold">{Math.round(Number(grimoireResult.profile.gold) || 0)}</span>
+                        <span className="text-yellow-400 text-sm">(+{grimoireResult.grimoireEntry.rewardGold})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <button
+                onClick={closeGrimoireModal}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-8 rounded-lg transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* アカウント削除確認モーダル */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-800 border border-red-900/50 rounded-xl max-w-md w-full p-6 shadow-2xl relative">
+            <button
+              onClick={closeDeleteAccountModal}
+              disabled={isDeletingAccount}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white disabled:opacity-50"
+              aria-label="閉じる"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="flex items-center gap-2 mb-4 text-red-400">
+              <Trash2 className="w-6 h-6 flex-shrink-0" />
+              <h3 className="text-xl font-bold text-white">アカウントを削除</h3>
+            </div>
+            <p className="text-slate-300 text-sm mb-4">
+              アカウントと紐づくすべてのデータ（プロフィール・クエスト・グリモワールなど）が完全に削除され、元に戻せません。本当に削除する場合は、下の欄に「<strong className="text-red-400">{CONFIRM_DELETE_TEXT}</strong>」と入力してください。
+            </p>
+            <input
+              type="text"
+              value={deleteAccountConfirmText}
+              onChange={(e) => setDeleteAccountConfirmText(e.target.value)}
+              placeholder={CONFIRM_DELETE_TEXT}
+              disabled={isDeletingAccount}
+              className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none mb-4"
+              aria-label="削除確認のため「削除する」と入力"
+            />
+            {deleteAccountError && (
+              <p className="text-red-400 text-sm mb-4" role="alert">{deleteAccountError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteAccountModal}
+                disabled={isDeletingAccount}
+                className="flex-1 py-2 px-4 bg-slate-600 hover:bg-slate-500 text-slate-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountConfirmText !== CONFIRM_DELETE_TEXT || isDeletingAccount}
+                className="flex-1 py-2 px-4 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeletingAccount ? '削除中...' : 'アカウントを削除する'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -29,28 +29,17 @@ export interface GenesisFormData {
   genre: Genre;
 }
 
-export interface CharacterStats {
-  strength: number; // Health/Fitness
-  intelligence: number; // Learning/Work
-  charisma: number; // Social/Connection
-  willpower: number; // Consistency/Habits
-  luck: number; // Random factor
-}
-
 export interface CharacterProfile {
   name: string;
   className: string;
   title: string;
-  stats: CharacterStats;
   prologue: string;
-  startingSkill: string;
   themeColor: string;
   level: number;
   currentXp: number;
   nextLevelXp: number;
-  hp: number;
-  maxHp: number;
   gold: number;
+  genre: Genre;
 }
 
 export interface Task {
@@ -59,6 +48,7 @@ export interface Task {
   type: TaskType;
   difficulty: Difficulty;
   completed: boolean;
+  status?: 'todo' | 'in_progress' | 'done';
   streak?: number; // For Habits/Dailies
 }
 

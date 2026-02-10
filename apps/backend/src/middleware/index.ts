@@ -18,7 +18,7 @@ export function setupMiddleware(app: Hono<{ Bindings: Bindings }>) {
         // 本番環境では環境変数から許可オリジンを取得
         return origin || '*';
       },
-      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
       exposeHeaders: ['Content-Length'],
       maxAge: 86400,

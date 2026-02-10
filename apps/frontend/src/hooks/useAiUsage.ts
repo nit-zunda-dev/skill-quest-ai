@@ -1,20 +1,11 @@
 /**
- * AI利用残り回数取得用カスタムフック（タスク 9.3）
- * - GET /api/ai/usage で残り回数・制限情報を取得
- * - 制限到達時にボタン無効化やメッセージ表示に利用
+ * AI利用状況取得用カスタムフック
+ * - useQuery でAI利用残り回数を取得
  */
 import { useQuery } from '@tanstack/react-query';
 import { client } from '@/lib/client';
 
-export type AiUsage = {
-  characterGenerated: boolean;
-  narrativeRemaining: number;
-  partnerRemaining: number;
-  chatRemaining: number;
-  limits: { narrative: number; partner: number; chat: number };
-};
-
-const AI_USAGE_QUERY_KEY = ['ai', 'usage'] as const;
+const AI_USAGE_QUERY_KEY = ['ai-usage'] as const;
 
 type AiUsageClient = {
   api: {
@@ -26,18 +17,39 @@ type AiUsageClient = {
   };
 };
 
-async function fetchAiUsage(): Promise<AiUsage> {
+interface AiUsageResponse {
+  characterGenerated: boolean;
+  narrativeRemaining: number;
+  partnerRemaining: number;
+  chatRemaining: number;
+  grimoireRemaining: number;
+  limits: {
+    narrative: number;
+    partner: number;
+    chat: number;
+    grimoire: number;
+  };
+}
+
+async function fetchAiUsage(): Promise<AiUsageResponse> {
   const res = await (client as AiUsageClient).api.ai.usage.$get();
   if (!res.ok) {
     const err = await res.text();
     throw new Error(err || `Failed to fetch AI usage: ${res.status}`);
   }
-  return res.json();
+  return (await res.json()) as AiUsageResponse;
 }
 
 export function useAiUsage() {
-  return useQuery({
+  const query = useQuery({
     queryKey: AI_USAGE_QUERY_KEY,
     queryFn: fetchAiUsage,
+    refetchInterval: 30000, // 30秒ごとに再取得
   });
+
+  return {
+    ...query,
+    grimoireRemaining: query.data?.grimoireRemaining ?? 0,
+    canGenerateGrimoire: (query.data?.grimoireRemaining ?? 0) > 0,
+  };
 }

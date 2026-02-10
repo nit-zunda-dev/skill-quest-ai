@@ -438,7 +438,7 @@
     - ログアウト機能が正常に動作することを確認（実際にログアウトを試す）
 
 - [ ] 11. 既存Gemini API呼び出しの置き換え
-- [ ] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える
+- [x] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える
   - `apps/frontend/services/geminiService.ts`を`apps/frontend/lib/api-client.ts`に置き換える
   - `generateCharacter`関数をHono RPCクライアントを使用する実装に変更する
   - `generateTaskNarrative`関数をバックエンドAPI呼び出しに変更する
@@ -452,7 +452,7 @@
     - TypeScriptの型チェックが通ることを確認
     - アプリケーションが正常に動作することを確認（ブラウザで確認）
 
-- [ ] 11.2 既存コンポーネントのAPI統合を更新する
+- [x] 11.2 既存コンポーネントのAPI統合を更新する
   - `App.tsx`の`generateCharacter`呼び出しを新しいAPIクライアントに更新する
   - `Dashboard.tsx`の`generateTaskNarrative`と`generatePartnerMessage`呼び出しを更新する
   - エラーハンドリングを適切に実装する
@@ -464,7 +464,7 @@
     - Gemini APIへの直接呼び出しが完全に削除されていることを確認（`grep -r "gemini" apps/frontend`で確認）
 
 - [ ] 12. セキュリティ対策の実装
-- [ ] 12.1 レート制限ミドルウェアを実装する
+- [x] 12.1 レート制限ミドルウェアを実装する
   - 7.8はアカウント別・日次の利用制限。本タスクは短時間のレート制限（連打防止）を担当する
   - AIエンドポイント用のレート制限ミドルウェアを作成する
   - リクエスト頻度を制限し、超過時に適切なエラーレスポンスを返す
@@ -476,7 +476,7 @@
     - レート制限を超えたリクエストで適切なエラーレスポンス（429 Too Many Requests）が返されることを確認（複数のリクエストを短時間で送信して確認）
     - Cloudflare WAFの設定を確認（Cloudflare Dashboardで確認）
 
-- [ ] 12.2 入力バリデーションを強化する
+- [x] 12.2 入力バリデーションを強化する
   - すべてのAPIエンドポイントでZodバリデーションを適用する
   - バリデーションエラーメッセージを適切に返す
   - _Requirements: 11.2_

@@ -19,6 +19,7 @@ const mockQuests = [
     difficulty: 'EASY',
     completed: false,
     streak: 0,
+    status: 'todo',
   },
 ];
 

@@ -14,7 +14,7 @@ import {
 /** テスト用 D1 互換モック（user_character_generated / ai_daily_usage 用） */
 function createMockD1() {
   const characterRows: { user_id: string }[] = [];
-  const usageRows: Map<string, { narrative: number; partner: number; chat: number }> = new Map();
+  const usageRows: Map<string, { narrative: number; partner: number; chat: number; grimoire: number }> = new Map();
 
   const run = async (sql: string, ...params: unknown[]) => {
     const key = (params[0] as string) + '-' + (params[1] as string);
@@ -23,26 +23,32 @@ function createMockD1() {
       return { success: true, meta: {} };
     }
     if (sql.includes('INSERT INTO ai_daily_usage')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0 };
-      if (sql.includes('1, 0, 0)') && sql.includes('narrative_count')) cur.narrative = 1;
-      else if (sql.includes('0, 1, 0)') && sql.includes('partner_count')) cur.partner = 1;
-      else if (sql.includes('0, 0, 1)') && sql.includes('chat_count')) cur.chat = (cur.chat || 0) + 1;
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
+      if (sql.includes('1, 0, 0, 0)') && sql.includes('narrative_count')) cur.narrative = 1;
+      else if (sql.includes('0, 1, 0, 0)') && sql.includes('partner_count')) cur.partner = 1;
+      else if (sql.includes('0, 0, 1, 0)') && sql.includes('chat_count')) cur.chat = (cur.chat || 0) + 1;
+      else if (sql.includes('0, 0, 0, 1)') && sql.includes('grimoire_count')) cur.grimoire = 1;
       usageRows.set(key, cur);
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET narrative_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
       usageRows.set(key, { ...cur, narrative: 1 });
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET partner_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
       usageRows.set(key, { ...cur, partner: 1 });
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET chat_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
       usageRows.set(key, { ...cur, chat: cur.chat + 1 });
+      return { success: true, meta: {} };
+    }
+    if (sql.includes('DO UPDATE SET grimoire_count')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
+      usageRows.set(key, { ...cur, grimoire: 1 });
       return { success: true, meta: {} };
     }
     return { success: true, meta: {} };
@@ -61,6 +67,7 @@ function createMockD1() {
             narrative_count: row.narrative,
             partner_count: row.partner,
             chat_count: row.chat,
+            grimoire_count: row.grimoire,
           }
         : null;
     }
@@ -108,7 +115,7 @@ describe('ai-usage', () => {
       const db = mock as unknown as D1Database;
       const today = getTodayUtc();
       const usage = await getDailyUsage(db, 'user-1', today);
-      expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0 });
+      expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0 });
     });
 
     it('returns updated counts after recordNarrative, recordPartner, recordChat', async () => {

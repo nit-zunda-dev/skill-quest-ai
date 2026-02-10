@@ -7,9 +7,12 @@
  */
 /// <reference types="vitest" />
 // @vitest-environment jsdom
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { useAuth } from './useAuth';
+import { useAuth, AuthProvider } from './useAuth';
+
+const wrapper = ({ children }: { children: React.ReactNode }) => <AuthProvider>{children}</AuthProvider>;
 
 const mockSession = {
   user: { id: 'u1', email: 'u@ex.com', name: 'User' },
@@ -32,7 +35,7 @@ describe('useAuth', () => {
 
   it('マウント時に getSession が呼ばれる', async () => {
     mockGetSession.mockResolvedValue({ data: null });
-    renderHook(() => useAuth());
+    renderHook(() => useAuth(), { wrapper });
     expect(mockGetSession).toHaveBeenCalledTimes(1);
     await waitFor(() => {
       expect(mockGetSession).toHaveBeenCalled();
@@ -41,7 +44,7 @@ describe('useAuth', () => {
 
   it('getSession がセッションを返すと isAuthenticated が true になる', async () => {
     mockGetSession.mockResolvedValue({ data: mockSession });
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -52,7 +55,7 @@ describe('useAuth', () => {
 
   it('getSession が null を返すと isAuthenticated が false になる', async () => {
     mockGetSession.mockResolvedValue({ data: null });
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
@@ -63,7 +66,7 @@ describe('useAuth', () => {
   it('signOut を呼ぶと authClient.signOut が呼ばれセッションがクリアされる', async () => {
     mockGetSession.mockResolvedValue({ data: mockSession });
     mockSignOut.mockResolvedValue(undefined);
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => {
       expect(result.current.isAuthenticated).toBe(true);
     });

@@ -7,18 +7,24 @@ import {
   narrativeRequestSchema,
   partnerMessageRequestSchema,
   chatRequestSchema,
+  Genre,
 } from '@skill-quest/shared';
 import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
 import { prepareUserPrompt } from '../services/prompt-safety';
 import {
   hasCharacterGenerated,
   recordCharacterGenerated,
+  saveCharacterProfile,
+  getCharacterProfile,
+  updateCharacterProfile,
   getDailyUsage,
   recordNarrative,
   recordPartner,
   recordChat,
+  completeQuest,
   getTodayUtc,
   CHAT_DAILY_LIMIT,
+  createGrimoireEntry,
 } from '../services/ai-usage';
 
 type AiVariables = { user: AuthUser };
@@ -46,13 +52,25 @@ aiRouter.get('/usage', async (c) => {
   const narrativeRemaining = Math.max(0, 1 - usage.narrativeCount);
   const partnerRemaining = Math.max(0, 1 - usage.partnerCount);
   const chatRemaining = Math.max(0, CHAT_DAILY_LIMIT - usage.chatCount);
+  const grimoireRemaining = Math.max(0, 1 - usage.grimoireCount);
   return c.json({
     characterGenerated,
     narrativeRemaining,
     partnerRemaining,
     chatRemaining,
-    limits: { narrative: 1, partner: 1, chat: CHAT_DAILY_LIMIT },
+    grimoireRemaining,
+    limits: { narrative: 1, partner: 1, chat: CHAT_DAILY_LIMIT, grimoire: 1 },
   });
+});
+
+/** 保存済みキャラクタープロフィール取得（ログイン時ダッシュボード表示用） */
+aiRouter.get('/character', async (c) => {
+  const user = c.get('user');
+  const profile = await getCharacterProfile(c.env.DB, user.id);
+  if (profile == null) {
+    return c.json({ error: 'Character not generated' }, 404);
+  }
+  return c.json(profile);
 });
 
 aiRouter.post(
@@ -72,6 +90,18 @@ aiRouter.post(
     const service = createAiService(c.env);
     const profile = await service.generateCharacter(sanitized);
     await recordCharacterGenerated(c.env.DB, user.id);
+    await saveCharacterProfile(c.env.DB, user.id, profile);
+    
+    // プロローグを第一回のグリモワールとして保存
+    if (profile.prologue) {
+      await createGrimoireEntry(c.env.DB, user.id, {
+        taskTitle: 'プロローグ',
+        narrative: profile.prologue,
+        rewardXp: 0,
+        rewardGold: 0,
+      });
+    }
+    
     return c.json(profile);
   }
 );
@@ -94,10 +124,61 @@ aiRouter.post(
       if (!commentResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: commentResult.reason }, 400);
       sanitized.userComment = commentResult.sanitized;
     }
+    // プロフィール取得（genreを取得するため）
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let genre: Genre | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+        genre = p.genre as Genre;
+      }
+    }
+
     const service = createAiService(c.env);
-    const result = await service.generateNarrative(sanitized);
+    const result = await service.generateNarrative(sanitized, genre);
+
+    // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
+    let updatedProfile = profileRaw as Record<string, unknown> | null;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      let newXp = (Number(p.currentXp) || 0) + result.rewardXp;
+      let newLevel = Number(p.level) || 1;
+      let nextXp = Number(p.nextLevelXp) || 100;
+      const newGold = (Number(p.gold) || 0) + result.rewardGold;
+
+      while (newXp >= nextXp) {
+        newXp -= nextXp;
+        newLevel += 1;
+        nextXp = Math.floor(nextXp * 1.2);
+      }
+
+      await updateCharacterProfile(c.env.DB, user.id, {
+        currentXp: newXp,
+        nextLevelXp: nextXp,
+        level: newLevel,
+        gold: newGold,
+      });
+      updatedProfile = { 
+        ...p, 
+        currentXp: newXp, 
+        nextLevelXp: nextXp, 
+        level: newLevel, 
+        gold: newGold,
+      };
+    }
+
+    // クエスト完了マーク
+    await completeQuest(c.env.DB, user.id, data.taskId);
+
     await recordNarrative(c.env.DB, user.id, today);
-    return c.json(result);
+
+    return c.json({
+      narrative: result.narrative,
+      rewardXp: result.rewardXp,
+      rewardGold: result.rewardGold,
+      profile: updatedProfile ?? undefined,
+      questCompletedAt: Date.now(),
+    });
   }
 );
 
@@ -120,8 +201,18 @@ aiRouter.post(
         sanitized[key] = result.sanitized;
       }
     }
+    // プロフィール取得（genreを取得するため）
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let genre: Genre | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+        genre = p.genre as Genre;
+      }
+    }
+
     const service = createAiService(c.env);
-    const message = await service.generatePartnerMessage(sanitized);
+    const message = await service.generatePartnerMessage(sanitized, genre);
     await recordPartner(c.env.DB, user.id, today);
     return c.json({ message });
   }
@@ -139,27 +230,100 @@ aiRouter.post(
     const data = c.req.valid('json');
     const msgResult = prepareUserPrompt(data.message);
     if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
-    const messages = [{ role: 'user' as const, content: msgResult.sanitized }];
+
+    // プロフィール取得（genreを取得するため）
+    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+    let genre: Genre | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+        genre = p.genre as Genre;
+      }
+    }
+
+    // システムメッセージに世界観を含める
+    const systemMessage = genre 
+      ? `あなたは${genre}世界観のRPGのゲームマスターです。プレイヤーの質問に答えてください。`
+      : 'あなたはRPGのゲームマスターです。プレイヤーの質問に答えてください。';
+    const messages = [
+      { role: 'system' as const, content: systemMessage },
+      { role: 'user' as const, content: msgResult.sanitized }
+    ];
 
     await recordChat(c.env.DB, user.id, today);
 
     return streamText(c, async (stream) => {
       try {
         const ai = c.env.AI as {
-          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<{ response?: string }>>;
+          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<unknown>>;
         };
         const response = await ai.run(MODEL_LLAMA_31_8B, {
           messages,
           stream: true,
         });
-        const iterable = response;
-        for await (const chunk of iterable) {
-          if (chunk?.response) {
-            await stream.write(chunk.response);
+
+        // Workers AI の stream:true は Uint8Array の AsyncIterable を返し、
+        // 中身は SSE 形式 ("data: {\"response\":\"...\",\"p\":\"...\"}\n\n") のバイト列。
+        // 1 つの SSE 行が複数チャンクに分割されるため、バッファリングして解析する。
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let hasContent = false;
+
+        for await (const chunk of response) {
+          // Uint8Array → 文字列にデコードしてバッファに追加
+          if (chunk instanceof Uint8Array) {
+            buffer += decoder.decode(chunk, { stream: true });
+          } else if (chunk && typeof chunk === 'object') {
+            // オブジェクトが直接来た場合（ローカルテストなど）
+            const obj = chunk as Record<string, unknown>;
+            if ('response' in obj && typeof obj.response === 'string' && obj.response) {
+              hasContent = true;
+              await stream.write(obj.response);
+              continue;
+            }
+          }
+
+          // バッファから完全な SSE 行を抽出して処理
+          // SSE 形式: "data: {JSON}\n\n"
+          let boundary: number;
+          while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+            const rawLine = buffer.slice(0, boundary).trim();
+            buffer = buffer.slice(boundary + 2);
+
+            if (rawLine === 'data: [DONE]') continue;
+            if (!rawLine.startsWith('data: ')) continue;
+
+            try {
+              const data = JSON.parse(rawLine.slice(6));
+              if (data?.response && typeof data.response === 'string') {
+                hasContent = true;
+                await stream.write(data.response);
+              }
+            } catch {
+              // 不完全な JSON は無視
+            }
           }
         }
+
+        // バッファに残ったデータを処理
+        const remaining = buffer.trim();
+        if (remaining.startsWith('data: ') && remaining !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(remaining.slice(6));
+            if (data?.response && typeof data.response === 'string') {
+              hasContent = true;
+              await stream.write(data.response);
+            }
+          } catch {
+            // 無視
+          }
+        }
+
+        if (!hasContent) {
+          await stream.write('申し訳ありません。応答を生成できませんでした。');
+        }
       } catch (err) {
-        console.error('Chat stream error:', err);
+        console.error('[Chat Stream] Error:', err);
         await stream.write('申し訳ありません。一時的に応答を生成できませんでした。');
       } finally {
         await stream.close();

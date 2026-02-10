@@ -62,13 +62,26 @@ export const skills = sqliteTable('skills', {
 
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   skillId: text('skill_id').references(() => skills.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   scenario: text('scenario'),
   difficulty: integer('difficulty').notNull(), // 1-5の範囲
   winCondition: text('win_condition', { mode: 'json' }), // JSON形式で勝利条件を格納
+  status: text('status').default('todo'), // 'todo' | 'in_progress' | 'done'
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
+});
+
+export const grimoireEntries = sqliteTable('grimoire_entries', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  taskTitle: text('task_title').notNull(),
+  narrative: text('narrative').notNull(),
+  rewardXp: integer('reward_xp').notNull().default(0),
+  rewardGold: integer('reward_gold').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const userProgress = sqliteTable('user_progress', {
@@ -99,16 +112,32 @@ export const userCharacterGenerated = sqliteTable('user_character_generated', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-/** 日次AI利用回数（ナラティブ・パートナー・チャット） */
+/** ユーザーキャラクタープロフィール（サインアップ時生成・ログイン時に取得） */
+export const userCharacterProfile = sqliteTable('user_character_profile', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  profile: text('profile', { mode: 'json' }).notNull(), // CharacterProfile を JSON で保存
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+/** 日次AI利用回数（ナラティブ・パートナー・チャット・グリモワール） */
 export const aiDailyUsage = sqliteTable('ai_daily_usage', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   dateUtc: text('date_utc').notNull(), // YYYY-MM-DD (UTC)
   narrativeCount: integer('narrative_count').notNull().default(0),
   partnerCount: integer('partner_count').notNull().default(0),
   chatCount: integer('chat_count').notNull().default(0),
+  grimoireCount: integer('grimoire_count').notNull().default(0),
 }, (table) => ({
   pk: primaryKey({ columns: [table.userId, table.dateUtc] }),
 }));
+
+/** レート制限ログ（短時間の連打防止用） */
+export const rateLimitLogs = sqliteTable('rate_limit_logs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull(), // エンドポイントパス（例: '/api/ai/generate-character'）
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
 
 // リレーション定義
 
@@ -116,6 +145,8 @@ export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   progress: many(userProgress),
+  quests: many(quests),
+  grimoireEntries: many(grimoireEntries),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -137,11 +168,22 @@ export const skillsRelations = relations(skills, ({ many }) => ({
 }));
 
 export const questsRelations = relations(quests, ({ one, many }) => ({
+  user: one(user, {
+    fields: [quests.userId],
+    references: [user.id],
+  }),
   skill: one(skills, {
     fields: [quests.skillId],
     references: [skills.id],
   }),
   progress: many(userProgress),
+}));
+
+export const grimoireEntriesRelations = relations(grimoireEntries, ({ one }) => ({
+  user: one(user, {
+    fields: [grimoireEntries.userId],
+    references: [user.id],
+  }),
 }));
 
 export const userProgressRelations = relations(userProgress, ({ one, many }) => ({
@@ -171,8 +213,11 @@ export const schema = {
   verification,
   skills,
   quests,
+  grimoireEntries,
   userProgress,
   interactionLogs,
   userCharacterGenerated,
+  userCharacterProfile,
   aiDailyUsage,
+  rateLimitLogs,
 };
