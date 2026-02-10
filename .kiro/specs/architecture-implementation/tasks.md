@@ -438,7 +438,7 @@
     - ログアウト機能が正常に動作することを確認（実際にログアウトを試す）
 
 - [ ] 11. 既存Gemini API呼び出しの置き換え
-- [ ] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える
+- [x] 11.1 geminiService.tsをバックエンドAPI呼び出しに置き換える
   - `apps/frontend/services/geminiService.ts`を`apps/frontend/lib/api-client.ts`に置き換える
   - `generateCharacter`関数をHono RPCクライアントを使用する実装に変更する
   - `generateTaskNarrative`関数をバックエンドAPI呼び出しに変更する
