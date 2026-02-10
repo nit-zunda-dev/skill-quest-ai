@@ -255,20 +255,75 @@ aiRouter.post(
     return streamText(c, async (stream) => {
       try {
         const ai = c.env.AI as {
-          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<{ response?: string }>>;
+          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<unknown>>;
         };
         const response = await ai.run(MODEL_LLAMA_31_8B, {
           messages,
           stream: true,
         });
-        const iterable = response;
-        for await (const chunk of iterable) {
-          if (chunk?.response) {
-            await stream.write(chunk.response);
+
+        // Workers AI の stream:true は Uint8Array の AsyncIterable を返し、
+        // 中身は SSE 形式 ("data: {\"response\":\"...\",\"p\":\"...\"}\n\n") のバイト列。
+        // 1 つの SSE 行が複数チャンクに分割されるため、バッファリングして解析する。
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let hasContent = false;
+
+        for await (const chunk of response) {
+          // Uint8Array → 文字列にデコードしてバッファに追加
+          if (chunk instanceof Uint8Array) {
+            buffer += decoder.decode(chunk, { stream: true });
+          } else if (chunk && typeof chunk === 'object') {
+            // オブジェクトが直接来た場合（ローカルテストなど）
+            const obj = chunk as Record<string, unknown>;
+            if ('response' in obj && typeof obj.response === 'string' && obj.response) {
+              hasContent = true;
+              await stream.write(obj.response);
+              continue;
+            }
+          }
+
+          // バッファから完全な SSE 行を抽出して処理
+          // SSE 形式: "data: {JSON}\n\n"
+          let boundary: number;
+          while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+            const rawLine = buffer.slice(0, boundary).trim();
+            buffer = buffer.slice(boundary + 2);
+
+            if (rawLine === 'data: [DONE]') continue;
+            if (!rawLine.startsWith('data: ')) continue;
+
+            try {
+              const data = JSON.parse(rawLine.slice(6));
+              if (data?.response && typeof data.response === 'string') {
+                hasContent = true;
+                await stream.write(data.response);
+              }
+            } catch {
+              // 不完全な JSON は無視
+            }
           }
         }
+
+        // バッファに残ったデータを処理
+        const remaining = buffer.trim();
+        if (remaining.startsWith('data: ') && remaining !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(remaining.slice(6));
+            if (data?.response && typeof data.response === 'string') {
+              hasContent = true;
+              await stream.write(data.response);
+            }
+          } catch {
+            // 無視
+          }
+        }
+
+        if (!hasContent) {
+          await stream.write('申し訳ありません。応答を生成できませんでした。');
+        }
       } catch (err) {
-        console.error('Chat stream error:', err);
+        console.error('[Chat Stream] Error:', err);
         await stream.write('申し訳ありません。一時的に応答を生成できませんでした。');
       } finally {
         await stream.close();

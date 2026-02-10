@@ -32,24 +32,26 @@ const PartnerWidget: React.FC = () => {
             {messages.length === 0 && !isLoading && (
               <p className="text-sm text-slate-500">メッセージを送信して会話を始めましょう。</p>
             )}
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`text-sm leading-relaxed break-words ${
-                  msg.role === 'user' ? 'text-right ml-8' : 'text-left mr-8'
-                }`}
-              >
-                <span
-                  className={
-                    msg.role === 'user'
-                      ? 'inline-block bg-indigo-600/80 text-white px-3 py-1.5 rounded-lg rounded-tr-none'
-                      : 'inline-block bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg rounded-tl-none'
-                  }
+            {messages
+              .filter((msg) => msg.content.trim() !== '')
+              .map((msg, i) => (
+                <div
+                  key={i}
+                  className={`text-sm leading-relaxed break-words ${
+                    msg.role === 'user' ? 'text-right ml-8' : 'text-left mr-8'
+                  }`}
                 >
-                  {msg.content}
-                </span>
-              </div>
-            ))}
+                  <span
+                    className={
+                      msg.role === 'user'
+                        ? 'inline-block bg-indigo-600/80 text-white px-3 py-1.5 rounded-lg rounded-tr-none'
+                        : 'inline-block bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg rounded-tl-none'
+                    }
+                  >
+                    {msg.content}
+                  </span>
+                </div>
+              ))}
             {isLoading && (
               <div className="flex space-x-1 justify-start py-2">
                 <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" />
