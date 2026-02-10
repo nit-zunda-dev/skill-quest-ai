@@ -27,18 +27,20 @@ function createMockD1ForAiUsage(overrides?: {
   narrativeCount?: number;
   partnerCount?: number;
   chatCount?: number;
+  grimoireCount?: number;
 }) {
   const hasCharacter = overrides?.hasCharacter ?? false;
   const storedProfile = overrides?.storedProfile ?? null;
   const narrativeCount = overrides?.narrativeCount ?? 0;
   const partnerCount = overrides?.partnerCount ?? 0;
   const chatCount = overrides?.chatCount ?? 0;
+  const grimoireCount = overrides?.grimoireCount ?? 0;
   const first = async (sql: string, ...params: unknown[]) => {
     if (sql.includes('user_character_generated')) return hasCharacter ? { user_id: params[0] } : null;
     if (sql.includes('user_character_profile') && sql.includes('profile'))
       return storedProfile != null ? { profile: JSON.stringify(storedProfile) } : null;
     if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
-      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount };
+      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount, grimoire_count: grimoireCount };
     return null;
   };
   const run = async () => ({ success: true, meta: {} });
@@ -319,13 +321,15 @@ describe('ai router', () => {
         narrativeRemaining: number;
         partnerRemaining: number;
         chatRemaining: number;
-        limits: { narrative: number; partner: number; chat: number };
+        grimoireRemaining: number;
+        limits: { narrative: number; partner: number; chat: number; grimoire: number };
       };
       expect(body.characterGenerated).toBe(false);
       expect(body.narrativeRemaining).toBe(1);
       expect(body.partnerRemaining).toBe(1);
       expect(body.chatRemaining).toBe(10);
-      expect(body.limits).toEqual({ narrative: 1, partner: 1, chat: 10 });
+      expect(body.grimoireRemaining).toBe(1);
+      expect(body.limits).toEqual({ narrative: 1, partner: 1, chat: 10, grimoire: 1 });
     });
 
     it('returns correct remaining when usage recorded', async () => {
@@ -346,13 +350,16 @@ describe('ai router', () => {
         narrativeRemaining: number;
         partnerRemaining: number;
         chatRemaining: number;
-        limits: { narrative: number; partner: number; chat: number };
+        grimoireRemaining: number;
+        limits: { narrative: number; partner: number; chat: number; grimoire: number };
       };
       expect(body.characterGenerated).toBe(true);
       expect(body.narrativeRemaining).toBe(0);
       expect(body.partnerRemaining).toBe(0);
       expect(body.chatRemaining).toBe(7);
+      expect(body.grimoireRemaining).toBe(1);
       expect(body.limits.chat).toBe(10);
+      expect(body.limits.grimoire).toBe(1);
     });
   });
 });
