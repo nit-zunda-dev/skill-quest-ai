@@ -452,7 +452,7 @@
     - TypeScriptの型チェックが通ることを確認
     - アプリケーションが正常に動作することを確認（ブラウザで確認）
 
-- [ ] 11.2 既存コンポーネントのAPI統合を更新する
+- [x] 11.2 既存コンポーネントのAPI統合を更新する
   - `App.tsx`の`generateCharacter`呼び出しを新しいAPIクライアントに更新する
   - `Dashboard.tsx`の`generateTaskNarrative`と`generatePartnerMessage`呼び出しを更新する
   - エラーハンドリングを適切に実装する

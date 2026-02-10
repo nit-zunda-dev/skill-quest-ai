@@ -41,8 +41,11 @@ const App: React.FC = () => {
       setProfile(result);
       setGenesisStep('RESULT');
     } catch (error) {
-      console.error('Failed to generate', error);
+      console.error('Failed to generate character', error);
+      // エラー時はQUESTIONSステップに戻す（ユーザーが再試行できるように）
       setGenesisStep('QUESTIONS');
+      // エラーメッセージはgenerateCharacter内でフォールバックプロフィールを返すため、
+      // ここではエラーをスローしない（フォールバックプロフィールが使用される）
     }
   };
 

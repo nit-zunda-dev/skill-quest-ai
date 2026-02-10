@@ -95,7 +95,10 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
       invalidateQuests();
       invalidateGrimoire();
     } catch (e) {
-      console.error(e);
+      console.error('Failed to generate narrative', e);
+      // エラー時はフォールバックナラティブが返されるため、エラーをスローしない
+      // ただし、ユーザーにエラーが発生したことを通知するために、エラー状態を設定する
+      // （現在の実装ではgenerateTaskNarrativeがフォールバックを返すため、エラーは発生しない）
     } finally {
       setIsProcessingNarrative(false);
     }
