@@ -199,10 +199,12 @@ pnpm exec wrangler d1 execute skill-quest-db-production --env production --remot
 
 ## 6. Cloudflare Pages と Workers の統合設定
 
-- **バックエンド（API）**: Cloudflare Workers にデプロイし、`wrangler deploy`（本番）または `wrangler deploy --env preview`（プレビュー）で公開します。
+- **バックエンド（API）**: Cloudflare Workers にデプロイします。Git 連携による自動デプロイを設定することを推奨します（セクション6.2参照）。手動デプロイも可能です（セクション6.1参照）。
 - **フロントエンド**: Cloudflare Pages にデプロイし、Pagesの「設定」で **Environment variables** に `VITE_API_URL`（またはプロジェクトで使用している変数名）を設定し、対応するWorkerのURL（例: `https://skill-quest-backend.<your-subdomain>.workers.dev`）を指定します。
 
-### 6.1 Workers のデプロイ
+### 6.1 Workers の手動デプロイ（オプション）
+
+Git 連携を設定する前に、または緊急時に手動でデプロイする場合：
 
 **本番**：
 
@@ -218,6 +220,55 @@ pnpm exec wrangler deploy --env preview
 ```
 
 デプロイ後、ダッシュボードの **Workers & Pages** からURLを確認し、フロントエンドの `VITE_API_URL` をそのURLに合わせます。
+
+### 6.2 Workers の Git 連携による自動デプロイ設定
+
+Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの push で自動デプロイを設定します。
+
+#### 6.2.1 本番環境（production）の Git 連携設定
+
+1. Cloudflare Dashboard にログインし、**Workers & Pages** から対象の Worker（例: `skill-quest-backend`）を選択します。
+2. **設定** タブを開き、**ビルド** セクションの **リポジトリに接続** ボタンをクリックします。
+3. **リポジトリに接続** モーダルで以下を設定します：
+   - **Git アカウント**: GitHub アカウントを選択（例: `nit-zunda-dev`）
+   - **リポジトリ**: `skill-quest-ai` を選択
+   - **ブランチ**: `main` を選択
+   - **ビルド コマンド**: `pnpm install && pnpm --filter @skill-quest/backend build`
+   - **デプロイ コマンド**: `cd apps/backend && pnpm exec wrangler d1 migrations apply skill-quest-db-production --remote --env production && pnpm exec wrangler deploy --env production`
+   - **ルートディレクトリ**: `/`（プロジェクトルート）
+4. **詳細設定** を展開し、必要に応じて以下を設定：
+   - **API トークン**: Cloudflare API トークンが自動的に使用されます（必要に応じて手動設定も可能）
+   - **ビルド変数**: 環境変数は `wrangler.toml` で管理するため、通常は不要
+5. **接続** ボタンをクリックして設定を保存します。
+
+#### 6.2.2 プレビュー環境（preview）の Git 連携設定
+
+1. 上記の本番環境設定と同様に、**設定** → **ビルド** → **リポジトリに接続** を開きます。
+2. または、既に本番環境の Git 連携が設定されている場合は、**詳細設定** の **非本番ブランチのデプロイ コマンド** を設定します：
+   - **非本番ブランチのビルド**: チェックボックスをオンにする
+   - **非本番ブランチのデプロイ コマンド**: `cd apps/backend && pnpm exec wrangler d1 migrations apply skill-quest-db-preview --remote --env preview && pnpm exec wrangler deploy --env preview`
+3. `develop` ブランチへの push で自動的にプレビュー環境へデプロイされます。
+
+**注意**: プレビュー環境用に別の Worker を作成している場合（例: `skill-quest-backend-preview`）は、その Worker に対して同様の Git 連携設定を行い、`develop` ブランチを本番ブランチとして設定します。
+
+#### 6.2.3 マイグレーション自動実行の代替案
+
+デプロイコマンドにマイグレーションを含めると、デプロイ時間が長くなる可能性があります。代替案として、`apps/backend/package.json` にデプロイスクリプトを定義することもできます：
+
+```json
+{
+  "scripts": {
+    "deploy:production": "wrangler d1 migrations apply skill-quest-db-production --remote --env production && wrangler deploy --env production",
+    "deploy:preview": "wrangler d1 migrations apply skill-quest-db-preview --remote --env preview && wrangler deploy --env preview"
+  }
+}
+```
+
+この場合、Cloudflare Dashboard のデプロイコマンドは：
+- 本番: `cd apps/backend && pnpm run deploy:production`
+- プレビュー: `cd apps/backend && pnpm run deploy:preview`
+
+と設定します。
 
 ### 6.2 Pages のデプロイ
 
@@ -287,7 +338,7 @@ pnpm exec wrangler deploy --env preview
 ## 次のステップ
 
 - **タスク13.1**: wrangler.tomlの環境分離を設定する（本手順で取得した database_id を反映）
-- **タスク13.2**: GitHub Actionsワークフローを実装する（PR時のチェック、mainマージ時の本番デプロイ・マイグレーション）
+- **タスク13.2**: Cloudflare Workers の Git 連携による自動デプロイを設定する（本手順のセクション6.2を参照）
 - **タスク13.3**: [Cloudflare WAF設定を確認する](./05_waf_setup.md)（手順書はタスク13.3で作成）
 
 ## 参考情報
