@@ -541,20 +541,22 @@
     - `docs/architecture/12_デプロイ戦略.md`が存在し、上記項目が記載されていることを確認
     - チームでレビューし、CI/CD設計の前提として合意されていることを確認
 
-- [ ] 13.2 CI/CDパイプラインを設定する
+- [x] 13.2 CI/CDパイプラインを設定する
   - **前提条件:** タスク13.1.5（テスト戦略）と13.1.6（デプロイ戦略）が策定済みであること。設定はそれらに従って実装する
   - `.github/workflows/check.yml`を作成し、PR作成時にESLint、TypeScript型チェック、単体テストを実行する（テスト戦略に準拠）
+  - `apps/backend/package.json`にデプロイスクリプト（`deploy:production`、`deploy:preview`）を追加する
   - Cloudflare DashboardでWorkersのGit連携を設定し、`main`ブランチへのマージ時に本番環境へ自動デプロイする（デプロイ戦略に準拠）
     - 本番環境用Worker（例: `skill-quest-backend`）の「設定」→「ビルド」→「リポジトリに接続」から設定
     - ブランチ: `main`、ビルドコマンド: `pnpm install && pnpm --filter @skill-quest/backend build`
-    - デプロイコマンド: `cd apps/backend && pnpm exec wrangler d1 migrations apply skill-quest-db-production --remote --env production && pnpm exec wrangler deploy --env production`
+    - デプロイコマンド: `cd apps/backend && pnpm run deploy:production`
   - Cloudflare DashboardでWorkersのGit連携を設定し、`develop`ブランチへのマージ時にプレビュー環境へ自動デプロイする（デプロイ戦略に準拠）
     - プレビュー環境用Worker（例: `skill-quest-backend-preview`）の「設定」→「ビルド」→「リポジトリに接続」から設定、または本番Workerの「非本番ブランチのビルド」を有効化
-    - ブランチ: `develop`、デプロイコマンド: `cd apps/backend && pnpm exec wrangler d1 migrations apply skill-quest-db-preview --remote --env preview && pnpm exec wrangler deploy --env preview`
+    - ブランチ: `develop`、デプロイコマンド: `cd apps/backend && pnpm run deploy:preview`
   - Cloudflare Pagesは既にGit連携済みのため、追加設定は不要（`main`で本番、その他のブランチでプレビューが自動デプロイされる）
   - _Requirements: 10.4, 10.5, 10.6_
   - **確認方法:**
     - `.github/workflows/check.yml`が存在し、PR作成時にチェックが実行されることを確認（GitHubのActionsタブで確認）
+    - `apps/backend/package.json`に`deploy:production`と`deploy:preview`スクリプトが追加されていることを確認
     - Cloudflare DashboardでWorkersのGit連携設定が完了していることを確認（「設定」→「ビルド」でリポジトリが接続されていることを確認）
     - `develop`ブランチにマージし、プレビュー環境への自動デプロイが実行されることを確認（Cloudflare Dashboardの「デプロイ」タブで確認）
     - `main`ブランチにマージし、本番環境への自動デプロイが実行されることを確認（Cloudflare Dashboardの「デプロイ」タブで確認）

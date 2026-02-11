@@ -234,7 +234,7 @@ Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの
    - **リポジトリ**: `skill-quest-ai` を選択
    - **ブランチ**: `main` を選択
    - **ビルド コマンド**: `pnpm install && pnpm --filter @skill-quest/backend build`
-   - **デプロイ コマンド**: `cd apps/backend && pnpm exec wrangler d1 migrations apply skill-quest-db-production --remote --env production && pnpm exec wrangler deploy --env production`
+   - **デプロイ コマンド**: `cd apps/backend && pnpm run deploy:production`
    - **ルートディレクトリ**: `/`（プロジェクトルート）
 4. **詳細設定** を展開し、必要に応じて以下を設定：
    - **API トークン**: Cloudflare API トークンが自動的に使用されます（必要に応じて手動設定も可能）
@@ -246,7 +246,7 @@ Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの
 1. 上記の本番環境設定と同様に、**設定** → **ビルド** → **リポジトリに接続** を開きます。
 2. または、既に本番環境の Git 連携が設定されている場合は、**詳細設定** の **非本番ブランチのデプロイ コマンド** を設定します：
    - **非本番ブランチのビルド**: チェックボックスをオンにする
-   - **非本番ブランチのデプロイ コマンド**: `cd apps/backend && pnpm exec wrangler d1 migrations apply skill-quest-db-preview --remote --env preview && pnpm exec wrangler deploy --env preview`
+   - **非本番ブランチのデプロイ コマンド**: `cd apps/backend && pnpm run deploy:preview`
 3. `develop` ブランチへの push で自動的にプレビュー環境へデプロイされます。
 
 **注意**: プレビュー環境用に別の Worker を作成している場合（例: `skill-quest-backend-preview`）は、その Worker に対して同様の Git 連携設定を行い、`develop` ブランチを本番ブランチとして設定します。
@@ -264,11 +264,7 @@ Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの
 }
 ```
 
-この場合、Cloudflare Dashboard のデプロイコマンドは：
-- 本番: `cd apps/backend && pnpm run deploy:production`
-- プレビュー: `cd apps/backend && pnpm run deploy:preview`
-
-と設定します。
+**注意**: `apps/backend/package.json` にデプロイスクリプトが既に定義されているため、Cloudflare Dashboard のデプロイコマンドは上記の通り設定してください。
 
 ### 6.2 Pages のデプロイ
 

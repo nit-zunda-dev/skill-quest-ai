@@ -14,6 +14,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:production": "wrangler d1 migrations apply skill-quest-db-production --remote --env production && wrangler deploy --env production",
+    "deploy:preview": "wrangler d1 migrations apply skill-quest-db-preview --remote --env preview && wrangler deploy --env preview",
     "type-check": "tsc --noEmit",
     "build": "tsc",
     "test": "vitest run",
