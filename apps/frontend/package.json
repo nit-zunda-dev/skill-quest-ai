@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "echo 'Lint is handled at root level'",
     "test": "vitest run",
     "test:watch": "vitest"
   },
