@@ -3,6 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { drizzle } from 'drizzle-orm/d1';
 import type { Bindings } from './types';
 import { schema } from './db/schema';
+import { hashPassword, verifyPassword } from './lib/password';
 
 /**
  * Better Authのオンデマンド初期化関数
@@ -43,6 +44,13 @@ export const auth = (env: Bindings, request?: Request) => {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // 初期実装ではメール確認を省略可能
+      // Cloudflare Workers Free プラン（CPU 10ms 制限）対応:
+      // デフォルトの scrypt は CPU 集約型で 10ms を超えやすいため、
+      // Web Crypto API の PBKDF2（SHA-256, 100,000 iterations）に置き換え
+      password: {
+        hash: hashPassword,
+        verify: verifyPassword,
+      },
     },
     trustedOrigins: [
       env.FRONTEND_URL || 'http://localhost:5173',

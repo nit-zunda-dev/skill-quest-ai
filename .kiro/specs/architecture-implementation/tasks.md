@@ -486,7 +486,7 @@
     - バリデーションエラーメッセージが適切に返されることを確認
 
 - [ ] 13. インフラ設定とCI/CDパイプライン
-- [ ] 13.0 本番環境とプレビュー環境のCloudflare設定手順書を作成する
+- [x] 13.0 本番環境とプレビュー環境のCloudflare設定手順書を作成する
   - `docs/setup/04_production_environment_setup.md`を作成し、本番環境とプレビュー環境の設定手順を記載する
   - 本番環境用D1データベースの作成手順（`wrangler d1 create <production-db-name>`）を記載する
   - プレビュー環境用D1データベースの作成手順（`wrangler d1 create <preview-db-name>`）を記載する
