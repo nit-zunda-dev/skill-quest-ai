@@ -40,11 +40,12 @@ async function fetchAiUsage(): Promise<AiUsageResponse> {
   return (await res.json()) as AiUsageResponse;
 }
 
-export function useAiUsage() {
+export function useAiUsage(options?: { enabled?: boolean }) {
   const query = useQuery({
     queryKey: AI_USAGE_QUERY_KEY,
     queryFn: fetchAiUsage,
-    refetchInterval: 30000, // 30秒ごとに再取得
+    enabled: options?.enabled,
+    // refetchInterval を削除: 自動的な定期再取得を停止
   });
 
   return {

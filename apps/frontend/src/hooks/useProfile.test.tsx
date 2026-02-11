@@ -45,7 +45,7 @@ const createWrapper = () => {
 
 describe('useProfile', () => {
   beforeEach(async () => {
-    const { client } = await import('@/lib/client');
+    const { client } = await import('@/lib/client') as { client: { api: { profile: { $get: ReturnType<typeof vi.fn>; $patch: ReturnType<typeof vi.fn> } } } };
     const mockGet = client.api.profile.$get as ReturnType<typeof vi.fn>;
     mockGet.mockResolvedValue({
       ok: true,
@@ -77,7 +77,7 @@ describe('useProfile', () => {
   });
 
   it('エラー時は isError が true かつ error が設定される', async () => {
-    const { client } = await import('@/lib/client');
+    const { client } = await import('@/lib/client') as { client: { api: { profile: { $get: ReturnType<typeof vi.fn> } } } };
     const mockGet = client.api.profile.$get as ReturnType<typeof vi.fn>;
     mockGet.mockRejectedValue(new Error('Network error'));
 
@@ -106,7 +106,7 @@ describe('useProfile', () => {
       expect(result.current.isPending).toBe(false);
     });
 
-    const { client } = await import('@/lib/client');
+    const { client } = await import('@/lib/client') as { client: { api: { profile: { $patch: ReturnType<typeof vi.fn> } } } };
     const mockPatch = client.api.profile.$patch as ReturnType<typeof vi.fn>;
     expect(mockPatch).toHaveBeenCalledWith({
       json: { name: 'Updated Name' },

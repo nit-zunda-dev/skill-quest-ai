@@ -583,8 +583,146 @@
 			"description": "クエスト管理API。すべて認証必須。GET: 一覧、POST: 作成、PUT: 更新、DELETE: 削除。quest_id は Get/Create のレスポンスから自動でコレクション変数に保存されます。"
 		},
 		{
+			"name": "Grimoire",
+			"item": [
+				{
+					"name": "Get Grimoire",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response is array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/grimoire",
+							"host": ["{{base_url}}"],
+							"path": ["api", "grimoire"]
+						}
+					},
+					"description": "グリモワール一覧を取得。認証必須。",
+					"response": []
+				},
+				{
+					"name": "Generate Grimoire",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 429 or 400\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 429, 400]);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has grimoireEntry\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('grimoireEntry');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/grimoire/generate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "grimoire", "generate"]
+						}
+					},
+					"description": "完了タスクからグリモワールを1日1回生成。認証必須。",
+					"response": []
+				}
+			],
+			"description": "グリモワールAPI。GET: 一覧、POST /generate: 1日1回。認証必須。"
+		},
+		{
 			"name": "AI",
 			"item": [
+				{
+					"name": "Get Usage",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.expect(pm.response.code).to.be.equal(200);",
+									"});",
+									"pm.test(\"Response has usage fields\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('characterGenerated');",
+									"    pm.expect(jsonData).to.have.property('narrativeRemaining');",
+									"    pm.expect(jsonData).to.have.property('chatRemaining');",
+									"    pm.expect(jsonData).to.have.property('grimoireRemaining');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ai/usage",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "usage"]
+						}
+					},
+					"description": "AI利用残り回数・制限情報を取得。認証必須。",
+					"response": []
+				},
+				{
+					"name": "Get Character",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has character profile\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('name');",
+									"        pm.expect(jsonData).to.have.property('className');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ai/character",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "character"]
+						}
+					},
+					"description": "保存済みキャラクタープロフィール取得。認証必須。未生成時404。",
+					"response": []
+				},
 				{
 					"name": "Generate Character",
 					"event": [

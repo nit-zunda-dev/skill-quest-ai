@@ -38,8 +38,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refetch = useCallback(() => {
     setIsLoading(true);
     withTimeout(getSession(), SESSION_FETCH_TIMEOUT_MS)
-      .then((res: { data?: SessionData }) => {
-        setSession(res?.data ?? null);
+      .then((res) => {
+        if (res?.data) {
+          // better-authのgetSessionはDate型のexpiresAtを返すが、SessionDataはnumber型を期待
+          const sessionData: SessionData = {
+            user: {
+              id: res.data.user.id,
+              email: res.data.user.email,
+              name: res.data.user.name,
+            },
+            session: {
+              id: res.data.session.id,
+              token: res.data.session.token,
+              expiresAt: res.data.session.expiresAt instanceof Date 
+                ? res.data.session.expiresAt.getTime() 
+                : typeof res.data.session.expiresAt === 'number'
+                ? res.data.session.expiresAt
+                : 0,
+            },
+          };
+          setSession(sessionData);
+        } else {
+          setSession(null);
+        }
       })
       .catch(() => setSession(null))
       .finally(() => setIsLoading(false));

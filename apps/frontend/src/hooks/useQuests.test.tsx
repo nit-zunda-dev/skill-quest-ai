@@ -48,7 +48,7 @@ const createWrapper = () => {
 
 describe('useQuests', () => {
   beforeEach(async () => {
-    const { client } = await import('@/lib/client');
+    const { client } = await import('@/lib/client') as { client: { api: { quests: { $get: ReturnType<typeof vi.fn> } } } };
     const mockGet = client.api.quests.$get as ReturnType<typeof vi.fn>;
     mockGet.mockResolvedValue({
       ok: true,
@@ -75,7 +75,7 @@ describe('useQuests', () => {
   });
 
   it('エラー時は isError が true かつ error が設定される', async () => {
-    const { client } = await import('@/lib/client');
+    const { client } = await import('@/lib/client') as { client: { api: { quests: { $get: ReturnType<typeof vi.fn> } } } };
     const mockGet = client.api.quests.$get as ReturnType<typeof vi.fn>;
     mockGet.mockRejectedValue(new Error('Network error'));
 

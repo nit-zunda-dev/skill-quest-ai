@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "echo 'Lint is handled at root level'",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -26,6 +26,8 @@
   "devDependencies": {
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "jsdom": "^25.0.0",
     "typescript": "~5.8.2",
