@@ -22,7 +22,7 @@ FRONTEND_URL = "http://localhost:5173"
 
 # プレビュー環境設定
 [env.preview]
-vars = { FRONTEND_URL = "https://e25255d5.skill-quest-ai.pages.dev/" }  # フロントエンドデプロイ後に実際のURLに更新
+vars = { FRONTEND_URL = "https://skill-quest-ai-preview.pages.dev/" }  # フロントエンドデプロイ後に実際のURLに更新
 [env.preview.ai]
 binding = "AI"
 remote = true
@@ -33,7 +33,7 @@ database_id = "3bf843ff-b857-4d8e-a9cc-861b18b38929"
 
 # 本番環境設定
 [env.production]
-vars = { FRONTEND_URL = "https://973290a7.skill-quest-ai.pages.dev/" }  # フロントエンドデプロイ後に実際のURLに更新
+vars = { FRONTEND_URL = "https://skill-quest-ai.pages.dev/" }  # フロントエンドデプロイ後に実際のURLに更新
 [env.production.ai]
 binding = "AI"
 remote = true

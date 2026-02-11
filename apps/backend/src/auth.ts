@@ -32,6 +32,22 @@ export const auth = (env: Bindings, request?: Request) => {
     baseURL = 'http://localhost:8787';
   }
 
+  // trustedOrigins: 環境変数 FRONTEND_URL を元にリストを組み立て（末尾スラッシュあり/なしの両方を含める）
+  const frontendOrigin = env.FRONTEND_URL || 'http://localhost:5173';
+  const trustedOrigins = [
+      frontendOrigin,
+      frontendOrigin.endsWith('/') ? frontendOrigin.slice(0, -1) : `${frontendOrigin}/`,
+      'http://localhost:5173',
+      'http://localhost:8787',
+    ].filter((url, i, arr) => arr.indexOf(url) === i); // 重複除去
+
+  // HTTPS のときはクロスオリジンで Cookie を送るため SameSite=None（本番の Pages ↔ Workers）
+  const isSecure = baseURL.startsWith('https');
+  const useSecureCookies = isSecure;
+  const defaultCookieAttributes = isSecure
+    ? { sameSite: 'none' as const, secure: true }
+    : { sameSite: 'lax' as const, secure: false };
+
   // Better Authを初期化
   // 公式ドキュメントに従い、basePathはデフォルト（/api/auth）を使用
   const authInstance = betterAuth({
@@ -52,14 +68,12 @@ export const auth = (env: Bindings, request?: Request) => {
         verify: verifyPassword,
       },
     },
-    trustedOrigins: [
-      env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5173', // 開発環境用のフォールバック
-      'http://localhost:8787', // バックエンドURL（APIテスト用）
-    ],
+    trustedOrigins,
     advanced: {
       // PostmanなどのAPIテストツール用にCSRFチェックを無効化（開発環境のみ推奨）
       disableCSRFCheck: true,
+      useSecureCookies,
+      defaultCookieAttributes,
     },
   });
 

@@ -270,10 +270,13 @@ pnpm exec wrangler deploy --env preview
   - 変更後も 503 が出る場合は、**Workers Paid プラン**（$5/月〜）へのアップグレードを検討してください。Paid プランでは `wrangler.toml` に `[limits] cpu_ms = 30_000` を追加することで CPU 制限を引き上げられます。
   - **注意**: Free プランでは `[limits]` セクションはデプロイエラーになるため使用できません。
 
-### 認証でリダイレクトループや 401 になる
+### 認証でリダイレクトループや 401 になる / サインアップ・サインイン後にログイン画面に戻る
 
-- `BETTER_AUTH_BASE_URL` が、実際にユーザーがアクセスしているフロントのオリジンと整合しているか確認してください。
-- `FRONTEND_URL` と Better Auth の `trustedOrigins` に、フロントのURL（末尾スラッシュの有無を含む）が含まれているか確認してください。
+- **原因**: フロント（Cloudflare Pages）とバック（Workers）が別オリジンのため、セッションCookieがクロスオリジンで送信されず、`GET /api/ai/usage` などが 401 になります。
+- **対処（実施済み）**: バックエンドの Better Auth で `advanced.defaultCookieAttributes` に `sameSite: 'none'` と `secure: true` を設定しています。これにより、Pages → Workers へのリクエストでCookieが送られます。本番デプロイ後は必ず **HTTPS** でアクセスしてください。
+- その他:
+  - `BETTER_AUTH_BASE_URL` が、実際にユーザーがアクセスしているフロントのオリジンと整合しているか確認してください。
+  - `FRONTEND_URL`（および `trustedOrigins`）に、フロントのURL（例: `https://skill-quest-ai.pages.dev`、末尾スラッシュの有無どちらも可）が含まれているか確認してください。
 
 ### GitHub OAuth で「Redirect URI mismatch」
 
