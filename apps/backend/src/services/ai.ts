@@ -26,8 +26,13 @@ export interface AiRunBinding {
  * Llama 3.1 8B でテキスト生成（通常の会話・生成用）
  * env.AI バインディングを使用する。
  */
-export async function runWithLlama31_8b(ai: AiRunBinding, prompt: string): Promise<string> {
-  const result = await ai.run(MODEL_LLAMA_31_8B, { prompt });
+export async function runWithLlama31_8b(
+  ai: AiRunBinding,
+  prompt: string
+): Promise<string> {
+  const result = await ai.run(MODEL_LLAMA_31_8B, {
+    prompt,
+  });
   return result?.response ?? '';
 }
 
@@ -35,8 +40,13 @@ export async function runWithLlama31_8b(ai: AiRunBinding, prompt: string): Promi
  * Llama 3.3 70B でテキスト生成（複雑な推論用）
  * env.AI バインディングを使用する。
  */
-export async function runWithLlama33_70b(ai: AiRunBinding, prompt: string): Promise<string> {
-  const result = await ai.run(MODEL_LLAMA_33_70B, { prompt });
+export async function runWithLlama33_70b(
+  ai: AiRunBinding,
+  prompt: string
+): Promise<string> {
+  const result = await ai.run(MODEL_LLAMA_33_70B, {
+    prompt,
+  });
   return result?.response ?? '';
 }
 

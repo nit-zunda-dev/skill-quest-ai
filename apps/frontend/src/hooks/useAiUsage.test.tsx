@@ -6,8 +6,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAiUsage } from './useAiUsage';
-import { client } from '@/lib/client';
-
 vi.mock('@/lib/client', () => ({
   client: {
     api: {
@@ -34,7 +32,8 @@ function createWrapper() {
 }
 
 describe('useAiUsage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const { client } = await import('@/lib/client') as { client: { api: { ai: { usage: { $get: ReturnType<typeof vi.fn> } } } } };
     vi.mocked(client.api.ai.usage.$get).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -58,6 +57,7 @@ describe('useAiUsage', () => {
   });
 
   it('returns zero chatRemaining when API says 0', async () => {
+    const { client } = await import('@/lib/client') as { client: { api: { ai: { usage: { $get: ReturnType<typeof vi.fn> } } } } };
     vi.mocked(client.api.ai.usage.$get).mockResolvedValue({
       ok: true,
       json: async () => ({

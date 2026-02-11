@@ -20,16 +20,24 @@ remote = true
 [vars]
 FRONTEND_URL = "http://localhost:5173"
 
-# プレビュー環境設定
+# プレビュー環境設定（Cloudflare Pages と Workers の統合: docs/setup/04_production_environment_setup.md セクション6参照）
 [env.preview]
+vars = { FRONTEND_URL = "https://skill-quest-ai-preview.pages.dev/" }  # フロントエンドデプロイ後に実際のURLに更新
+[env.preview.ai]
+binding = "AI"
+remote = true
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "skill-quest-db-preview"
-database_id = "preview-db-id"
+database_id = "3bf843ff-b857-4d8e-a9cc-861b18b38929"
 
-# 本番環境設定
+# 本番環境設定（Cloudflare Pages と Workers の統合: 同上）
 [env.production]
+vars = { FRONTEND_URL = "https://skill-quest-ai.pages.dev/" }  # フロントエンドデプロイ後に実際のURLに更新
+[env.production.ai]
+binding = "AI"
+remote = true
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "skill-quest-db-production"
-database_id = "production-db-id"
+database_id = "4301512e-0c40-44a9-8476-c5e6da0cc728"

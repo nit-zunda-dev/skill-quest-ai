@@ -7,10 +7,12 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
     "type-check": "turbo run type-check"
   },
   "devDependencies": {
+    "@skill-quest/eslint-config": "workspace:*",
+    "eslint": "^9.0.0",
     "turbo": "^2.0.0",
     "typescript": "~5.8.2"
   },

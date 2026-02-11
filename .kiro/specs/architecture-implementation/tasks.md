@@ -486,7 +486,7 @@
     - バリデーションエラーメッセージが適切に返されることを確認
 
 - [ ] 13. インフラ設定とCI/CDパイプライン
-- [ ] 13.0 本番環境とプレビュー環境のCloudflare設定手順書を作成する
+- [x] 13.0 本番環境とプレビュー環境のCloudflare設定手順書を作成する
   - `docs/setup/04_production_environment_setup.md`を作成し、本番環境とプレビュー環境の設定手順を記載する
   - 本番環境用D1データベースの作成手順（`wrangler d1 create <production-db-name>`）を記載する
   - プレビュー環境用D1データベースの作成手順（`wrangler d1 create <preview-db-name>`）を記載する
@@ -502,7 +502,7 @@
     - 手順書に従ってプレビュー環境用D1データベースを作成できることを確認
     - 手順書に従って環境変数を設定できることを確認
 
-- [ ] 13.1 wrangler.tomlの環境分離を設定する
+- [x] 13.1 wrangler.tomlの環境分離を設定する
   - **前提条件:** タスク13.0で本番環境とプレビュー環境のD1データベースが作成されていること
   - 本番環境とプレビュー環境で異なるD1データベースIDを設定する
   - 環境変数のバインディングを設定する
@@ -515,32 +515,54 @@
     - Cloudflare PagesとWorkersの統合設定が追加されていることを確認
     - `wrangler dev --env preview`でプレビュー環境が動作することを確認
 
-- [ ] 13.2 GitHub Actionsワークフローを実装する
-  - `.github/workflows/check.yml`を作成し、PR作成時にESLint、TypeScript型チェック、単体テストを実行する
-  - `.github/workflows/deploy.yml`を作成し、mainブランチへのマージ時に本番デプロイを実行する
-  - マイグレーション自動化を実装する（バックエンドデプロイ前にD1マイグレーションを適用）
-  - Cloudflare PagesとWorkersのデプロイメントを設定する
+- [x] 13.1.5 テスト戦略を策定しドキュメント化する
+  - **目的:** GitHub Actionsワークフロー実装前に、CIで実行するテストの範囲・種類・方針を決める
+  - `docs/architecture/11_テスト戦略.md`を作成し、以下を記載する
+    - テストピラミッド（単体・統合・E2E）の割合と対象
+    - モノレポ各パッケージ（frontend / backend / shared）のテスト方針
+    - CIで実行するチェック一覧（lint、型チェック、単体テスト、カバレッジ方針）
+    - 統合テスト・E2Eの実行タイミング（PR時／main時／手動）と環境
+    - テストデータ・モック・Workers AIの扱い（スタブ／スキップ条件）
+  - _Requirements: 10.4, 10.5_
+  - **確認方法:**
+    - `docs/architecture/11_テスト戦略.md`が存在し、上記項目が記載されていることを確認
+    - チームでレビューし、CI設計の前提として合意されていることを確認
+
+- [x] 13.1.6 デプロイ戦略を策定しドキュメント化する
+  - **目的:** GitHub Actionsワークフロー実装前に、環境・ブランチ・マイグレーション・ロールバックの方針を決める
+  - `docs/architecture/12_デプロイ戦略.md`を作成し、以下を記載する
+    - 環境の定義（local / preview / production）とブランチとの対応
+    - デプロイトリガー（PR時プレビュー、mainマージ時本番など）
+    - マイグレーションの適用タイミング（デプロイ前／デプロイ時／手動）と順序
+    - Cloudflare Pages（frontend）と Workers（backend）のデプロイ順序と依存関係
+    - ロールバック手順とリリース判定基準（何を以って本番リリースとするか）
   - _Requirements: 10.4, 10.5, 10.6_
   - **確認方法:**
-    - `.github/workflows/check.yml`と`.github/workflows/deploy.yml`が存在することを確認
-    - PRを作成し、GitHub Actionsでチェックが実行されることを確認（GitHubのActionsタブで確認）
-    - mainブランチにマージし、デプロイが実行されることを確認（GitHubのActionsタブで確認）
-    - マイグレーションが自動的に適用されることを確認（Cloudflare Dashboardで確認）
+    - `docs/architecture/12_デプロイ戦略.md`が存在し、上記項目が記載されていることを確認
+    - チームでレビューし、CI/CD設計の前提として合意されていることを確認
+
+- [x] 13.2 CI/CDパイプラインを設定する
+  - **前提条件:** タスク13.1.5（テスト戦略）と13.1.6（デプロイ戦略）が策定済みであること。設定はそれらに従って実装する
+  - `.github/workflows/check.yml`を作成し、PR作成時にESLint、TypeScript型チェック、単体テストを実行する（テスト戦略に準拠）
+  - `apps/backend/package.json`にデプロイスクリプト（`deploy:production`、`deploy:preview`）を追加する
+  - Cloudflare DashboardでWorkersのGit連携を設定し、`main`ブランチへのマージ時に本番環境へ自動デプロイする（デプロイ戦略に準拠）
+    - 本番環境用Worker（例: `skill-quest-backend`）の「設定」→「ビルド」→「リポジトリに接続」から設定
+    - ブランチ: `main`、ビルドコマンド: `pnpm install && pnpm --filter @skill-quest/backend build`
+    - デプロイコマンド: `cd apps/backend && pnpm run deploy:production`
+  - Cloudflare DashboardでWorkersのGit連携を設定し、`develop`ブランチへのマージ時にプレビュー環境へ自動デプロイする（デプロイ戦略に準拠）
+    - プレビュー環境用Worker（例: `skill-quest-backend-preview`）の「設定」→「ビルド」→「リポジトリに接続」から設定、または本番Workerの「非本番ブランチのビルド」を有効化
+    - ブランチ: `develop`、デプロイコマンド: `cd apps/backend && pnpm run deploy:preview`
+  - Cloudflare Pagesは既にGit連携済みのため、追加設定は不要（`main`で本番、その他のブランチでプレビューが自動デプロイされる）
+  - _Requirements: 10.4, 10.5, 10.6_
+  - **確認方法:**
+    - `.github/workflows/check.yml`が存在し、PR作成時にチェックが実行されることを確認（GitHubのActionsタブで確認）
+    - `apps/backend/package.json`に`deploy:production`と`deploy:preview`スクリプトが追加されていることを確認
+    - Cloudflare DashboardでWorkersのGit連携設定が完了していることを確認（「設定」→「ビルド」でリポジトリが接続されていることを確認）
+    - `develop`ブランチにマージし、プレビュー環境への自動デプロイが実行されることを確認（Cloudflare Dashboardの「デプロイ」タブで確認）
+    - `main`ブランチにマージし、本番環境への自動デプロイが実行されることを確認（Cloudflare Dashboardの「デプロイ」タブで確認）
+    - マイグレーションが自動的に適用されることを確認（デプロイログまたはD1のテーブル一覧で確認）
     - Cloudflare PagesとWorkersが正常にデプロイされることを確認
 
-- [ ] 13.3 Cloudflare WAF設定を確認する
-  - `docs/setup/05_waf_setup.md`を作成し、Cloudflare WAF設定手順を記載する
-  - Cloudflare DashboardでWAFルールを設定する手順を記載する
-  - レート制限ルールの設定手順を記載する
-  - DDoS対策設定の確認手順を記載する
-  - 手順書に従ってWAF設定を実施する
-  - _Requirements: 11.5_
-  - **確認方法:**
-    - `docs/setup/05_waf_setup.md`が存在し、WAF設定手順が記載されていることを確認
-    - Cloudflare DashboardでWAFルールが設定されていることを確認
-    - レート制限ルールが設定されていることを確認
-    - DDoS対策設定が有効になっていることを確認
-    - 実際にレート制限が動作することを確認（複数のリクエストを短時間で送信して確認）
 
 - [ ] 14. 統合テストと検証
 - [ ] 14.1 認証フローの統合テストを実装する
