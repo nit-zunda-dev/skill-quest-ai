@@ -8,16 +8,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAiUsage } from './useAiUsage';
 import { client } from '@/lib/client';
 
-vi.mock('@/lib/client', () => ({
-  client: {
-    api: {
-      ai: {
-        usage: {
-          $get: vi.fn(),
-        },
+const mockClient = {
+  api: {
+    ai: {
+      usage: {
+        $get: vi.fn(),
       },
     },
   },
+};
+
+vi.mock('@/lib/client', () => ({
+  client: mockClient,
 }));
 
 function createWrapper() {
@@ -35,7 +37,7 @@ function createWrapper() {
 
 describe('useAiUsage', () => {
   beforeEach(() => {
-    vi.mocked(client.api.ai.usage.$get).mockResolvedValue({
+    vi.mocked(mockClient.api.ai.usage.$get).mockResolvedValue({
       ok: true,
       json: async () => ({
         characterGenerated: false,
@@ -58,7 +60,7 @@ describe('useAiUsage', () => {
   });
 
   it('returns zero chatRemaining when API says 0', async () => {
-    vi.mocked(client.api.ai.usage.$get).mockResolvedValue({
+    vi.mocked(mockClient.api.ai.usage.$get).mockResolvedValue({
       ok: true,
       json: async () => ({
         characterGenerated: true,

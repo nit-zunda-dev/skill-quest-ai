@@ -54,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
       setShowGrimoireModal(true);
       // プロフィールを更新
       if (grimoireResult.profile) {
-        setProfile(normalizeProfileNumbers(grimoireResult.profile as CharacterProfile));
+        setProfile(normalizeProfileNumbers(grimoireResult.profile as unknown as CharacterProfile));
       }
     }
   }, [grimoireResult]);
