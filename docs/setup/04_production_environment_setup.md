@@ -335,7 +335,6 @@ Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの
 
 - **タスク13.1**: wrangler.tomlの環境分離を設定する（本手順で取得した database_id を反映）
 - **タスク13.2**: Cloudflare Workers の Git 連携による自動デプロイを設定する（本手順のセクション6.2を参照）
-- **タスク13.3**: [Cloudflare WAF設定を確認する](./05_waf_setup.md)（手順書はタスク13.3で作成）
 
 ## 参考情報
 

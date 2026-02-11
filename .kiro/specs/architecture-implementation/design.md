@@ -977,7 +977,6 @@ CREATE TABLE interaction_logs (
 ### Monitoring
 
 - Cloudflare Dashboardでリクエスト数、エラー率、レイテンシを監視
-- Workers AI GatewayでAIリクエストのログとコストを追跡
 - エラーログはCloudflareのログストリームで確認
 
 ## Testing Strategy
@@ -1036,7 +1035,6 @@ CREATE TABLE interaction_logs (
 
 ### Caching Strategies
 - TanStack Queryによるクライアントサイドキャッシュ
-- Workers AI GatewayによるAIレスポンスキャッシュ（同じ質問への回答）
 
 ## Migration Strategy
 

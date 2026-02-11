@@ -44,7 +44,7 @@ export function useAiUsage() {
   const query = useQuery({
     queryKey: AI_USAGE_QUERY_KEY,
     queryFn: fetchAiUsage,
-    refetchInterval: 30000, // 30秒ごとに再取得
+    // refetchInterval を削除: 自動的な定期再取得を停止
   });
 
   return {
