@@ -18,35 +18,45 @@ interface TextGenerationResponse {
 export interface AiRunBinding {
   run(
     model: string,
-    options: { prompt: string; [key: string]: unknown }
+    options: { prompt: string; [key: string]: unknown },
+    gatewayOptions?: { gateway: { id: string } }
   ): Promise<TextGenerationResponse>;
+  run(
+    model: string,
+    options: { messages: unknown[]; stream?: boolean; [key: string]: unknown },
+    gatewayOptions?: { gateway: { id: string } }
+  ): Promise<AsyncIterable<unknown>>;
 }
 
 /**
  * Llama 3.1 8B でテキスト生成（通常の会話・生成用）
  * env.AI バインディングを使用する。
+ * AI Gatewayが設定されている場合は経由して呼び出す。
  */
 export async function runWithLlama31_8b(
   ai: AiRunBinding,
-  prompt: string
+  prompt: string,
+  gatewayId?: string
 ): Promise<string> {
-  const result = await ai.run(MODEL_LLAMA_31_8B, {
-    prompt,
-  });
+  const options = { prompt };
+  const gatewayOptions = gatewayId ? { gateway: { id: gatewayId } } : undefined;
+  const result = await ai.run(MODEL_LLAMA_31_8B, options, gatewayOptions);
   return result?.response ?? '';
 }
 
 /**
  * Llama 3.3 70B でテキスト生成（複雑な推論用）
  * env.AI バインディングを使用する。
+ * AI Gatewayが設定されている場合は経由して呼び出す。
  */
 export async function runWithLlama33_70b(
   ai: AiRunBinding,
-  prompt: string
+  prompt: string,
+  gatewayId?: string
 ): Promise<string> {
-  const result = await ai.run(MODEL_LLAMA_33_70B, {
-    prompt,
-  });
+  const options = { prompt };
+  const gatewayOptions = gatewayId ? { gateway: { id: gatewayId } } : undefined;
+  const result = await ai.run(MODEL_LLAMA_33_70B, options, gatewayOptions);
   return result?.response ?? '';
 }
 
@@ -83,27 +93,29 @@ export interface AiService {
 /**
  * env から AI バインディングを取得し、AI サービスを生成する。
  * env.AI は Cloudflare Workers の Ai バインディング（AiRunBinding と互換）。
+ * AI Gateway IDが設定されている場合は、すべてのAI呼び出しをAI Gateway経由で実行する。
  */
 export function createAiService(env: Bindings): AiService {
   const ai = env.AI as AiRunBinding;
+  const gatewayId = env.AI_GATEWAY_ID;
   return {
     runWithLlama31_8b(prompt: string) {
-      return runWithLlama31_8b(ai, prompt);
+      return runWithLlama31_8b(ai, prompt, gatewayId);
     },
     runWithLlama33_70b(prompt: string) {
-      return runWithLlama33_70b(ai, prompt);
+      return runWithLlama33_70b(ai, prompt, gatewayId);
     },
     generateCharacter(data: GenesisFormData) {
-      return generateCharacter(ai, data);
+      return generateCharacter(ai, data, gatewayId);
     },
     generateNarrative(request: NarrativeRequest, genre?: Genre) {
-      return generateNarrative(ai, request, genre);
+      return generateNarrative(ai, request, genre, gatewayId);
     },
     generatePartnerMessage(request: PartnerMessageRequest, genre?: Genre) {
-      return generatePartnerMessage(ai, request, genre);
+      return generatePartnerMessage(ai, request, genre, gatewayId);
     },
     generateGrimoire(completedTasks: CompletedTask[], genre?: Genre) {
-      return generateGrimoire(ai, completedTasks, genre);
+      return generateGrimoire(ai, completedTasks, genre, gatewayId);
     },
   };
 }
@@ -172,11 +184,12 @@ function extractJson(text: string): unknown {
  */
 export async function generateCharacter(
   ai: AiRunBinding,
-  data: GenesisFormData
+  data: GenesisFormData,
+  gatewayId?: string
 ): Promise<CharacterProfile> {
   const prompt = buildCharacterPrompt(data);
   try {
-    const raw = await runWithLlama31_8b(ai, prompt);
+    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
     if (parsed === null && typeof raw === 'string') {
       try {
@@ -277,12 +290,13 @@ function getNarrativeStyleByGenre(genre: Genre): string {
 export async function generateNarrative(
   ai: AiRunBinding,
   request: NarrativeRequest,
-  genre?: Genre
+  genre?: Genre,
+  gatewayId?: string
 ): Promise<NarrativeResult> {
   const prompt = buildNarrativePrompt(request, genre);
   
   try {
-    const raw = await runWithLlama31_8b(ai, prompt);
+    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
     if (parsed === null && typeof raw === 'string') {
       try {
@@ -335,11 +349,12 @@ function buildPartnerMessagePrompt(request: PartnerMessageRequest, genre?: Genre
 export async function generatePartnerMessage(
   ai: AiRunBinding,
   request: PartnerMessageRequest,
-  genre?: Genre
+  genre?: Genre,
+  gatewayId?: string
 ): Promise<string> {
   const prompt = buildPartnerMessagePrompt(request, genre);
   try {
-    const raw = await runWithLlama31_8b(ai, prompt);
+    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     const trimmed = typeof raw === 'string' ? raw.trim() : '';
     if (trimmed.length > 0) return trimmed;
   } catch {
@@ -391,7 +406,8 @@ function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
 export async function generateGrimoire(
   ai: AiRunBinding,
   completedTasks: CompletedTask[],
-  genre?: Genre
+  genre?: Genre,
+  gatewayId?: string
 ): Promise<GrimoireGenerationResult> {
   if (completedTasks.length === 0) {
     return {
@@ -431,7 +447,7 @@ export async function generateGrimoire(
   );
   
   try {
-    const raw = await runWithLlama31_8b(ai, prompt);
+    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
     if (parsed === null && typeof raw === 'string') {
       try {

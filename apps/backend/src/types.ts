@@ -11,6 +11,7 @@ export type Bindings = {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_BASE_URL?: string;
   FRONTEND_URL?: string;
+  AI_GATEWAY_ID?: string;
 };
 
 /**

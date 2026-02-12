@@ -255,12 +255,20 @@ aiRouter.post(
     return streamText(c, async (stream) => {
       try {
         const ai = c.env.AI as {
-          run(model: string, options: Record<string, unknown>): Promise<AsyncIterable<unknown>>;
+          run(
+            model: string,
+            options: Record<string, unknown>,
+            gatewayOptions?: { gateway: { id: string } }
+          ): Promise<AsyncIterable<unknown>>;
         };
-        const response = await ai.run(MODEL_LLAMA_31_8B, {
+        const options = {
           messages,
           stream: true,
-        });
+        };
+        const gatewayOptions = c.env.AI_GATEWAY_ID
+          ? { gateway: { id: c.env.AI_GATEWAY_ID } }
+          : undefined;
+        const response = await ai.run(MODEL_LLAMA_31_8B, options, gatewayOptions);
 
         // Workers AI の stream:true は Uint8Array の AsyncIterable を返し、
         // 中身は SSE 形式 ("data: {\"response\":\"...\",\"p\":\"...\"}\n\n") のバイト列。

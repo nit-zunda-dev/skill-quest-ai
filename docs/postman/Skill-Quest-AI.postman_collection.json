@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "skill-quest-ai-collection",
 		"name": "Skill Quest AI API",
-		"description": "Skill Quest AI Backend API Collection\n\nこのコレクションには、Skill Quest AIバックエンドAPIのすべてのエンドポイントが含まれています。\n\n## 認証\n\nBetter Authを使用した認証エンドポイントが含まれています。\n\n## 使用方法\n\n1. Environmentファイルをインポートして、適切な環境を選択してください\n2. 認証が必要なエンドポイントを使用する前に、`Auth - Sign Up`または`Auth - Sign In`を実行してください\n3. セッションは自動的にCookieに保存されます",
+		"description": "Skill Quest AI Backend API Collection\n\nこのコレクションには、Skill Quest AIバックエンドAPIのすべてのエンドポイントが含まれています。\n\n## 認証\n\nBetter Authを使用した認証エンドポイントが含まれています。\n\n## AI Gateway\n\nCloudflare AI Gatewayが設定されている場合、すべてのAI API呼び出しがAI Gateway経由で実行されます。AI Gatewayを使用することで、監視、レート制限、キャッシング、コスト管理などの機能が利用できます。\n\n詳細は [AI Gatewayセットアップ手順](../../setup/05_ai_gateway_setup.md) を参照してください。\n\n## 使用方法\n\n1. Environmentファイルをインポートして、適切な環境を選択してください\n2. 認証が必要なエンドポイントを使用する前に、`Auth - Sign Up`または`Auth - Sign In`を実行してください\n3. セッションは自動的にCookieに保存されます",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
