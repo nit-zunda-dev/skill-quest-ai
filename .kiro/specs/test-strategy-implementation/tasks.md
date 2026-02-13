@@ -223,7 +223,7 @@ Use whichever pattern fits the work breakdown:
   - CIでヘッドレスモードで実行されることを確認
   - _Requirements: 9.1, 9.3, 9.4_
 
-- [ ] 8.2 バックエンドテスト環境の確認
+- [x] 8.2 バックエンドテスト環境の確認
   - `apps/backend/vitest.config.ts`でnode環境が設定されていることを確認
   - ウォッチモードが機能することを確認
   - CIでヘッドレスモードで実行されることを確認
