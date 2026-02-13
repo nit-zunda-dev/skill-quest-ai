@@ -24,6 +24,20 @@ describe('AI service', () => {
 
       expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, expect.objectContaining({ prompt: 'test prompt' }), undefined);
     });
+
+    it('passes AI Gateway ID when env.AI_GATEWAY_ID is set', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'ok' });
+      const env = { AI: { run }, AI_GATEWAY_ID: 'gateway-123' } as unknown as Bindings;
+
+      const service = createAiService(env);
+      await service.runWithLlama31_8b('test prompt');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: 'test prompt' }),
+        { gateway: { id: 'gateway-123' } }
+      );
+    });
   });
 
   describe('runWithLlama31_8b', () => {
@@ -37,6 +51,20 @@ describe('AI service', () => {
       expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, { prompt: 'Hello' }, undefined);
       expect(result).toBe('Generated text from 8B');
     });
+
+    it('passes gateway options when gatewayId is provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'Gateway response' });
+      const ai = { run };
+
+      const result = await runWithLlama31_8b(ai, 'Hello', 'gateway-456');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        { prompt: 'Hello' },
+        { gateway: { id: 'gateway-456' } }
+      );
+      expect(result).toBe('Gateway response');
+    });
   });
 
   describe('runWithLlama33_70b', () => {
@@ -49,6 +77,20 @@ describe('AI service', () => {
       expect(run).toHaveBeenCalledTimes(1);
       expect(run).toHaveBeenCalledWith(MODEL_LLAMA_33_70B, { prompt: 'Complex question' }, undefined);
       expect(result).toBe('Complex reasoning from 70B');
+    });
+
+    it('passes gateway options when gatewayId is provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'Gateway 70B response' });
+      const ai = { run };
+
+      const result = await runWithLlama33_70b(ai, 'Complex question', 'gateway-789');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_33_70B,
+        { prompt: 'Complex question' },
+        { gateway: { id: 'gateway-789' } }
+      );
+      expect(result).toBe('Gateway 70B response');
     });
   });
 
@@ -101,6 +143,20 @@ describe('AI service', () => {
 
       expect(result.name).toBe('エラー時');
       expect(result.prologue).toContain('目標');
+    });
+
+    it('passes gatewayId to runWithLlama31_8b when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validProfileJson });
+      const ai = { run };
+      const data = { name: 'テスト', goal: '目標', genre: Genre.FANTASY };
+
+      await generateCharacter(ai, data, 'gateway-123');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: expect.any(String) }),
+        { gateway: { id: 'gateway-123' } }
+      );
     });
   });
 
@@ -187,6 +243,25 @@ describe('AI service', () => {
       expect(result.rewardXp).toBeGreaterThan(0);
       expect(result.rewardGold).toBeGreaterThan(0);
     });
+
+    it('passes gatewayId to runWithLlama31_8b when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validNarrativeJson });
+      const ai = { run };
+      const request = {
+        taskId: 't1',
+        taskTitle: '毎日勉強',
+        taskType: TaskType.DAILY,
+        difficulty: Difficulty.MEDIUM,
+      };
+
+      await generateNarrative(ai, request, Genre.FANTASY, 'gateway-456');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: expect.any(String) }),
+        { gateway: { id: 'gateway-456' } }
+      );
+    });
   });
 
   describe('generatePartnerMessage', () => {
@@ -242,6 +317,23 @@ describe('AI service', () => {
 
       expect(result).toBeTruthy();
       expect(typeof result).toBe('string');
+    });
+
+    it('passes gatewayId to runWithLlama31_8b when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'ゲートウェイ経由のメッセージ' });
+      const ai = { run };
+      const request = {
+        progressSummary: '進捗良好',
+        timeOfDay: '朝',
+      };
+
+      await generatePartnerMessage(ai, request, Genre.CYBERPUNK, 'gateway-789');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: expect.any(String) }),
+        { gateway: { id: 'gateway-789' } }
+      );
     });
   });
 
@@ -392,6 +484,28 @@ describe('AI service', () => {
 
       expect(result.rewardXp).toBe(105); // 15 + 30 + 60
       expect(result.rewardGold).toBe(61); // 8 + 18 + 35
+    });
+
+    it('passes gatewayId to runWithLlama31_8b when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validGrimoireJson });
+      const ai = { run };
+      const completedTasks = [
+        {
+          id: 't1',
+          title: 'タスク',
+          type: TaskType.DAILY,
+          difficulty: Difficulty.EASY,
+          completedAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+
+      await generateGrimoire(ai, completedTasks, Genre.FANTASY, 'gateway-999');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: expect.any(String) }),
+        { gateway: { id: 'gateway-999' } }
+      );
     });
   });
 });

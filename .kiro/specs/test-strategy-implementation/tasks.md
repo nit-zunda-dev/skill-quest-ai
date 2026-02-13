@@ -98,13 +98,13 @@ Use whichever pattern fits the work breakdown:
   - jsdom環境でDOM操作をシミュレート
   - _Requirements: 2.1, 2.4, 2.5_
 
-- [ ] 4.4 (P) 未テストのカスタムフックのテストを追加
+- [x] 4.4 (P) 未テストのカスタムフックのテストを追加
   - 既存のカスタムフック（`use*`）を分析し、未テストのものを特定
   - 各フックの振る舞いを検証するテストを実装
   - APIクライアントを使用する場合はモックを利用
   - _Requirements: 2.2, 2.3_
 
-- [ ] 4.5 (P) 未テストのバックエンドルートハンドラのテストを追加
+- [x] 4.5 (P) 未テストのバックエンドルートハンドラのテストを追加
   - 既存のルートハンドラを分析し、未テストのものを特定
   - Honoルートハンドラのリクエスト/レスポンス検証を行う単体テストを実装
   - Workers AIを使用するルートはAIレスポンスをスタブしてテスト
@@ -112,10 +112,11 @@ Use whichever pattern fits the work breakdown:
   - node環境で実行
   - _Requirements: 3.1, 3.4, 3.5_
 
-- [ ] 4.6 (P) 未テストのサービス層関数のテストを追加
+- [x] 4.6 (P) 未テストのサービス層関数のテストを追加
   - 既存のサービス層関数を分析し、未テストのものを特定
   - ビジネスロジックの振る舞いを検証する単体テストを実装
   - 外部依存がある場合はモックを使用
+  - AI Gateway ID経由の呼び出しテストを追加（`createAiService`, `runWithLlama31_8b`, `runWithLlama33_70b`, `generateCharacter`, `generateNarrative`, `generatePartnerMessage`, `generateGrimoire`）
   - _Requirements: 3.2_
 
 - [ ] 5. 統合テストの実装
