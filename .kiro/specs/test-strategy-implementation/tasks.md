@@ -204,7 +204,7 @@ Use whichever pattern fits the work breakdown:
   - 既存のワークフロー設定を確認し、必要に応じて調整
   - _Requirements: 7.2_
 
-- [ ] 7.3 E2EテストのCI統合
+- [x] 7.3 E2EテストのCI統合
   - `.github/workflows/check.yml`にE2Eテストステップを追加
   - mainブランチへのPR時にE2Eテストを実行する条件を追加
   - プレビュー環境へのデプロイ完了を待機するステップを追加

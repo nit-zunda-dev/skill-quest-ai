@@ -68,4 +68,34 @@ describe('CI workflow (check.yml)', () => {
     expect(content).toMatch(/pnpm run build/);
     expect(content).toMatch(/pnpm run test/);
   });
+
+  describe('E2E test CI integration (7.3, 7.6, 12.1-12.7)', () => {
+    it('has E2E job that runs only on PR to main', () => {
+      expect(content).toMatch(/e2e|E2E|playwright/i);
+      expect(content).toMatch(/github\.base_ref == 'main'/);
+      expect(content).not.toMatch(/github\.base_ref == 'develop'/);
+    });
+
+    it('runs Playwright in CI (headless)', () => {
+      expect(content).toMatch(/test:e2e|playwright test/);
+      expect(content).toMatch(/CI:\s*true|CI=true/);
+    });
+
+    it('uploads E2E artifacts on failure (screenshot, video, trace)', () => {
+      expect(content).toMatch(/failure\(\)|if:\s*failure/);
+      expect(content).toMatch(/upload-artifact|playwright-report|test-results/);
+    });
+
+    it('has E2E job timeout of 30 minutes', () => {
+      expect(content).toMatch(/timeout-minutes:\s*30|30\s*min/);
+    });
+
+    it('has wait for preview or deploy step (healthcheck or wrangler)', () => {
+      const hasWait =
+        /Wait for preview|wait.*preview|deploy.*complete|wrangler deployments|health|curl.*E2E_BASE_URL/i.test(
+          content
+        );
+      expect(hasWait).toBe(true);
+    });
+  });
 });

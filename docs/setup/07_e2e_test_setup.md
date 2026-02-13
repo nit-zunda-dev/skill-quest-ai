@@ -50,9 +50,9 @@ E2E_BASE_URL=http://localhost:5173 E2E_API_URL=http://localhost:8787 pnpm test:e
 
 ### 現状
 
-- **CI には E2E ステップは含まれていません。**
-- `.github/workflows/check.yml` では、Lint → 型チェック → ビルド → 単体テスト（＋カバレッジ）までが実行されます。
-- そのため「CI で E2E が通る」状態にするには、以下の準備とワークフロー変更が必要です。
+- **CI に E2E ジョブが含まれています**（タスク 7.3 で追加）。**main への PR 時のみ**、`check` ジョブ成功後に `e2e` ジョブが実行されます。
+- `e2e` ジョブ: Playwright ブラウザインストール → プレビュー待機（`E2E_BASE_URL` 設定時）→ `pnpm run test:e2e`（CI 時はヘッドレス）。失敗時は playwright-report と e2e/test-results を成果物としてアップロードします。
+- プレビュー URL を渡すには、リポジトリの GitHub Secrets に `E2E_BASE_URL`（と必要なら `E2E_API_URL`）を設定してください。未設定の場合はサーバー依存の E2E テストはスキップされ、ジョブは成功します。
 
 ### CI で E2E を通すために必要な準備
 
