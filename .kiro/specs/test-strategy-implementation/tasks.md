@@ -149,7 +149,7 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 4.5_
 
 - [ ] 6. E2Eテストの導入
-- [ ] 6.1 Playwrightのインストールと基本設定
+- [x] 6.1 Playwrightのインストールと基本設定
   - `@playwright/test`パッケージをルートレベルにインストール
   - `playwright.config.ts`をプロジェクトルートに作成
   - Chromium、Firefox、WebKitの3つのブラウザプロジェクトを設定
