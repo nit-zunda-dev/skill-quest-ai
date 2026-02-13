@@ -229,7 +229,7 @@ Use whichever pattern fits the work breakdown:
   - CIでヘッドレスモードで実行されることを確認
   - _Requirements: 9.2, 9.3, 9.4_
 
-- [ ] 8.3 E2Eテスト環境の確認
+- [x] 8.3 E2Eテスト環境の確認
   - Playwrightの設定でブラウザ環境（Chromium、Firefox、WebKit）が正しく設定されていることを確認
   - ローカルでUIモード（`--ui`）またはヘッドフルモードが機能することを確認
   - CIでヘッドレスモードで実行されることを確認
