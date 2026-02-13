@@ -7,6 +7,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
+    "test:root": "vitest run --config vitest.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:local": "cross-env E2E_BASE_URL=http://localhost:3000 E2E_API_URL=http://localhost:8787 playwright test",

@@ -241,10 +241,11 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 9.5_
 
 - [ ] 9. テストファイルの命名規則と配置の確認
-- [ ] 9.1 テストファイル命名規則の確認
+- [x] 9.1 テストファイル命名規則の確認
   - 単体テスト: `*.test.ts`または`*.test.tsx`の命名規則に従っていることを確認
   - 統合テスト: `*.integration.test.ts`の命名規則に従っていることを確認
   - E2Eテスト: `*.e2e.test.ts`の命名規則に従っていることを確認
+  - `tests/naming-convention.test.ts` で検証テストを追加、`pnpm test:root` で実行可能
   - _Requirements: 10.1, 10.2, 10.3_
 
 - [ ] 9.2 テストファイル配置の確認
