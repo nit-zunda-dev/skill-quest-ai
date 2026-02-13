@@ -2,75 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import type { Bindings, AuthUser } from '../types';
 import { profileRouter } from './profile';
-import { createMockAuthUser } from '../../../../tests/utils';
+import { createMockAuthUser, createMockD1ForProfile } from '../../../../tests/utils';
 
 const testUser = createMockAuthUser();
-
-function createMockD1ForProfile(overrides?: {
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-    image: string | null;
-  };
-}): Bindings['DB'] {
-  let user = overrides?.user ?? {
-    id: testUser.id,
-    email: testUser.email,
-    name: testUser.name,
-    image: testUser.image ?? null,
-  };
-
-  const users: Array<{
-    id: string;
-    email: string;
-    name: string;
-    image: string | null;
-  }> = [user];
-
-  const createBound = (sql: string) => {
-    const run = async () => {
-      if (sql.includes('UPDATE') && sql.includes('user')) {
-        // 更新処理をシミュレート
-        // 実際の更新は行わないが、成功を返す
-        return { success: true, meta: {} };
-      }
-      return { success: true, meta: {} };
-    };
-    const first = async () => rowForSelect()[0] ?? null;
-    const rowForSelect = () => {
-      if (sql.includes('SELECT') && sql.includes('user')) {
-        return users.length > 0 ? users : [];
-      }
-      return [];
-    };
-    const all = async () => {
-      const rows = rowForSelect();
-      return { results: rows, success: true, meta: {} };
-    };
-    const raw = async () => {
-      if (sql.includes('SELECT') && sql.includes('user')) {
-        return users.length > 0 ? users : [];
-      }
-      return [];
-    };
-    return { run, first, all, raw };
-  };
-
-  return {
-    prepare: (sql: string) => ({
-      bind: (..._args: unknown[]) => createBound(sql),
-    }),
-    batch: async (statements: Array<{ run?: () => Promise<unknown> }>) => {
-      const out: unknown[] = [];
-      for (const stmt of statements) {
-        if (typeof stmt.run === 'function') out.push(await stmt.run());
-        else out.push({ success: true, meta: {} });
-      }
-      return out;
-    },
-  } as unknown as Bindings['DB'];
-}
 
 function createTestApp(mockEnv: Bindings, user?: AuthUser) {
   const app = new Hono<{ Bindings: Bindings; Variables: { user: AuthUser } }>();
@@ -309,28 +243,7 @@ describe('profile router', () => {
     });
 
     it('ユーザーが見つからない場合、404エラーを返す', async () => {
-      // ユーザーが見つからない場合のモック
-      const createBound = (sql: string) => {
-        const run = async () => ({ success: true, meta: {} });
-        const first = async () => null;
-        const all = async () => ({ results: [], success: true, meta: {} });
-        const raw = async () => [];
-        return { run, first, all, raw };
-      };
-
-      mockEnv.DB = {
-        prepare: (sql: string) => ({
-          bind: (..._args: unknown[]) => createBound(sql),
-        }),
-        batch: async (statements: Array<{ run?: () => Promise<unknown> }>) => {
-          const out: unknown[] = [];
-          for (const stmt of statements) {
-            if (typeof stmt.run === 'function') out.push(await stmt.run());
-            else out.push({ success: true, meta: {} });
-          }
-          return out;
-        },
-      } as unknown as Bindings['DB'];
+      mockEnv.DB = createMockD1ForProfile({ user: null }) as unknown as Bindings['DB'];
 
       const { app, env } = createTestApp(mockEnv);
       const res = await app.request('/', {

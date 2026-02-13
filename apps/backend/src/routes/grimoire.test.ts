@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import type { Bindings, AuthUser } from '../types';
 import { grimoireRouter } from './grimoire';
-import { createMockAuthUser } from '../../../../tests/utils';
-import { createMockAI } from '../../../../tests/utils';
+import { createMockAuthUser, createMockAI, createMockD1ForGrimoire } from '../../../../tests/utils';
 import { Genre } from '@skill-quest/shared';
 
 const testUser = createMockAuthUser();
@@ -26,79 +25,6 @@ vi.mock('../services/ai-usage', async () => {
 vi.mock('../services/ai', () => ({
   createAiService: vi.fn(),
 }));
-
-function createMockD1ForGrimoire(overrides?: {
-  grimoireEntries?: Array<{
-    id: string;
-    userId: string;
-    taskTitle: string;
-    narrative: string;
-    rewardXp: number;
-    rewardGold: number;
-    createdAt: number;
-  }>;
-  completedQuests?: Array<{
-    id: string;
-    userId: string;
-    title: string;
-    difficulty: number;
-    winCondition: unknown;
-    completedAt: string | null;
-  }>;
-}): Bindings['DB'] {
-  const grimoireEntries = overrides?.grimoireEntries ?? [];
-  const completedQuests = overrides?.completedQuests ?? [];
-
-  const createBound = (sql: string) => {
-    const run = async () => ({ success: true, meta: {} });
-    const first = async () => null;
-    const rowForSelect = () => {
-      if (sql.includes('quests') && sql.includes('completed_at')) {
-        // DrizzleはJSONカラムを文字列として期待する
-        // スキーマに合わせてすべてのフィールドを含める
-        return completedQuests.map(q => ({
-          id: q.id,
-          userId: q.userId,
-          skillId: null,
-          title: q.title,
-          scenario: null,
-          difficulty: q.difficulty,
-          winCondition: typeof q.winCondition === 'string' ? q.winCondition : JSON.stringify(q.winCondition),
-          status: 'done',
-          completedAt: q.completedAt,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }));
-      }
-      if (sql.includes('grimoire_entries')) {
-        return grimoireEntries;
-      }
-      return [];
-    };
-    const all = async () => {
-      const rows = rowForSelect();
-      return { results: rows, success: true, meta: {} };
-    };
-    const raw = async () => {
-      return rowForSelect();
-    };
-    return { run, first, all, raw };
-  };
-
-  return {
-    prepare: (sql: string) => ({
-      bind: (..._args: unknown[]) => createBound(sql),
-    }),
-    batch: async (statements: Array<{ run?: () => Promise<unknown> }>) => {
-      const out: unknown[] = [];
-      for (const stmt of statements) {
-        if (typeof stmt.run === 'function') out.push(await stmt.run());
-        else out.push({ success: true, meta: {} });
-      }
-      return out;
-    },
-  } as unknown as Bindings['DB'];
-}
 
 function createTestApp(mockEnv: Bindings, user?: AuthUser) {
   const app = new Hono<{ Bindings: Bindings; Variables: { user: AuthUser } }>();

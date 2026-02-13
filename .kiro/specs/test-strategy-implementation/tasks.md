@@ -256,10 +256,12 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 10.4, 10.5, 10.6_
 
 - [ ] 10. 既存テストのリファクタリング（段階的）
-- [ ] 10.1 既存テストファイルで共通ユーティリティを使用するように更新
+- [x] 10.1 既存テストファイルで共通ユーティリティを使用するように更新
   - 既存のテストファイルを分析し、共通ユーティリティを使用できる箇所を特定
   - 段階的に既存のモック関数を共通ユーティリティに置き換え
-  - テストの動作が変わらないことを確認
+  - `createMockD1ForGrimoire`, `createMockD1ForProfile` を tests/utils/mock-d1.ts に追加
+  - grimoire.test.ts, profile.test.ts のインラインD1モックを共通ユーティリティに置換
+  - テストの動作が変わらないことを確認（176 passed）
   - _Requirements: 8.3, 8.4_
 
 - [ ] 10.2 既存テストファイルでテストデータファクトリを使用するように更新

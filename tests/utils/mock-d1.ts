@@ -3,6 +3,7 @@
  * テストで使用するD1データベースのモックを提供
  */
 import type { D1Database } from '@cloudflare/workers-types';
+import { createMockAuthUser } from './mock-auth';
 
 /**
  * AI利用制限用のD1モック（未使用=0、記録は何もしない）
@@ -221,5 +222,121 @@ export function createMockD1ForRateLimit(overrides?: {
     first: async (sql: string, ...params: unknown[]) => first(sql, params),
     run: async (sql: string) => run(sql),
     getDeleteCallCount: () => deleteCallCount,
+  } as unknown as D1Database;
+}
+
+/**
+ * プロフィールルート用のD1モック（user テーブルの SELECT/UPDATE 用）
+ */
+export function createMockD1ForProfile(overrides?: {
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+    image: string | null;
+  } | null;
+}): D1Database {
+  const defaultUser = createMockAuthUser();
+  const userOverride = overrides?.user;
+  const users: Array<{ id: string; email: string; name: string; image: string | null }> =
+    userOverride === null
+      ? []
+      : [userOverride ?? { ...defaultUser, image: defaultUser.image ?? null }];
+
+  const createBound = (sql: string) => {
+    const run = async () => {
+      if (sql.includes('UPDATE') && sql.includes('user')) return { success: true, meta: {} };
+      return { success: true, meta: {} };
+    };
+    const rowForSelect = () => {
+      if (sql.includes('SELECT') && sql.includes('user')) return users;
+      return [];
+    };
+    const first = async () => rowForSelect()[0] ?? null;
+    const all = async () => ({ results: rowForSelect(), success: true, meta: {} });
+    const raw = async () => (sql.includes('SELECT') && sql.includes('user') ? users : []);
+
+    return { run, first, all, raw };
+  };
+
+  return {
+    prepare: (sql: string) => ({
+      bind: (..._args: unknown[]) => createBound(sql),
+    }),
+    batch: async (statements: Array<{ run?: () => Promise<unknown> }>) => {
+      const out: unknown[] = [];
+      for (const stmt of statements) {
+        if (typeof stmt.run === 'function') out.push(await stmt.run());
+        else out.push({ success: true, meta: {} });
+      }
+      return out;
+    },
+  } as unknown as D1Database;
+}
+
+/**
+ * グリモワールルート用のD1モック（grimoire_entries, completed quests 用）
+ */
+export function createMockD1ForGrimoire(overrides?: {
+  grimoireEntries?: Array<{
+    id: string;
+    userId: string;
+    taskTitle: string;
+    narrative: string;
+    rewardXp: number;
+    rewardGold: number;
+    createdAt: number;
+  }>;
+  completedQuests?: Array<{
+    id: string;
+    userId: string;
+    title: string;
+    difficulty: number;
+    winCondition: unknown;
+    completedAt: string | null;
+  }>;
+}): D1Database {
+  const grimoireEntries = overrides?.grimoireEntries ?? [];
+  const completedQuests = overrides?.completedQuests ?? [];
+
+  const createBound = (sql: string) => {
+    const run = async () => ({ success: true, meta: {} });
+    const first = async () => null;
+    const rowForSelect = () => {
+      if (sql.includes('quests') && sql.includes('completed_at')) {
+        return completedQuests.map((q) => ({
+          id: q.id,
+          userId: q.userId,
+          skillId: null,
+          title: q.title,
+          scenario: null,
+          difficulty: q.difficulty,
+          winCondition: typeof q.winCondition === 'string' ? q.winCondition : JSON.stringify(q.winCondition),
+          status: 'done',
+          completedAt: q.completedAt,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+      }
+      if (sql.includes('grimoire_entries')) return grimoireEntries;
+      return [];
+    };
+    const all = async () => ({ results: rowForSelect(), success: true, meta: {} });
+    const raw = async () => rowForSelect();
+    return { run, first, all, raw };
+  };
+
+  return {
+    prepare: (sql: string) => ({
+      bind: (..._args: unknown[]) => createBound(sql),
+    }),
+    batch: async (statements: Array<{ run?: () => Promise<unknown> }>) => {
+      const out: unknown[] = [];
+      for (const stmt of statements) {
+        if (typeof stmt.run === 'function') out.push(await stmt.run());
+        else out.push({ success: true, meta: {} });
+      }
+      return out;
+    },
   } as unknown as D1Database;
 }
