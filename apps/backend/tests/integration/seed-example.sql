@@ -1,0 +1,2 @@
+-- 統合テスト用サンプルシード（必要に応じてINSERTを追加）
+-- 例: INSERT INTO user (id, name, email, ...) VALUES (...);
