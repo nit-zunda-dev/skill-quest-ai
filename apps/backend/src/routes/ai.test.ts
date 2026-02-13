@@ -4,8 +4,9 @@ import type { Bindings, AuthUser } from '../types';
 import { aiRouter } from './ai';
 import { Genre } from '@skill-quest/shared';
 import { Difficulty, TaskType } from '@skill-quest/shared';
+import { createMockD1ForAiUsage, createMockAuthUser } from '../../../../tests/utils';
 
-const testUser: AuthUser = { id: 'test-user-id', email: 'test@example.com', name: 'Test User' };
+const testUser = createMockAuthUser();
 
 /** テスト用の最小 CharacterProfile 形 */
 const stubProfile = {
@@ -19,35 +20,6 @@ const stubProfile = {
   nextLevelXp: 100,
   gold: 0,
 };
-
-/** AI利用制限用のD1モック（未使用=0、記録は何もしない） */
-function createMockD1ForAiUsage(overrides?: {
-  hasCharacter?: boolean;
-  storedProfile?: unknown | null;
-  narrativeCount?: number;
-  partnerCount?: number;
-  chatCount?: number;
-  grimoireCount?: number;
-}) {
-  const hasCharacter = overrides?.hasCharacter ?? false;
-  const storedProfile = overrides?.storedProfile ?? null;
-  const narrativeCount = overrides?.narrativeCount ?? 0;
-  const partnerCount = overrides?.partnerCount ?? 0;
-  const chatCount = overrides?.chatCount ?? 0;
-  const grimoireCount = overrides?.grimoireCount ?? 0;
-  const first = async (sql: string, ...params: unknown[]) => {
-    if (sql.includes('user_character_generated')) return hasCharacter ? { user_id: params[0] } : null;
-    if (sql.includes('user_character_profile') && sql.includes('profile'))
-      return storedProfile != null ? { profile: JSON.stringify(storedProfile) } : null;
-    if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
-      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount, grimoire_count: grimoireCount };
-    return null;
-  };
-  const run = async () => ({ success: true, meta: {} });
-  return {
-    prepare: (sql: string) => ({ bind: (..._args: unknown[]) => ({ run, first: () => first(sql, ..._args) }) }),
-  };
-}
 
 function createTestApp(mockEnv: Bindings, options?: { user?: AuthUser }) {
   const app = new Hono<{ Bindings: Bindings; Variables: { user: AuthUser } }>();

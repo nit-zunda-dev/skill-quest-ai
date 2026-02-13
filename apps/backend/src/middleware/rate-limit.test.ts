@@ -2,69 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import type { Bindings, AuthUser } from '../types';
 import { rateLimitMiddleware } from './rate-limit';
+import { createMockD1ForRateLimit, createMockAuthUser } from '../../../../tests/utils';
 
-const testUser: AuthUser = { id: 'test-user-id', email: 'test@example.com', name: 'Test User' };
-
-/** レート制限用のD1モック */
-function createMockD1ForRateLimit(overrides?: {
-  recentRequests?: Array<{ user_id: string; endpoint: string; created_at: number }>;
-  deleteCount?: number;
-}) {
-  const recentRequests = overrides?.recentRequests ?? [];
-  let deleteCallCount = 0;
-
-  const first = async (sql: string, params?: unknown[]) => {
-    if (sql.includes('SELECT') && sql.includes('COUNT(*)')) {
-      // パラメータに基づいてフィルタリング
-      // bind()で渡されたパラメータは配列として渡される
-      if (params && params.length >= 3) {
-        const userId = params[0] as string;
-        const endpoint = params[1] as string;
-        const windowStart = params[2] as number;
-        
-        const filtered = recentRequests.filter(
-          (req) =>
-            req.user_id === userId &&
-            req.endpoint === endpoint &&
-            req.created_at > windowStart
-        );
-        return { count: filtered.length };
-      }
-      // パラメータがない場合は全件を返す
-      return { count: recentRequests.length };
-    }
-    return null;
-  };
-
-  const run = async (sql: string) => {
-    if (sql.includes('DELETE') && sql.includes('rate_limit_logs')) {
-      deleteCallCount++;
-      return { success: true, meta: {} };
-    }
-    if (sql.includes('INSERT') && sql.includes('rate_limit_logs')) {
-      return { success: true, meta: {} };
-    }
-    return { success: true, meta: {} };
-  };
-
-  const prepare = (sql: string) => ({
-    bind: (...args: unknown[]) => {
-      // bind()で渡されたパラメータを保存
-      const boundParams = args;
-      return {
-        run: async () => run(sql),
-        first: async () => first(sql, boundParams),
-      };
-    },
-  });
-
-  return {
-    prepare,
-    first: async (sql: string, ...params: unknown[]) => first(sql, params),
-    run: async (sql: string) => run(sql),
-    getDeleteCallCount: () => deleteCallCount,
-  };
-}
+const testUser = createMockAuthUser();
 
 function createTestApp(mockEnv: Bindings, user?: AuthUser) {
   const app = new Hono<{ Bindings: Bindings; Variables: { user: AuthUser } }>();
@@ -90,7 +30,7 @@ describe('rateLimitMiddleware', () => {
 
   beforeEach(() => {
     mockEnv = {
-      DB: createMockD1ForRateLimit() as unknown as Bindings['DB'],
+      DB: createMockD1ForRateLimit(),
       AI: {} as Bindings['AI'],
       BETTER_AUTH_SECRET: 'test-secret',
     };
@@ -116,7 +56,7 @@ describe('rateLimitMiddleware', () => {
       created_at: windowStart + (i + 1) * 1000, // windowStartより大きい値（1秒ずつ増加）
     }));
 
-    mockEnv.DB = createMockD1ForRateLimit({ recentRequests }) as unknown as Bindings['DB'];
+    mockEnv.DB = createMockD1ForRateLimit({ recentRequests });
     const { app, env } = createTestApp(mockEnv);
 
     const res = await app.request('/api/ai/generate-character', {
@@ -164,7 +104,7 @@ describe('rateLimitMiddleware', () => {
       created_at: now - (60 - i * 5) * 1000,
     }));
 
-    mockEnv.DB = createMockD1ForRateLimit({ recentRequests }) as unknown as Bindings['DB'];
+    mockEnv.DB = createMockD1ForRateLimit({ recentRequests });
     const { app, env } = createTestApp(mockEnv);
     // generate-characterエンドポイントへのリクエストは許可される（generate-narrativeとは別カウント）
     const res = await app.request('/api/ai/generate-character', {
@@ -183,7 +123,7 @@ describe('rateLimitMiddleware', () => {
       created_at: now - (60 - i * 5) * 1000,
     }));
 
-    mockEnv.DB = createMockD1ForRateLimit({ recentRequests }) as unknown as Bindings['DB'];
+    mockEnv.DB = createMockD1ForRateLimit({ recentRequests });
     const { app, env } = createTestApp(mockEnv);
     // 別ユーザーのリクエストはカウントしない
     const res = await app.request('/api/ai/generate-character', {

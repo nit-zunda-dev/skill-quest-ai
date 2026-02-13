@@ -10,79 +10,7 @@ import {
   CHAT_DAILY_LIMIT,
   getTodayUtc,
 } from './ai-usage';
-
-/** テスト用 D1 互換モック（user_character_generated / ai_daily_usage 用） */
-function createMockD1() {
-  const characterRows: { user_id: string }[] = [];
-  const usageRows: Map<string, { narrative: number; partner: number; chat: number; grimoire: number }> = new Map();
-
-  const run = async (sql: string, ...params: unknown[]) => {
-    const key = (params[0] as string) + '-' + (params[1] as string);
-    if (sql.includes('INSERT INTO user_character_generated')) {
-      characterRows.push({ user_id: params[0] as string });
-      return { success: true, meta: {} };
-    }
-    if (sql.includes('INSERT INTO ai_daily_usage')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
-      if (sql.includes('1, 0, 0, 0)') && sql.includes('narrative_count')) cur.narrative = 1;
-      else if (sql.includes('0, 1, 0, 0)') && sql.includes('partner_count')) cur.partner = 1;
-      else if (sql.includes('0, 0, 1, 0)') && sql.includes('chat_count')) cur.chat = (cur.chat || 0) + 1;
-      else if (sql.includes('0, 0, 0, 1)') && sql.includes('grimoire_count')) cur.grimoire = 1;
-      usageRows.set(key, cur);
-      return { success: true, meta: {} };
-    }
-    if (sql.includes('DO UPDATE SET narrative_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
-      usageRows.set(key, { ...cur, narrative: 1 });
-      return { success: true, meta: {} };
-    }
-    if (sql.includes('DO UPDATE SET partner_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
-      usageRows.set(key, { ...cur, partner: 1 });
-      return { success: true, meta: {} };
-    }
-    if (sql.includes('DO UPDATE SET chat_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
-      usageRows.set(key, { ...cur, chat: cur.chat + 1 });
-      return { success: true, meta: {} };
-    }
-    if (sql.includes('DO UPDATE SET grimoire_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
-      usageRows.set(key, { ...cur, grimoire: 1 });
-      return { success: true, meta: {} };
-    }
-    return { success: true, meta: {} };
-  };
-
-  const first = async (sql: string, ...params: unknown[]) => {
-    if (sql.includes('user_character_generated')) {
-      const uid = params[0] as string;
-      return characterRows.some((r) => r.user_id === uid) ? { user_id: uid } : null;
-    }
-    if (sql.includes('SELECT narrative_count') && sql.includes('ai_daily_usage')) {
-      const key = (params[0] as string) + '-' + (params[1] as string);
-      const row = usageRows.get(key);
-      return row
-        ? {
-            narrative_count: row.narrative,
-            partner_count: row.partner,
-            chat_count: row.chat,
-            grimoire_count: row.grimoire,
-          }
-        : null;
-    }
-    return null;
-  };
-
-  const prepare = (sql: string) => ({
-    bind: (...args: unknown[]) => ({
-      run: () => run(sql, ...args),
-      first: () => first(sql, ...args),
-    }),
-  });
-
-  return { prepare, characterRows, usageRows };
-}
+import { createMockD1ForAiUsageService } from '../../../../tests/utils';
 
 describe('ai-usage', () => {
   describe('getTodayUtc', () => {
@@ -94,15 +22,13 @@ describe('ai-usage', () => {
 
   describe('hasCharacterGenerated', () => {
     it('returns false when user has not generated character', async () => {
-      const mock = createMockD1();
-      const db = mock as unknown as D1Database;
+      const db = createMockD1ForAiUsageService();
       const result = await hasCharacterGenerated(db, 'user-1');
       expect(result).toBe(false);
     });
 
     it('returns true after recordCharacterGenerated', async () => {
-      const mock = createMockD1();
-      const db = mock as unknown as D1Database;
+      const db = createMockD1ForAiUsageService();
       await recordCharacterGenerated(db, 'user-1');
       const result = await hasCharacterGenerated(db, 'user-1');
       expect(result).toBe(true);
@@ -111,16 +37,14 @@ describe('ai-usage', () => {
 
   describe('getDailyUsage', () => {
     it('returns zeros when no usage recorded', async () => {
-      const mock = createMockD1();
-      const db = mock as unknown as D1Database;
+      const db = createMockD1ForAiUsageService();
       const today = getTodayUtc();
       const usage = await getDailyUsage(db, 'user-1', today);
       expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0 });
     });
 
     it('returns updated counts after recordNarrative, recordPartner, recordChat', async () => {
-      const mock = createMockD1();
-      const db = mock as unknown as D1Database;
+      const db = createMockD1ForAiUsageService();
       const today = getTodayUtc();
       await recordNarrative(db, 'user-1', today);
       await recordPartner(db, 'user-1', today);

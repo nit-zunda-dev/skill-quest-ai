@@ -23,7 +23,7 @@ Use whichever pattern fits the work breakdown:
 ---
 
 - [ ] 1. テストユーティリティとフィクスチャの整備
-- [ ] 1.1 (P) 共通テストユーティリティディレクトリの作成
+- [x] 1.1 (P) 共通テストユーティリティディレクトリの作成
   - `tests/utils/`ディレクトリを作成
   - 既存のモック関数（`createMockD1`、`createMockD1ForAiUsage`など）を共通ユーティリティに移行
   - D1データベースのモック関数を`tests/utils/mock-d1.ts`に集約
