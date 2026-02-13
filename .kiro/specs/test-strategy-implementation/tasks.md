@@ -135,7 +135,7 @@ Use whichever pattern fits the work breakdown:
   - テスト前にデータベースをリセット
   - _Requirements: 4.1, 4.4_
 
-- [ ] 5.3 (P) クエストCRUD操作の統合テストを実装
+- [x] 5.3 (P) クエストCRUD操作の統合テストを実装
   - `apps/backend/src/routes/quests.integration.test.ts`を作成
   - クエストの作成、取得、更新、削除の統合テストを実装
   - D1データベース操作を含むテスト
