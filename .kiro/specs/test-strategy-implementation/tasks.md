@@ -166,7 +166,7 @@ Use whichever pattern fits the work breakdown:
   - テスト間で状態を共有しないようにする設定を確認
   - _Requirements: 10.6, 11.8, 11.9_
 
-- [ ] 6.3 (P) 認証フローのE2Eテストを実装
+- [x] 6.3 (P) 認証フローのE2Eテストを実装
   - `e2e/auth.e2e.test.ts`を作成
   - ログインからログアウトまでの一連の操作を検証するE2Eテストを実装
   - プレビュー環境またはスタブされたAIレスポンスを使用
