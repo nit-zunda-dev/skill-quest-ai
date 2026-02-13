@@ -128,7 +128,7 @@ Use whichever pattern fits the work breakdown:
   - `wrangler d1 execute --local`を使用する設定を確認
   - _Requirements: 4.2, 4.4, 8.2_
 
-- [ ] 5.2 (P) 認証フローの統合テストを実装
+- [x] 5.2 (P) 認証フローの統合テストを実装
   - `apps/backend/src/routes/auth.integration.test.ts`を作成
   - ログインからログアウトまでの一連の操作を検証する統合テストを実装
   - D1データベースを使用した認証フローのテスト
