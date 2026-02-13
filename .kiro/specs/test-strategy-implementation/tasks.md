@@ -32,7 +32,7 @@ Use whichever pattern fits the work breakdown:
   - APIクライアントのモック関数を`tests/utils/mock-api.ts`に実装
   - _Requirements: 1.6, 2.3, 2.5, 3.4, 4.5, 8.3, 8.4_
 
-- [ ] 1.2 (P) テストデータファクトリの作成
+- [x] 1.2 (P) テストデータファクトリの作成
   - `tests/fixtures/`ディレクトリを作成
   - テストユーザーのファクトリ関数を実装
   - テストクエストのファクトリ関数を実装
