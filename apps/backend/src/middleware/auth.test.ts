@@ -162,12 +162,12 @@ describe('authMiddleware', () => {
   });
 
   it('injects user information into context', async () => {
-    const customUser = {
+    const customUser = createMockAuthUser({
       id: 'custom-user-id',
       email: 'custom@example.com',
       name: 'Custom User',
       image: 'https://example.com/avatar.png',
-    };
+    });
 
     const mockAuth = {
       api: {

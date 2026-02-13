@@ -3,8 +3,9 @@ import { Hono } from 'hono';
 import type { Bindings, AuthUser } from '../types';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { createMockAuthUser } from '../../../../tests/utils';
 
-const testUser: AuthUser = { id: 'test-user-id', email: 'test@example.com', name: 'Test User' };
+const testUser = createMockAuthUser();
 
 function createMockEnv(): Bindings {
   return {
@@ -80,7 +81,7 @@ describe('Input Validation', () => {
       const validRes = await app.request('/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test User', email: 'test@example.com' }),
+        body: JSON.stringify({ name: testUser.name, email: testUser.email }),
       }, mockEnv);
       expect(validRes.status).toBe(200);
 
@@ -88,7 +89,7 @@ describe('Input Validation', () => {
       const invalidRes1 = await app.request('/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: '', email: 'test@example.com' }),
+        body: JSON.stringify({ name: '', email: testUser.email }),
       }, mockEnv);
       expect(invalidRes1.status).toBe(400);
       const body1 = await invalidRes1.json() as { error?: { message?: string; code?: string } };
@@ -102,7 +103,7 @@ describe('Input Validation', () => {
       const invalidRes2 = await app.request('/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test User', email: 'invalid-email' }),
+        body: JSON.stringify({ name: testUser.name, email: 'invalid-email' }),
       }, mockEnv);
       expect(invalidRes2.status).toBe(400);
       const body2 = await invalidRes2.json() as { error?: { message?: string; code?: string } };

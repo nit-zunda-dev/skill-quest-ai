@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { IntroStep, QuestionStep, LoadingStep } from './GenesisStep';
 import { Genre } from '@skill-quest/shared';
+import { createTestUser } from '../../../../tests/fixtures';
+
+const defaultTestUser = createTestUser();
 
 describe('IntroStep', () => {
   it('タイトルと説明を表示する', () => {
@@ -33,7 +36,7 @@ describe('IntroStep', () => {
 
 describe('QuestionStep', () => {
   const defaultProps = {
-    name: 'Test User',
+    name: defaultTestUser.name,
     goal: '',
     genre: Genre.FANTASY,
     onChange: vi.fn(),
@@ -42,7 +45,7 @@ describe('QuestionStep', () => {
   };
 
   it('名前フィールドを表示する（読み取り専用）', () => {
-    render(<QuestionStep {...defaultProps} name="Test User" />);
+    render(<QuestionStep {...defaultProps} name={defaultTestUser.name} />);
 
     const nameInput = screen.getByDisplayValue('Test User') as HTMLInputElement;
     expect(nameInput).toBeDefined();

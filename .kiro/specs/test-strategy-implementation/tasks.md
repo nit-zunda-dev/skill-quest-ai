@@ -264,8 +264,12 @@ Use whichever pattern fits the work breakdown:
   - テストの動作が変わらないことを確認（176 passed）
   - _Requirements: 8.3, 8.4_
 
-- [ ] 10.2 既存テストファイルでテストデータファクトリを使用するように更新
+- [x] 10.2 既存テストファイルでテストデータファクトリを使用するように更新
   - 既存のテストファイルでインライン定義されているテストデータをファクトリ関数に置き換え
-  - テストの意図が明確になるようにリファクタリング
-  - テストの動作が変わらないことを確認
+  - validation.test.ts: createMockAuthUser を使用
+  - auth.test.ts: createMockAuthUser で customUser を生成
+  - useProfile.test.tsx: createTestUser で mockProfile を生成
+  - useQuests.test.tsx: createTestQuest で mockQuests を生成
+  - GenesisStep.test.tsx: createTestUser で defaultTestUser を生成
+  - テストの動作が変わらないことを確認（変更対象テストは全てパス）
   - _Requirements: 8.1_
