@@ -179,7 +179,7 @@ Use whichever pattern fits the work breakdown:
   - プレビュー環境で実行
   - _Requirements: 11.3, 11.6, 11.7_
 
-- [ ] 6.5 (P) AIチャット機能のE2Eテストを実装
+- [x] 6.5 (P) AIチャット機能のE2Eテストを実装
   - `e2e/chat.e2e.test.ts`を作成
   - チャット入力からストリーミングレスポンス表示までの操作を検証するE2Eテストを実装
   - プレビュー環境またはスタブされたAIレスポンスを使用
