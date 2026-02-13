@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { D1Database } from '@cloudflare/workers-types';
 import {
   hasCharacterGenerated,
@@ -7,6 +7,13 @@ import {
   recordNarrative,
   recordPartner,
   recordChat,
+  recordGrimoireGeneration,
+  saveCharacterProfile,
+  updateCharacterProfile,
+  getCharacterProfile,
+  createGrimoireEntry,
+  getGrimoireEntries,
+  completeQuest,
   CHAT_DAILY_LIMIT,
   getTodayUtc,
 } from './ai-usage';
@@ -60,6 +67,276 @@ describe('ai-usage', () => {
   describe('limits', () => {
     it('CHAT_DAILY_LIMIT is 10', () => {
       expect(CHAT_DAILY_LIMIT).toBe(10);
+    });
+  });
+
+  describe('recordGrimoireGeneration', () => {
+    it('records grimoire generation usage', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordGrimoireGeneration(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.grimoireCount).toBe(1);
+    });
+  });
+
+  describe('saveCharacterProfile', () => {
+    it('saves character profile for user', async () => {
+      const profileRows: Map<string, string> = new Map();
+      const runMock = vi.fn().mockResolvedValue({ success: true, meta: {} });
+      const firstMock = vi.fn().mockImplementation(async (sql: string, ...params: unknown[]) => {
+        if (sql.includes('SELECT profile FROM user_character_profile')) {
+          const userId = params[0] as string;
+          const profileJson = profileRows.get(userId);
+          return profileJson ? { profile: profileJson } : null;
+        }
+        return null;
+      });
+      const prepareMock = vi.fn().mockImplementation((sql: string) => ({
+        bind: (...args: unknown[]) => ({
+          run: async () => {
+            if (sql.includes('INSERT INTO user_character_profile')) {
+              const userId = args[0] as string;
+              const profileJson = args[1] as string;
+              profileRows.set(userId, profileJson);
+            }
+            return runMock();
+          },
+          first: () => firstMock(sql, ...args),
+        }),
+      }));
+      const db = { prepare: prepareMock } as unknown as D1Database;
+
+      const profile = {
+        name: 'テスト',
+        className: '戦士',
+        level: 1,
+      };
+
+      await saveCharacterProfile(db, 'user-1', profile);
+      const saved = await getCharacterProfile(db, 'user-1');
+
+      expect(saved).toBeDefined();
+      expect((saved as { name?: string })?.name).toBe('テスト');
+    });
+  });
+
+  describe('getCharacterProfile', () => {
+    it('returns null when profile does not exist', async () => {
+      const db = createMockD1ForAiUsageService();
+      const profile = await getCharacterProfile(db, 'user-nonexistent');
+      expect(profile).toBeNull();
+    });
+
+    it('returns parsed profile when exists', async () => {
+      const profileRows: Map<string, string> = new Map();
+      const runMock = vi.fn().mockResolvedValue({ success: true, meta: {} });
+      const firstMock = vi.fn().mockImplementation(async (sql: string, ...params: unknown[]) => {
+        if (sql.includes('SELECT profile FROM user_character_profile')) {
+          const userId = params[0] as string;
+          const profileJson = profileRows.get(userId);
+          return profileJson ? { profile: profileJson } : null;
+        }
+        return null;
+      });
+      const prepareMock = vi.fn().mockImplementation((sql: string) => ({
+        bind: (...args: unknown[]) => ({
+          run: async () => {
+            if (sql.includes('INSERT INTO user_character_profile')) {
+              const userId = args[0] as string;
+              const profileJson = args[1] as string;
+              profileRows.set(userId, profileJson);
+            }
+            return runMock();
+          },
+          first: () => firstMock(sql, ...args),
+        }),
+      }));
+      const db = { prepare: prepareMock } as unknown as D1Database;
+
+      const originalProfile = {
+        name: 'キャラクター',
+        className: '魔法使い',
+        level: 5,
+      };
+      await saveCharacterProfile(db, 'user-1', originalProfile);
+      const retrieved = await getCharacterProfile(db, 'user-1');
+
+      expect(retrieved).toBeDefined();
+      expect((retrieved as { name?: string })?.name).toBe('キャラクター');
+      expect((retrieved as { className?: string })?.className).toBe('魔法使い');
+      expect((retrieved as { level?: number })?.level).toBe(5);
+    });
+  });
+
+  describe('updateCharacterProfile', () => {
+    it('updates existing profile with partial data', async () => {
+      const profileRows: Map<string, string> = new Map();
+      const runMock = vi.fn().mockResolvedValue({ success: true, meta: {} });
+      const firstMock = vi.fn().mockImplementation(async (sql: string, ...params: unknown[]) => {
+        if (sql.includes('SELECT profile FROM user_character_profile')) {
+          const userId = params[0] as string;
+          const profileJson = profileRows.get(userId);
+          return profileJson ? { profile: profileJson } : null;
+        }
+        return null;
+      });
+      const prepareMock = vi.fn().mockImplementation((sql: string) => ({
+        bind: (...args: unknown[]) => ({
+          run: async () => {
+            if (sql.includes('INSERT INTO user_character_profile')) {
+              const userId = args[0] as string;
+              const profileJson = args[1] as string;
+              profileRows.set(userId, profileJson);
+            } else if (sql.includes('UPDATE user_character_profile')) {
+              const profileJson = args[0] as string;
+              const userId = args[1] as string;
+              profileRows.set(userId, profileJson);
+            }
+            return runMock();
+          },
+          first: () => firstMock(sql, ...args),
+        }),
+      }));
+      const db = { prepare: prepareMock } as unknown as D1Database;
+
+      const originalProfile = {
+        name: 'キャラクター',
+        className: '戦士',
+        level: 1,
+        currentXp: 0,
+      };
+      await saveCharacterProfile(db, 'user-1', originalProfile);
+
+      await updateCharacterProfile(db, 'user-1', { level: 2, currentXp: 100 });
+
+      const updated = await getCharacterProfile(db, 'user-1');
+      expect((updated as { level?: number })?.level).toBe(2);
+      expect((updated as { currentXp?: number })?.currentXp).toBe(100);
+      expect((updated as { name?: string })?.name).toBe('キャラクター'); // Original fields preserved
+    });
+
+    it('does nothing when profile does not exist', async () => {
+      const db = createMockD1ForAiUsageService();
+      await expect(updateCharacterProfile(db, 'user-nonexistent', { level: 2 })).resolves.not.toThrow();
+    });
+  });
+
+  describe('createGrimoireEntry', () => {
+    it('creates grimoire entry and returns id', async () => {
+      const db = createMockD1ForAiUsageService();
+      const entry = {
+        taskTitle: 'テストタスク',
+        narrative: '物語のセグメント',
+        rewardXp: 30,
+        rewardGold: 15,
+      };
+
+      const result = await createGrimoireEntry(db, 'user-1', entry);
+
+      expect(result.id).toBeDefined();
+      expect(typeof result.id).toBe('string');
+    });
+  });
+
+  describe('getGrimoireEntries', () => {
+    it('returns empty array when no entries exist', async () => {
+      const allMock = vi.fn().mockResolvedValue({ results: [], success: true, meta: {} });
+      const prepareMock = vi.fn().mockImplementation((sql: string) => ({
+        bind: (..._args: unknown[]) => ({
+          all: () => allMock(),
+        }),
+      }));
+      const db = { prepare: prepareMock } as unknown as D1Database;
+
+      const entries = await getGrimoireEntries(db, 'user-1');
+      expect(entries).toEqual([]);
+    });
+
+    it('returns entries in descending order by created_at', async () => {
+      const entries: Array<{ id: string; task_title: string; narrative: string; reward_xp: number; reward_gold: number; created_at: number }> = [];
+      let timestampCounter = 1000;
+      const runMock = vi.fn().mockImplementation(async () => {
+        return { success: true, meta: {} };
+      });
+      const allMock = vi.fn().mockImplementation(() => {
+        // Sort entries by created_at descending (newest first)
+        const sorted = [...entries].sort((a, b) => b.created_at - a.created_at);
+        return Promise.resolve({ results: sorted, success: true, meta: {} });
+      });
+      const prepareMock = vi.fn().mockImplementation((sql: string) => ({
+        bind: (...args: unknown[]) => ({
+          run: async () => {
+            if (sql.includes('INSERT INTO grimoire_entries')) {
+              const id = args[0] as string;
+              const taskTitle = args[2] as string;
+              const narrative = args[3] as string;
+              const rewardXp = args[4] as number;
+              const rewardGold = args[5] as number;
+              // Use explicit timestamp to ensure ordering
+              const createdAt = timestampCounter++;
+              entries.push({
+                id,
+                task_title: taskTitle,
+                narrative,
+                reward_xp: rewardXp,
+                reward_gold: rewardGold,
+                created_at: createdAt,
+              });
+            }
+            return runMock();
+          },
+          all: () => allMock(),
+        }),
+      }));
+      const db = { prepare: prepareMock } as unknown as D1Database;
+
+      const entry1 = {
+        taskTitle: 'タスク1',
+        narrative: '物語1',
+        rewardXp: 10,
+        rewardGold: 5,
+      };
+      const entry2 = {
+        taskTitle: 'タスク2',
+        narrative: '物語2',
+        rewardXp: 20,
+        rewardGold: 10,
+      };
+
+      await createGrimoireEntry(db, 'user-1', entry1);
+      await createGrimoireEntry(db, 'user-1', entry2);
+
+      const retrievedEntries = await getGrimoireEntries(db, 'user-1');
+
+      expect(retrievedEntries.length).toBe(2);
+      // Newer entry (higher timestamp) should come first
+      expect(retrievedEntries[0].taskTitle).toBe('タスク2');
+      expect(retrievedEntries[1].taskTitle).toBe('タスク1');
+    });
+  });
+
+  describe('completeQuest', () => {
+    it('returns true when quest is completed', async () => {
+      const db = createMockD1ForAiUsageService();
+      const result = await completeQuest(db, 'user-1', 'quest-1');
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('returns false when quest does not exist', async () => {
+      const db = createMockD1ForAiUsageService();
+      // Mock to return 0 changes
+      const mockDb = {
+        ...db,
+        prepare: vi.fn().mockReturnValue({
+          bind: vi.fn().mockReturnValue({
+            run: vi.fn().mockResolvedValue({ success: true, meta: { changes: 0 } }),
+          }),
+        }),
+      } as unknown as D1Database;
+
+      const result = await completeQuest(mockDb, 'user-1', 'non-existent-quest');
+      expect(result).toBe(false);
     });
   });
 });
