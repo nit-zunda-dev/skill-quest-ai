@@ -59,14 +59,14 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 6.2, 7.5_
 
 - [ ] 3. 共有パッケージのテスト実装
-- [ ] 3.1 (P) packages/sharedにVitest設定を追加
+- [x] 3.1 (P) packages/sharedにVitest設定を追加
   - `packages/shared/vitest.config.ts`を作成
   - node環境で実行するように設定
   - `*.test.ts`ファイルを対象とする設定を追加
   - `package.json`に`test`スクリプトを追加
   - _Requirements: 5.2, 9.2, 10.1, 10.5_
 
-- [ ] 3.2 (P) Zodスキーマのバリデーションテストを実装
+- [x] 3.2 (P) Zodスキーマのバリデーションテストを実装
   - `packages/shared/src/schemas.test.ts`を作成
   - 各スキーマ（`createQuestSchema`、`updateQuestSchema`、`genesisFormDataSchema`など）の`parse`テストを実装
   - 各スキーマの`safeParse`テストを実装
