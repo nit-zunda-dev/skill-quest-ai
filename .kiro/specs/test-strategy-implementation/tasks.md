@@ -192,7 +192,7 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 11.5, 11.6, 11.7, 11.10_
 
 - [ ] 7. CI/CDパイプラインへの統合
-- [ ] 7.1 既存CIワークフローの確認と拡張
+- [x] 7.1 既存CIワークフローの確認と拡張
   - `.github/workflows/check.yml`の現在の設定を確認
   - Lint → 型チェック → ビルド → 単体テストの順序が正しいことを確認
   - Turboによる並列実行が機能していることを確認
