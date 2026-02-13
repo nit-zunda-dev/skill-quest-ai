@@ -217,7 +217,7 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 7.6, 7.7, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
 
 - [ ] 8. テスト実行環境の最終確認
-- [ ] 8.1 フロントエンドテスト環境の確認
+- [x] 8.1 フロントエンドテスト環境の確認
   - `apps/frontend/vitest.config.ts`でjsdom環境が設定されていることを確認
   - ウォッチモード（`test:watch`）が機能することを確認
   - CIでヘッドレスモードで実行されることを確認
