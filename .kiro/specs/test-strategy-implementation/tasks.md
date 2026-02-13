@@ -235,7 +235,7 @@ Use whichever pattern fits the work breakdown:
   - CIでヘッドレスモードで実行されることを確認
   - _Requirements: 9.6, 9.7, 9.8_
 
-- [ ] 8.4 Miniflare設定の確認（オプション）
+- [x] 8.4 Miniflare設定の確認（オプション）
   - 統合テストでMiniflareを使用する場合の設定を確認
   - Workers環境のローカルエミュレーションが機能することを確認
   - _Requirements: 9.5_
