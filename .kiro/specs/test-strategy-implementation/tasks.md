@@ -173,7 +173,7 @@ Use whichever pattern fits the work breakdown:
   - スクリーンショットと動画を保存する設定を確認
   - _Requirements: 11.2, 11.6, 11.7, 11.10_
 
-- [ ] 6.4 (P) クエスト操作のE2Eテストを実装
+- [x] 6.4 (P) クエスト操作のE2Eテストを実装
   - `e2e/quests.e2e.test.ts`を作成
   - クエストの作成、編集、完了、削除の操作を検証するE2Eテストを実装
   - プレビュー環境で実行
