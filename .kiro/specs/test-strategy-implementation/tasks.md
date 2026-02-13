@@ -248,10 +248,11 @@ Use whichever pattern fits the work breakdown:
   - `tests/naming-convention.test.ts` で検証テストを追加、`pnpm test:root` で実行可能
   - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 9.2 テストファイル配置の確認
+- [x] 9.2 テストファイル配置の確認
   - Co-located pattern（対象ファイルと同階層）に従っていることを確認
   - E2Eテストファイルが`e2e/`ディレクトリに配置されていることを確認
   - Vitestの設定で`include`パターンが正しく定義されていることを確認
+  - `tests/file-placement.test.ts` で検証テストを追加、`pnpm test:root` で実行可能
   - _Requirements: 10.4, 10.5, 10.6_
 
 - [ ] 10. 既存テストのリファクタリング（段階的）
