@@ -3,11 +3,15 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
+    alias: { 
+      '@': path.resolve(__dirname, 'src'),
+      '@skill-quest/shared': path.resolve(__dirname, '../../packages/shared/src'),
+    },
   },
   test: {
     environment: 'jsdom',
     globals: true,
+    setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     coverage: {
       provider: 'v8',

@@ -90,7 +90,7 @@ Use whichever pattern fits the work breakdown:
   - 認証ミドルウェアの場合は成功時と失敗時（401 Unauthorized）の両方をテスト
   - _Requirements: 1.3, 3.3_
 
-- [ ] 4.3 (P) 未テストのReactコンポーネントのテストを追加
+- [x] 4.3 (P) 未テストのReactコンポーネントのテストを追加
   - 既存のコンポーネントを分析し、未テストのものを特定
   - `@testing-library/react`を使用したコンポーネント単体テストを実装
   - UIの振る舞いを検証するテストを追加
