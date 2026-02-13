@@ -1,6 +1,7 @@
 /**
- * CIワークフロー検証テスト (Requirement 7.1, 7.3, 7.4)
+ * CIワークフロー検証テスト (Requirement 7.1, 7.2, 7.3, 7.4)
  * - Lint → 型チェック → ビルド → 単体テストの順序
+ * - mainマージ時にも全チェックが実行されること (7.2)
  * - テスト失敗時にPRマージがブロックされること
  */
 import { readFileSync } from 'node:fs';
@@ -23,6 +24,14 @@ describe('CI workflow (check.yml)', () => {
     expect(content).toMatch(/branches:\s*\n\s*- main/);
     expect(content).toMatch(/- develop/);
     expect(content).toMatch(/push:/);
+  });
+
+  it('runs full check on push to main so merge to main triggers all checks (7.2)', () => {
+    const pushStart = content.indexOf('push:');
+    expect(pushStart).toBeGreaterThan(-1);
+    const afterPush = content.slice(pushStart, content.indexOf('jobs:'));
+    expect(afterPush).toMatch(/- main/);
+    expect(afterPush).toMatch(/branches:/);
   });
 
   it('has job "check" with steps in order: Lint → Type check → Build → Test', () => {

@@ -199,7 +199,7 @@ Use whichever pattern fits the work breakdown:
   - テスト失敗時にPRマージがブロックされることを確認
   - _Requirements: 7.1, 7.3, 7.4_
 
-- [ ] 7.2 mainブランチマージ時のテスト実行設定
+- [x] 7.2 mainブランチマージ時のテスト実行設定
   - mainブランチへのマージ時に全チェック（Lint、型チェック、ビルド、テスト）が実行されることを確認
   - 既存のワークフロー設定を確認し、必要に応じて調整
   - _Requirements: 7.2_
