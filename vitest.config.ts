@@ -15,5 +15,16 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['tests/**/*.ts'],
+      exclude: [
+        'tests/**/*.test.ts',
+        'tests/**/*.config.ts',
+        '**/node_modules/**',
+        '**/dist/**',
+      ],
+    },
   },
 });

@@ -42,7 +42,7 @@ Use whichever pattern fits the work breakdown:
   - _Requirements: 8.1_
 
 - [ ] 2. カバレッジ設定の追加
-- [ ] 2.1 Vitestカバレッジプロバイダーのインストールと設定
+- [x] 2.1 Vitestカバレッジプロバイダーのインストールと設定
   - `@vitest/coverage-v8`パッケージをルートレベルにインストール
   - 各パッケージ（frontend, backend, shared）の`vitest.config.ts`にカバレッジ設定を追加
   - v8プロバイダーを使用するように設定

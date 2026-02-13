@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@skill-quest/eslint-config": "workspace:*",
+    "@vitest/coverage-v8": "^2.0.0",
     "eslint": "^9.0.0",
     "turbo": "^2.0.0",
     "typescript": "~5.8.2",
