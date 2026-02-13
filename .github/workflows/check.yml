@@ -46,7 +46,7 @@ jobs:
         continue-on-error: false
 
       - name: Test with coverage
-        run: pnpm run test -- --coverage
+        run: pnpm run test -- -- --coverage
         continue-on-error: false
 
       - name: Upload test coverage

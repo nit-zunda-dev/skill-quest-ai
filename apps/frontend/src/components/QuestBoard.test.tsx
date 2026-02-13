@@ -24,7 +24,7 @@ describe('QuestBoard', () => {
 
   it('タスク追加ボタンを表示する', () => {
     render(<QuestBoard {...defaultProps} />);
-    const addButton = screen.getByRole('button', { name: '' });
+    const addButton = screen.getByRole('button', { name: 'タスクを追加' });
     expect(addButton).toBeDefined();
   });
 
@@ -49,7 +49,7 @@ describe('QuestBoard', () => {
     const input = screen.getByPlaceholderText(/タスク名を入力/);
     fireEvent.change(input, { target: { value: 'New Task' } });
     
-    const submitButton = screen.getByRole('button', { name: /追加/ });
+    const submitButton = screen.getByRole('button', { name: '追加', exact: true });
     fireEvent.click(submitButton);
 
     expect(onAddTask).toHaveBeenCalledWith({
@@ -124,7 +124,7 @@ describe('QuestBoard', () => {
     const hardButton = screen.getByText(Difficulty.HARD);
     fireEvent.click(hardButton);
 
-    const submitButton = screen.getByRole('button', { name: /追加/ });
+    const submitButton = screen.getByRole('button', { name: '追加', exact: true });
     fireEvent.click(submitButton);
 
     expect(onAddTask).toHaveBeenCalledWith({
