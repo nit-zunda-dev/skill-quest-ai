@@ -91,11 +91,38 @@ export interface AiService {
 }
 
 /**
+ * 統合テスト用スタブ: env.AI を呼ばず固定値を返す AiService
+ */
+function createStubAiService(env: Bindings): AiService {
+  return {
+    runWithLlama31_8b: async () => '',
+    runWithLlama33_70b: async () => '',
+    generateCharacter: async (data: GenesisFormData) =>
+      defaultCharacterProfile(data.name, data.goal, data.genre),
+    generateNarrative: async () => ({
+      narrative: 'Stub narrative.',
+      rewardXp: 10,
+      rewardGold: 5,
+    }),
+    generatePartnerMessage: async () => 'Stub partner message.',
+    generateGrimoire: async () => ({
+      narrative: 'Stub grimoire.',
+      rewardXp: 10,
+      rewardGold: 5,
+    }),
+  };
+}
+
+/**
  * env から AI バインディングを取得し、AI サービスを生成する。
  * env.AI は Cloudflare Workers の Ai バインディング（AiRunBinding と互換）。
  * AI Gateway IDが設定されている場合は、すべてのAI呼び出しをAI Gateway経由で実行する。
+ * INTEGRATION_TEST_AI_STUB が '1' のときはスタブを返し本番AIを呼ばない。
  */
 export function createAiService(env: Bindings): AiService {
+  if (env.INTEGRATION_TEST_AI_STUB === '1') {
+    return createStubAiService(env);
+  }
   const ai = env.AI as AiRunBinding;
   const gatewayId = env.AI_GATEWAY_ID;
   return {
