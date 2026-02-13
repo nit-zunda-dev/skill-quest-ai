@@ -45,16 +45,19 @@ jobs:
         run: pnpm run build
         continue-on-error: false
 
-      - name: Test
-        run: pnpm run test
+      - name: Test with coverage
+        run: pnpm run test -- --coverage
         continue-on-error: false
 
-      - name: Upload test coverage (if available)
+      - name: Upload test coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-coverage
           path: |
-            **/coverage
-            **/.coverage
+            apps/frontend/coverage
+            apps/backend/coverage
+            packages/shared/coverage
+            coverage
           if-no-files-found: ignore
+          retention-days: 30

@@ -51,7 +51,7 @@ Use whichever pattern fits the work breakdown:
   - 初期段階では閾値なしでレポートのみ取得する設定
   - _Requirements: 6.1, 6.3, 6.5_
 
-- [ ] 2.2 CIでのカバレッジレポート生成とアップロード
+- [x] 2.2 CIでのカバレッジレポート生成とアップロード
   - `.github/workflows/check.yml`にカバレッジレポート生成ステップを追加
   - `--coverage`フラグを使用してテスト実行時にカバレッジを収集
   - カバレッジレポートを成果物としてアップロードする設定を追加
