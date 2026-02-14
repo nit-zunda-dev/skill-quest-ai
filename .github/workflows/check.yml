@@ -45,16 +45,85 @@ jobs:
         run: pnpm run build
         continue-on-error: false
 
-      - name: Test
-        run: pnpm run test
+      - name: Test with coverage
+        run: pnpm run test -- -- --coverage
         continue-on-error: false
 
-      - name: Upload test coverage (if available)
+      - name: Upload test coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-coverage
           path: |
-            **/coverage
-            **/.coverage
+            apps/frontend/coverage
+            apps/backend/coverage
+            packages/shared/coverage
+            coverage
           if-no-files-found: ignore
+          retention-days: 30
+
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Wait for preview environment
+        if: env.E2E_BASE_URL != ''
+        run: |
+          for i in $(seq 1 24); do
+            if curl -sf "$E2E_BASE_URL" > /dev/null; then echo "Preview ready"; exit 0; fi
+            echo "Waiting for preview... ($i/24)"
+            sleep 30
+          done
+          echo "Preview not ready within 12 minutes"
+          exit 1
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+
+      - name: Run E2E tests
+        run: pnpm run test:e2e
+        env:
+          CI: true
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_API_URL: ${{ secrets.E2E_API_URL }}
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload E2E test results (screenshots, videos, traces)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: e2e/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -10,17 +10,19 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useQuests } from './useQuests';
+import { createTestQuest } from '../../../../tests/fixtures';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 
 const mockQuests = [
-  {
+  createTestQuest({
     id: 'q1',
     title: 'Test Quest',
-    type: 'TODO',
-    difficulty: 'EASY',
+    type: TaskType.TODO,
+    difficulty: Difficulty.EASY,
     completed: false,
     streak: 0,
     status: 'todo',
-  },
+  }),
 ];
 
 vi.mock('@/lib/client', () => ({

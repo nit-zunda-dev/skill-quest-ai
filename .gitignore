@@ -64,6 +64,10 @@ Thumbs.db
 coverage/
 .nyc_output/
 *.lcov
+e2e/test-results/
+playwright-report/
+test-results/
+.playwright/
 
 # Temporary files
 *.tmp

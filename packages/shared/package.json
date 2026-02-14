@@ -12,10 +12,13 @@
     }
   },
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "typescript": "~5.8.2",
+    "vitest": "^2.0.0",
     "zod": "^3.23.8"
   },
   "dependencies": {}

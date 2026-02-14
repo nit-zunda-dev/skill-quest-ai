@@ -4,7 +4,21 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    exclude: ['**/*.integration.test.ts'],
     setupFiles: ['./vitest.setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.ts'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.config.ts',
+        'src/**/*.d.ts',
+        'src/index.ts',
+        '**/node_modules/**',
+        '**/dist/**',
+      ],
+    },
   },
 });

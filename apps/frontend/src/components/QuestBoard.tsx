@@ -133,6 +133,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
         <button 
           onClick={() => setIsAdding(true)}
           className="bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors"
+          aria-label="タスクを追加"
         >
           <Plus className="w-5 h-5" />
         </button>
