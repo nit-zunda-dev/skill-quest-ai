@@ -11,13 +11,14 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useProfile } from './useProfile';
+import { createTestUser } from '../../../../tests/fixtures';
 
-const mockProfile = {
+const mockProfile = createTestUser({
   id: 'user-1',
   email: 'user@example.com',
   name: 'Test User',
-  image: null as string | null,
-};
+  image: null,
+});
 
 vi.mock('@/lib/client', () => ({
   client: {

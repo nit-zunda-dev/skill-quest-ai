@@ -4,15 +4,14 @@ import type { Bindings } from '../types';
 import type { AuthUser } from '../types';
 import { questsRouter } from './quests';
 import { Difficulty, TaskType } from '@skill-quest/shared';
+import { createMockD1ForQuests, createMockAuthUser } from '../../../../tests/utils';
 
 type QuestVariables = { user: AuthUser };
 
 /** Test-only fixture: not used for real auth */
-const MOCK_AUTH_USER: AuthUser = {
-  id: 'test-user-id',
+const MOCK_AUTH_USER = createMockAuthUser({
   email: process.env.TEST_USER_EMAIL ?? 'test-user@test.invalid',
-  name: 'Test User',
-};
+});
 
 function createTestApp(mockEnv: Bindings) {
   const app = new Hono<{ Bindings: Bindings; Variables: QuestVariables }>();
@@ -24,61 +23,12 @@ function createTestApp(mockEnv: Bindings) {
   return { app, env: mockEnv };
 }
 
-/** Drizzle D1 ドライバが bind().raw() を呼ぶため、D1 互換のモックを用意 */
-function createMockD1() {
-  const quests: Record<string, unknown>[] = [];
-  const defaultRow = () => ({
-    id: 'test-quest-id',
-    skillId: null,
-    title: 'Test Quest',
-    scenario: null,
-    difficulty: 1,
-    winCondition: { type: 'DAILY' },
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  });
-  const createBound = (sql: string) => {
-    const run = async () => {
-      if (sql.includes('INSERT INTO')) quests.push(defaultRow());
-      if (sql.includes('DELETE FROM')) quests.pop();
-      return { success: true, meta: {} };
-    };
-    const rowForSelect = () => {
-      if (sql.includes('SELECT')) {
-        if (quests.length === 0) quests.push(defaultRow());
-        return quests;
-      }
-      return quests;
-    };
-    const first = async () => rowForSelect()[0] ?? null;
-    const all = async () => ({ results: rowForSelect(), success: true, meta: {} });
-    const raw = async () => {
-      if (sql.includes('INSERT INTO')) quests.push(defaultRow());
-      return rowForSelect();
-    };
-    return { run, first, all, raw };
-  };
-  return {
-    prepare: (sql: string) => ({
-      bind: (..._args: unknown[]) => createBound(sql),
-    }),
-    batch: async (statements: Array<{ run?: () => Promise<unknown> }>) => {
-      const out: unknown[] = [];
-      for (const stmt of statements) {
-        if (typeof stmt.run === 'function') out.push(await stmt.run());
-        else out.push({ success: true, meta: {} });
-      }
-      return out;
-    },
-  };
-}
-
 describe('quests router', () => {
-  let mockD1: ReturnType<typeof createMockD1>;
+  let mockD1: ReturnType<typeof createMockD1ForQuests>;
   let mockEnv: Bindings;
 
   beforeEach(() => {
-    mockD1 = createMockD1();
+    mockD1 = createMockD1ForQuests();
     mockEnv = {
       DB: mockD1 as unknown as Bindings['DB'],
       AI: {} as Bindings['AI'],

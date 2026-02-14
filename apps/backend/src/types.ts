@@ -11,6 +11,9 @@ export type Bindings = {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_BASE_URL?: string;
   FRONTEND_URL?: string;
+  AI_GATEWAY_ID?: string;
+  /** 統合テスト用: '1' のとき AI をスタブし本番を呼ばない */
+  INTEGRATION_TEST_AI_STUB?: string;
 };
 
 /**
