@@ -63,6 +63,7 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
+tests/reports/
 *.lcov
 e2e/test-results/
 playwright-report/
