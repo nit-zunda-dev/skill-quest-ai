@@ -34,9 +34,9 @@ binding = "DB"
 database_name = "skill-quest-db-preview"
 database_id = "3bf843ff-b857-4d8e-a9cc-861b18b38929"
 
-# 本番環境設定（Cloudflare Pages と Workers の統合: 同上）
+# 本番環境設定（カスタムドメイン: docs/setup/09_custom_domain_setup.md）
 [env.production]
-vars = { FRONTEND_URL = "https://skill-quest-ai.pages.dev/" }
+vars = { FRONTEND_URL = "https://app.skill-quest-ai.com" }
 # AI_GATEWAY_ID は Cloudflare ダッシュボードの環境変数で設定（Git管理外）
 [env.production.ai]
 binding = "AI"
