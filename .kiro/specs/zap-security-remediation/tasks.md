@@ -33,7 +33,7 @@
   - server.headers に設定を追加する
   - _Requirements: 2.1, 2.2_
 
-- [ ] 2.2 (P) 本番配信用の _headers ファイルを作成する
+- [x] 2.2 (P) 本番配信用の _headers ファイルを作成する
   - public 配下に _headers を配置し、ビルド出力に含める
   - X-Frame-Options, X-Content-Type-Options, HSTS, CSP を設定する
   - CSP は index.html で使用する外部リソース（cdn.tailwindcss.com, esm.sh, fonts.googleapis.com, fonts.gstatic.com）を許可する
