@@ -1,12 +1,13 @@
 import type { Hono } from 'hono';
 import type { Bindings } from '../types';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { errorHandler } from './error-handler';
 import { loggingMiddleware } from './logging';
 
 /**
  * 共通ミドルウェアを適用する
- * 適用順序: CORS → ロギング → エラーハンドリング
+ * 適用順序: CORS → セキュリティヘッダー → ロギング → エラーハンドリング
  */
 export function setupMiddleware(app: Hono<{ Bindings: Bindings }>) {
   // CORSミドルウェア: Access-Control-Allow-Credentialsを設定
@@ -23,6 +24,14 @@ export function setupMiddleware(app: Hono<{ Bindings: Bindings }>) {
       exposeHeaders: ['Content-Length'],
       maxAge: 86400,
       credentials: true, // Access-Control-Allow-Credentials: true
+    })
+  );
+
+  // セキュリティヘッダー: X-Content-Type-Options, X-Frame-Options 等（HSTS はタスク1.2で条件付きに）
+  app.use(
+    '*',
+    secureHeaders({
+      strictTransportSecurity: false,
     })
   );
 

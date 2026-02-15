@@ -9,7 +9,7 @@
 ---
 
 - [ ] 1. バックエンドにセキュリティヘッダーとCORS許可リストを実装する
-- [ ] 1.1 (P) セキュリティヘッダー用ミドルウェアを追加し、全レスポンスに X-Content-Type-Options と X-Frame-Options を付与する
+- [x] 1.1 (P) セキュリティヘッダー用ミドルウェアを追加し、全レスポンスに X-Content-Type-Options と X-Frame-Options を付与する
   - 既存のミドルウェアチェーンに secureHeaders を適用する（CORS の直後）
   - バックエンドは主に JSON API のため CSP は省略可。将来 HTML を返す場合は report-only を検討する
   - _Requirements: 1.1, 1.2, 1.3_
