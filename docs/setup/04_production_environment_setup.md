@@ -338,6 +338,7 @@ Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの
 
 ## 参考情報
 
+- [独自ドメイン（カスタムドメイン）のセットアップ](./09_custom_domain_setup.md) — `*.pages.dev` / `*.workers.dev` の代わりに独自ドメインを使う手順
 - [Cloudflare D1 - 本番利用](https://developers.cloudflare.com/d1/)
 - [Wrangler - 環境別設定](https://developers.cloudflare.com/workers/wrangler/configuration/#environments)
 - [Wrangler - Secrets](https://developers.cloudflare.com/workers/wrangler/commands/#secret)
