@@ -19,7 +19,7 @@
   - 開発時は HSTS を設定しない
   - _Requirements: 5.1, 5.3_
 
-- [ ] 1.3 CORS の origin を許可リストで検証する
+- [x] 1.3 CORS の origin を許可リストで検証する
   - 許可リストに FRONTEND_URL および localhost 系（3000, 5173, 8787）を含める
   - リクエストの Origin が許可リストに含まれる場合のみその値を返す
   - credentials 利用時は `*` を返さない
