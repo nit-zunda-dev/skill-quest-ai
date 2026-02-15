@@ -43,7 +43,7 @@
 ---
 
 - [ ] 3. (P) ZAP 対策状況を文書化する
-- [ ] 3.1 docs/ZAP_REMEDIATION.md を作成し、対象アラート種別の対策状況と例外を記載する
+- [x] 3.1 docs/ZAP_REMEDIATION.md を作成し、対象アラート種別の対策状況と例外を記載する
   - 対象種別: CSP, X-Frame-Options, X-Content-Type-Options, SRI, CORS, HSTS, Cookie 属性
   - 外部 CDN の SRI 方針（Tailwind CDN 等はバージョン非固定のため未適用、理由を記載）
   - 同一オリジンリソースの SRI は Vite ビルドでハッシュ付きファイル名により実質対応済みであることを記載
