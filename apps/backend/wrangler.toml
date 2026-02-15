@@ -18,13 +18,13 @@ remote = true
 
 # 環境変数（開発環境）
 [vars]
-FRONTEND_URL = "http://localhost:5173"
+FRONTEND_URL = "http://localhost:3000"
 # AI_GATEWAY_ID は .dev.vars ファイルで設定（Git管理外）
 # プレビュー/本番環境では Cloudflare ダッシュボードの環境変数で設定
 
 # プレビュー環境設定（Cloudflare Pages と Workers の統合: docs/setup/04_production_environment_setup.md セクション6参照）
 [env.preview]
-vars = { FRONTEND_URL = "https://skill-quest-ai-preview.pages.dev/" }
+vars = { FRONTEND_URL = "https://develop.skill-quest-ai.pages.dev/" }
 # AI_GATEWAY_ID は Cloudflare ダッシュボードの環境変数で設定（Git管理外）
 [env.preview.ai]
 binding = "AI"
