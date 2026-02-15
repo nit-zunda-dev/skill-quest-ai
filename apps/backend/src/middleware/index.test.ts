@@ -10,6 +10,7 @@ function createTestApp(mockEnv: Bindings) {
   return { app, env: mockEnv };
 }
 
+// Task 4.1 / Req 7.1: バックエンドのセキュリティヘッダーと CORS を検証
 describe('setupMiddleware - security headers', () => {
   let mockEnv: Bindings;
 
