@@ -1,8 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const e2eBaseUrl = process.env.E2E_BASE_URL ?? process.env.PLAYWRIGHT_BASE_URL;
+const useLocalServers = !!e2eBaseUrl && e2eBaseUrl.includes('localhost');
+
 /**
  * E2Eテスト用 Playwright 設定
  * @see .kiro/specs/test-strategy-implementation/design.md (E2ETestInfrastructure)
+ *
+ * test:e2e:local 実行時（E2E_BASE_URL が localhost）は webServer でフロント・バックを自動起動する。
+ * 既に pnpm dev 等で起動済みの場合は reuseExistingServer で再利用する。
  */
 export default defineConfig({
   testDir: 'e2e',
@@ -23,6 +29,22 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   outputDir: 'e2e/test-results',
+  ...(useLocalServers && {
+    webServer: [
+      {
+        command: 'pnpm --filter @skill-quest/frontend dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 60_000,
+      },
+      {
+        command: 'pnpm --filter @skill-quest/backend dev',
+        url: 'http://localhost:8787/',
+        reuseExistingServer: !process.env.CI,
+        timeout: 90_000,
+      },
+    ],
+  }),
   projects: process.env.CI
     ? [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]
     : [
