@@ -7,6 +7,10 @@ export default defineConfig(() => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        headers: {
+          'X-Frame-Options': 'SAMEORIGIN',
+          'X-Content-Type-Options': 'nosniff',
+        },
       },
       plugins: [react()],
       define: {},

@@ -29,7 +29,7 @@
 ---
 
 - [ ] 2. フロントエンドにセキュリティヘッダーを実装する
-- [ ] 2.1 (P) Vite 開発サーバーに X-Frame-Options と X-Content-Type-Options を付与する
+- [x] 2.1 (P) Vite 開発サーバーに X-Frame-Options と X-Content-Type-Options を付与する
   - server.headers に設定を追加する
   - _Requirements: 2.1, 2.2_
 
