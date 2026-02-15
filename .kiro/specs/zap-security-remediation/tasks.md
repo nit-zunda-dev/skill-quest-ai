@@ -14,7 +14,7 @@
   - バックエンドは主に JSON API のため CSP は省略可。将来 HTML を返す場合は report-only を検討する
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 1.2 (P) HTTPS の場合のみ HSTS を有効化し、開発環境（localhost）では無効にする
+- [x] 1.2 (P) HTTPS の場合のみ HSTS を有効化し、開発環境（localhost）では無効にする
   - リクエスト URL のプロトコルで HTTPS を判定する
   - 開発時は HSTS を設定しない
   - _Requirements: 5.1, 5.3_

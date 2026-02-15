@@ -27,13 +27,29 @@ export function setupMiddleware(app: Hono<{ Bindings: Bindings }>) {
     })
   );
 
-  // セキュリティヘッダー: X-Content-Type-Options, X-Frame-Options 等（HSTS はタスク1.2で条件付きに）
+  // セキュリティヘッダー: X-Content-Type-Options, X-Frame-Options 等
   app.use(
     '*',
     secureHeaders({
-      strictTransportSecurity: false,
+      strictTransportSecurity: false, // HSTS は下記ミドルウェアで HTTPS 時のみ付与
     })
   );
+
+  // HSTS: リクエスト URL が HTTPS の場合のみ付与（開発環境 localhost では無効）
+  app.use('*', (c, next) => {
+    try {
+      const url = new URL(c.req.url);
+      if (url.protocol === 'https:') {
+        c.header(
+          'Strict-Transport-Security',
+          'max-age=31536000; includeSubDomains'
+        );
+      }
+    } catch {
+      // URL パース失敗時は HSTS を付けない
+    }
+    return next();
+  });
 
   // ロギングミドルウェア: リクエスト情報を記録
   app.use('*', loggingMiddleware);

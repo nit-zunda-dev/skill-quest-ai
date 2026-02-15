@@ -34,3 +34,35 @@ describe('setupMiddleware - security headers', () => {
     expect(value === 'DENY' || value === 'SAMEORIGIN').toBe(true);
   });
 });
+
+describe('setupMiddleware - HSTS (task 1.2)', () => {
+  let mockEnv: Bindings;
+
+  beforeEach(() => {
+    mockEnv = {
+      DB: {} as Bindings['DB'],
+      AI: {} as Bindings['AI'],
+      BETTER_AUTH_SECRET: 'test-secret',
+    };
+  });
+
+  it('does not set Strict-Transport-Security when request URL is HTTP (e.g. localhost)', async () => {
+    const app = new Hono<{ Bindings: Bindings }>();
+    setupMiddleware(app);
+    app.get('/test', (c) => c.json({ message: 'ok' }));
+    const req = new Request('http://localhost:8787/test', { method: 'GET' });
+    const res = await app.request(req, mockEnv);
+    expect(res.headers.get('Strict-Transport-Security')).toBeNull();
+  });
+
+  it('sets Strict-Transport-Security when request URL is HTTPS', async () => {
+    const app = new Hono<{ Bindings: Bindings }>();
+    setupMiddleware(app);
+    app.get('/test', (c) => c.json({ message: 'ok' }));
+    const req = new Request('https://api.example.com/test', { method: 'GET' });
+    const res = await app.request(req, mockEnv);
+    const hsts = res.headers.get('Strict-Transport-Security');
+    expect(hsts).not.toBeNull();
+    expect(hsts).toMatch(/max-age=\d+/);
+  });
+});
