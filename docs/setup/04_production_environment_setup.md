@@ -6,7 +6,7 @@
 
 - Cloudflareアカウントが作成済みであること（[Cloudflareアカウント設定手順](./01_cloudflare_account_setup.md)を参照）
 - Wrangler CLIがインストールされ、認証済みであること（`pnpm --filter @skill-quest/backend exec wrangler whoami` で確認）
-- ローカルでマイグレーションが生成済みであること（タスク4.2、4.3を参照）
+- ローカルでマイグレーションが生成済みであること（`pnpm --filter @skill-quest/backend db:generate` で生成、`db:migrate:local` で適用）
 
 ## 概要
 
@@ -333,8 +333,9 @@ Cloudflare Dashboard から Git リポジトリと連携し、ブランチへの
 
 ## 次のステップ
 
-- **タスク13.1**: wrangler.tomlの環境分離を設定する（本手順で取得した database_id を反映）
-- **タスク13.2**: Cloudflare Workers の Git 連携による自動デプロイを設定する（本手順のセクション6.2を参照）
+- `wrangler.toml` の環境分離を設定する（本手順で取得した `database_id` を反映）
+- Cloudflare Workers の Git 連携による自動デプロイを設定する（本手順のセクション6.2を参照）
+- [デプロイ戦略](../architecture/12_デプロイ戦略.md) に従い、マイグレーション適用後にデプロイする
 
 ## 参考情報
 

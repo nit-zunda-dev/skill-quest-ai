@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { IntroStep, QuestionStep, LoadingStep } from './GenesisStep';
-import { Genre } from '@skill-quest/shared';
 import { createTestUser } from '../../../../tests/fixtures';
 
 const defaultTestUser = createTestUser();
@@ -38,7 +37,6 @@ describe('QuestionStep', () => {
   const defaultProps = {
     name: defaultTestUser.name,
     goal: '',
-    genre: Genre.FANTASY,
     onChange: vi.fn(),
     onNext: vi.fn(),
     isGenerating: false,
@@ -67,31 +65,6 @@ describe('QuestionStep', () => {
     fireEvent.change(goalInput, { target: { value: 'Learn English' } });
 
     expect(onChange).toHaveBeenCalledWith('goal', 'Learn English');
-  });
-
-  it('ジャンル選択ボタンを表示する', () => {
-    render(<QuestionStep {...defaultProps} />);
-
-    Object.values(Genre).forEach(genre => {
-      expect(screen.getByText(genre)).toBeDefined();
-    });
-  });
-
-  it('ジャンルを選択できる', () => {
-    const onChange = vi.fn();
-    render(<QuestionStep {...defaultProps} onChange={onChange} goal="Test Goal" />);
-
-    const genreButton = screen.getByText(Genre.SCI_FI);
-    fireEvent.click(genreButton);
-
-    expect(onChange).toHaveBeenCalledWith('genre', Genre.SCI_FI);
-  });
-
-  it('選択されたジャンルがハイライトされる', () => {
-    render(<QuestionStep {...defaultProps} genre={Genre.SCI_FI} goal="Test Goal" />);
-
-    const selectedButton = screen.getByText(Genre.SCI_FI).closest('button');
-    expect(selectedButton?.className).toContain('bg-indigo-900/40');
   });
 
   it('名前と目標が入力されている場合のみ「決定して次へ」ボタンを表示する', () => {

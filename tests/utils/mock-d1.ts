@@ -15,6 +15,7 @@ export function createMockD1ForAiUsage(overrides?: {
   partnerCount?: number;
   chatCount?: number;
   grimoireCount?: number;
+  goalUpdateCount?: number;
 }): D1Database {
   const hasCharacter = overrides?.hasCharacter ?? false;
   const storedProfile = overrides?.storedProfile ?? null;
@@ -22,12 +23,13 @@ export function createMockD1ForAiUsage(overrides?: {
   const partnerCount = overrides?.partnerCount ?? 0;
   const chatCount = overrides?.chatCount ?? 0;
   const grimoireCount = overrides?.grimoireCount ?? 0;
+  const goalUpdateCount = overrides?.goalUpdateCount ?? 0;
   const first = async (sql: string, ...params: unknown[]) => {
     if (sql.includes('user_character_generated')) return hasCharacter ? { user_id: params[0] } : null;
     if (sql.includes('user_character_profile') && sql.includes('profile'))
       return storedProfile != null ? { profile: JSON.stringify(storedProfile) } : null;
     if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
-      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount, grimoire_count: grimoireCount };
+      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount, grimoire_count: grimoireCount, goal_update_count: goalUpdateCount };
     return null;
   };
   const run = async () => ({ success: true, meta: {} });
@@ -41,7 +43,7 @@ export function createMockD1ForAiUsage(overrides?: {
  */
 export function createMockD1ForAiUsageService(): D1Database {
   const characterRows: { user_id: string }[] = [];
-  const usageRows: Map<string, { narrative: number; partner: number; chat: number; grimoire: number }> = new Map();
+  const usageRows: Map<string, { narrative: number; partner: number; chat: number; grimoire: number; goalUpdate: number }> = new Map();
 
   const run = async (sql: string, ...params: unknown[]) => {
     const key = (params[0] as string) + '-' + (params[1] as string);
@@ -50,32 +52,38 @@ export function createMockD1ForAiUsageService(): D1Database {
       return { success: true, meta: {} };
     }
     if (sql.includes('INSERT INTO ai_daily_usage')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
-      if (sql.includes('1, 0, 0, 0)') && sql.includes('narrative_count')) cur.narrative = 1;
-      else if (sql.includes('0, 1, 0, 0)') && sql.includes('partner_count')) cur.partner = 1;
-      else if (sql.includes('0, 0, 1, 0)') && sql.includes('chat_count')) cur.chat = (cur.chat || 0) + 1;
-      else if (sql.includes('0, 0, 0, 1)') && sql.includes('grimoire_count')) cur.grimoire = 1;
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
+      if (sql.includes('1, 0, 0, 0, 0)') && sql.includes('narrative_count')) cur.narrative = 1;
+      else if (sql.includes('0, 1, 0, 0, 0)') && sql.includes('partner_count')) cur.partner = 1;
+      else if (sql.includes('0, 0, 1, 0, 0)') && sql.includes('chat_count')) cur.chat = (cur.chat || 0) + 1;
+      else if (sql.includes('0, 0, 0, 1, 0)') && sql.includes('grimoire_count')) cur.grimoire = 1;
+      else if (sql.includes('0, 0, 0, 0, 1)') && sql.includes('goal_update_count')) cur.goalUpdate = (cur.goalUpdate || 0) + 1;
       usageRows.set(key, cur);
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET narrative_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
       usageRows.set(key, { ...cur, narrative: 1 });
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET partner_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
       usageRows.set(key, { ...cur, partner: 1 });
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET chat_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
       usageRows.set(key, { ...cur, chat: cur.chat + 1 });
       return { success: true, meta: {} };
     }
     if (sql.includes('DO UPDATE SET grimoire_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0 };
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
       usageRows.set(key, { ...cur, grimoire: 1 });
+      return { success: true, meta: {} };
+    }
+    if (sql.includes('DO UPDATE SET goal_update_count')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
+      usageRows.set(key, { ...cur, goalUpdate: (cur.goalUpdate || 0) + 1 });
       return { success: true, meta: {} };
     }
     return { success: true, meta: {} };
@@ -95,6 +103,7 @@ export function createMockD1ForAiUsageService(): D1Database {
             partner_count: row.partner,
             chat_count: row.chat,
             grimoire_count: row.grimoire,
+            goal_update_count: row.goalUpdate,
           }
         : null;
     }

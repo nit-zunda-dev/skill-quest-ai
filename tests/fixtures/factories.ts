@@ -4,7 +4,7 @@
  */
 import type { AuthUser } from '../../apps/backend/src/types';
 import type { Task, CharacterProfile, GrimoireEntry } from '@skill-quest/shared';
-import { TaskType, Difficulty, Genre } from '@skill-quest/shared';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 
 /**
  * テストユーザーのファクトリ関数
@@ -55,7 +55,6 @@ export function createTestCharacterProfile(overrides?: Partial<CharacterProfile>
     currentXp: 0,
     nextLevelXp: 100,
     gold: 0,
-    genre: Genre.FANTASY,
     ...overrides,
   };
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export { z };
-import { Genre, Difficulty, TaskType } from './types';
+import { Difficulty, TaskType } from './types';
 
 // クエスト作成リクエストスキーマ
 export const createQuestSchema = z.object({
@@ -33,20 +33,10 @@ export const updateProfileSchema = z.object({
   themeColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'テーマカラーは16進数カラーコード形式で入力してください').optional(),
 });
 
-// APIでは genre に enum キー（FANTASY 等）または値（ハイファンタジー 等）のどちらも受け付ける
-const genreKeys = ['FANTASY', 'CYBERPUNK', 'MODERN', 'HORROR', 'SCI_FI'] as const;
-const genreValues = ['ハイファンタジー', 'サイバーパンク', '現代ドラマ', 'エルドリッチホラー', 'スペースオペラ'] as const;
-
 // キャラクター生成リクエストスキーマ（GenesisFormData）
 export const genesisFormDataSchema = z.object({
   name: z.string().min(1, '名前は必須です').max(50, '名前は50文字以内で入力してください'),
   goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
-  genre: z.enum([...genreKeys, ...genreValues]).transform((v): Genre => {
-    if (genreKeys.includes(v as (typeof genreKeys)[number])) {
-      return Genre[v as keyof typeof Genre];
-    }
-    return v as Genre;
-  }),
 });
 
 // ナラティブ生成リクエストスキーマ
@@ -72,6 +62,28 @@ export const partnerMessageRequestSchema = z.object({
   context: z.record(z.unknown()).optional(),
 });
 
+// クエスト提案リクエストスキーマ（suggest-quests API）
+export const suggestQuestsRequestSchema = z.object({
+  goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
+});
+
+// 提案1件スキーマ（CreateQuestRequest と整合。title / type / difficulty）
+export const suggestedQuestItemSchema = createQuestSchema.pick({
+  title: true,
+  type: true,
+  difficulty: true,
+});
+
+// 目標更新リクエストスキーマ（PATCH /api/ai/goal）
+export const updateGoalRequestSchema = z.object({
+  goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
+});
+
+// クエスト一括作成リクエストスキーマ
+export const createQuestBatchSchema = z.object({
+  quests: z.array(createQuestSchema).min(1, '1件以上必要です').max(20, '20件以内で入力してください'),
+});
+
 // 認証関連スキーマ
 export const signUpRequestSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -94,3 +106,7 @@ export type ChatRequest = z.infer<typeof chatRequestSchema>;
 export type SignUpRequest = z.infer<typeof signUpRequestSchema>;
 export type SignInRequest = z.infer<typeof signInRequestSchema>;
 export type PartnerMessageRequest = z.infer<typeof partnerMessageRequestSchema>;
+export type SuggestQuestsRequest = z.infer<typeof suggestQuestsRequestSchema>;
+export type SuggestedQuestItem = z.infer<typeof suggestedQuestItemSchema>;
+export type UpdateGoalRequest = z.infer<typeof updateGoalRequestSchema>;
+export type CreateQuestBatchRequest = z.infer<typeof createQuestBatchSchema>;

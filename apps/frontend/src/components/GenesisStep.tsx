@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Genre } from '@skill-quest/shared';
-import { ArrowRight, Wand2, Sword, Scroll, User, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Wand2, Sword, Scroll, User } from 'lucide-react';
 
 export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
   <div className="text-center space-y-8 animate-fade-in">
@@ -29,17 +28,16 @@ export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
 interface QuestionStepProps {
   name: string;
   goal: string;
-  genre: Genre;
   onChange: (field: string, value: any) => void;
   onNext: () => void;
   isGenerating: boolean;
 }
 
-export const QuestionStep: React.FC<QuestionStepProps> = ({ name, goal, genre, onChange, onNext, isGenerating }) => {
+export const QuestionStep: React.FC<QuestionStepProps> = ({ name, goal, onChange, onNext, isGenerating }) => {
   const [activeField, setActiveField] = useState<number>(0);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && activeField < 2 && (e.target as HTMLInputElement).value) {
+    if (e.key === 'Enter' && activeField < 1 && (e.target as HTMLInputElement).value) {
        setActiveField(prev => prev + 1);
     }
   };
@@ -81,27 +79,6 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({ name, goal, genre, o
             placeholder="例：英語学習、ダイエット、副業など"
             className="w-full bg-slate-800/50 border border-slate-700 text-slate-100 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder:text-slate-600"
           />
-        </div>
-      </div>
-
-      {/* Genre Selection */}
-      <div className={`transition-all duration-500 delay-200 ${activeField >= 1 && goal ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <label className="block text-sm font-medium text-slate-400 mb-2">好みの世界観を選択</label>
-        <div className="grid grid-cols-1 gap-3">
-          {Object.values(Genre).map((g) => (
-            <button
-              key={g}
-              onClick={() => onChange('genre', g)}
-              className={`text-left px-4 py-3 rounded-lg border transition-all flex items-center justify-between ${
-                genre === g
-                  ? 'bg-indigo-900/40 border-indigo-500 text-indigo-200 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
-                  : 'bg-slate-800/30 border-slate-700 text-slate-400 hover:bg-slate-800 hover:border-slate-600'
-              }`}
-            >
-              <span>{g}</span>
-              {genre === g && <CheckCircle2 className="w-5 h-5 text-indigo-400" />}
-            </button>
-          ))}
         </div>
       </div>
 

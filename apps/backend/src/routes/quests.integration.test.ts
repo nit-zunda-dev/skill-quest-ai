@@ -110,3 +110,73 @@ describe('Quest CRUD integration (Task 5.3)', () => {
     expect(listAfter.length).toBe(0);
   });
 });
+
+describe('POST /api/quests/batch (Task 4.1)', () => {
+  let batchCookie: string;
+  beforeAll(async () => {
+    await resetDatabase();
+    batchCookie = await getAuthCookie();
+  });
+
+  it('creates multiple quests and returns created list', async () => {
+    const cookie = batchCookie;
+    const headers = {
+      'Content-Type': 'application/json',
+      Cookie: cookie,
+    };
+    const batchBody = {
+      quests: [
+        { title: 'Batch Quest 1', type: TaskType.DAILY, difficulty: Difficulty.EASY },
+        { title: 'Batch Quest 2', type: TaskType.HABIT, difficulty: Difficulty.MEDIUM },
+      ],
+    };
+    const res = await SELF.fetch(`${BASE}/api/quests/batch`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(batchBody),
+    });
+    expect(res.status).toBe(201);
+    const created = (await res.json()) as { id: string; title: string; type: string; difficulty: string }[];
+    expect(Array.isArray(created)).toBe(true);
+    expect(created.length).toBe(2);
+    expect(created[0].id).toBeDefined();
+    expect(created[0].title).toBe('Batch Quest 1');
+    expect(created[1].title).toBe('Batch Quest 2');
+    const listRes = await SELF.fetch(`${BASE}/api/quests`, { headers });
+    const list = (await listRes.json()) as { id: string }[];
+    expect(list.length).toBe(2);
+  });
+
+  it('returns 400 when quests array is empty', async () => {
+    const cookie = batchCookie;
+    const res = await SELF.fetch(`${BASE}/api/quests/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ quests: [] }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when an item fails createQuestSchema validation', async () => {
+    const cookie = batchCookie;
+    const res = await SELF.fetch(`${BASE}/api/quests/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        quests: [{ title: 'No type', difficulty: Difficulty.EASY }],
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 401 without authentication (Task 9.2)', async () => {
+    const res = await SELF.fetch(`${BASE}/api/quests/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quests: [{ title: 'Batch Quest', type: TaskType.DAILY, difficulty: Difficulty.EASY }],
+      }),
+    });
+    expect(res.status).toBe(401);
+  });
+});
