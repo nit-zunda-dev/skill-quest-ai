@@ -1,8 +1,9 @@
 /**
  * @vitest-environment node
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { execSync } from 'node:child_process';
 import { describe, it, expect } from 'vitest';
 
 describe('Vite dev server security headers', () => {
@@ -81,4 +82,29 @@ describe('Tailwind CDN removed from index.html (Req 1.1, Task 1.2)', () => {
     expect(content).toMatch(/\.font-display/);
     expect(content).toMatch(/::-webkit-scrollbar/);
   });
+});
+
+describe('Tailwind migration: build and styles (Req 1.1, Task 1.3)', () => {
+  const frontendRoot = resolve(__dirname, '..');
+  const distAssets = resolve(frontendRoot, 'dist/assets');
+
+  it('production build completes successfully', () => {
+    execSync('pnpm build', { cwd: frontendRoot, stdio: 'pipe' });
+    expect(existsSync(resolve(frontendRoot, 'dist'))).toBe(true);
+  }, 30000);
+
+  it('built CSS includes Tailwind utilities used by existing screens (login, Genesis, dashboard)', () => {
+    if (!existsSync(distAssets)) {
+      execSync('pnpm build', { cwd: frontendRoot, stdio: 'pipe' });
+    }
+    const files = readdirSync(distAssets);
+    const cssFile = files.find((f) => f.endsWith('.css'));
+    expect(cssFile).toBeDefined();
+    const cssPath = resolve(distAssets, cssFile!);
+    const css = readFileSync(cssPath, 'utf-8');
+    expect(css.length).toBeGreaterThan(1000);
+    expect(
+      /\.min-h-screen\b|\.bg-slate-900|\.text-slate-200|\.bg-indigo-600/.test(css)
+    ).toBe(true);
+  }, 35000);
 });
