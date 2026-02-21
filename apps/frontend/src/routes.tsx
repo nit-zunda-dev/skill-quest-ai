@@ -13,6 +13,7 @@ import {
   PATH_APP,
 } from '@/lib/paths';
 import { GenesisLayout } from '@/layouts/GenesisLayout';
+import { LoginRouteWrapper } from '@/components/LoginRouteWrapper';
 
 /** プレースホルダー: 8.1 でルーター統合時に実コンポーネントに差し替える */
 const Placeholder: React.FC<{ name: string }> = ({ name }) => (
@@ -40,7 +41,7 @@ export const routeConfig: RouteObject[] = [
   },
   {
     path: PATH_LOGIN,
-    element: <Placeholder name="Login" />,
+    element: <LoginRouteWrapper />,
   },
   {
     path: PATH_GENESIS,
