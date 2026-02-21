@@ -139,3 +139,21 @@ describe('shadcn/ui initialized (Req 1.2, 4.2, Task 2.1)', () => {
     expect(content).toMatch(/clsx|class-variance-authority|tailwind-merge|cn\s*\(/);
   });
 });
+
+describe('shadcn Button and Card for landing (Req 1.2, 4.2, Task 2.2)', () => {
+  const uiDir = resolve(__dirname, 'components/ui');
+
+  it('Button component exists and exports Button', () => {
+    const buttonPath = resolve(uiDir, 'button.tsx');
+    expect(existsSync(buttonPath)).toBe(true);
+    const content = readFileSync(buttonPath, 'utf-8');
+    expect(content).toMatch(/export\s+(\{\s*)?Button/);
+  });
+
+  it('Card component exists and exports Card', () => {
+    const cardPath = resolve(uiDir, 'card.tsx');
+    expect(existsSync(cardPath)).toBe(true);
+    const content = readFileSync(cardPath, 'utf-8');
+    expect(content).toMatch(/export\s+(\{\s*)?Card\b/);
+  });
+});
