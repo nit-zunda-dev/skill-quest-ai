@@ -49,7 +49,8 @@
 // フロントエンド: @/ で src を参照
 import { useAuth } from '@/hooks/useAuth';
 import { generateCharacter } from '@/lib/api-client';
-import Dashboard from '@/components/Dashboard';
+import AppLayout from '@/layouts/AppLayout';
+import HomePage from '@/pages/HomePage';
 import { CharacterProfile } from '@skill-quest/shared';
 
 // バックエンド: 相対インポート

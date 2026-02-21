@@ -1,14 +1,40 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
-import { generateCharacter } from '@/lib/api-client';
+import { generateCharacter, normalizeProfileNumbers } from '@/lib/api-client';
 import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
 import SuggestStep from '@/components/SuggestStep';
-import Dashboard from '@/components/Dashboard';
 import LoginSignupForm from '@/components/LoginSignupForm';
 import LandingPage from '@/components/LandingPage';
+import { ProfileProvider } from '@/contexts/ProfileContext';
+import AppLayout from '@/layouts/AppLayout';
+import HomePage from '@/pages/HomePage';
+import QuestBoardPage from '@/pages/QuestBoardPage';
+import GrimoirePage from '@/pages/GrimoirePage';
+import PartnerPage from '@/pages/PartnerPage';
+import ItemsPage from '@/pages/ItemsPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
+
+function AuthenticatedApp({ initialProfile }: { initialProfile: CharacterProfile }) {
+  const profile = normalizeProfileNumbers(initialProfile);
+  return (
+    <ProfileProvider initialProfile={profile}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="quests" element={<QuestBoardPage />} />
+            <Route path="grimoire" element={<GrimoirePage />} />
+            <Route path="partner" element={<PartnerPage />} />
+            <Route path="items" element={<ItemsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ProfileProvider>
+  );
+}
 
 const App: React.FC = () => {
   const { session, isLoading: authLoading, isAuthenticated, refetch } = useAuth();
@@ -114,9 +140,9 @@ const App: React.FC = () => {
     );
   }
 
-  // 認証済み: Genesis 完了直後 → ダッシュボード（サインアップ時のみ）
+  // 認証済み: Genesis 完了直後 → アプリ（サインアップ時のみ）
   if (justCompletedProfile) {
-    return <Dashboard initialProfile={justCompletedProfile} />;
+    return <AuthenticatedApp initialProfile={justCompletedProfile} />;
   }
 
   // Genesis の RESULT / SUGGEST ステップ中は、genesisOrProfile の結果を無視して Genesis 画面を表示し続ける
@@ -141,9 +167,9 @@ const App: React.FC = () => {
       );
     }
 
-    // 認証済み・キャラ生成済み → ダッシュボード（ログイン時）
+    // 認証済み・キャラ生成済み → アプリ（ログイン時）
     if (genesisOrProfile.kind === 'dashboard') {
-      return <Dashboard initialProfile={genesisOrProfile.profile} />;
+      return <AuthenticatedApp initialProfile={genesisOrProfile.profile} />;
     }
   }
 

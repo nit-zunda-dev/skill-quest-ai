@@ -90,7 +90,7 @@ describe('Landing CTA switches to form (Task 3.2, Req 5.1, 5.3)', () => {
   });
 });
 
-describe('Genesis flow: RESULT → SUGGEST → Dashboard (Task 6.1)', () => {
+describe('Genesis flow: RESULT → SUGGEST → アプリ (Task 6.1)', () => {
   const mockProfile = createTestCharacterProfile({
     className: 'テストクラス',
     title: 'テストタイトル',
@@ -107,7 +107,7 @@ describe('Genesis flow: RESULT → SUGGEST → Dashboard (Task 6.1)', () => {
     mockUseGenesisOrProfile.mockReturnValue({ kind: 'genesis' as const });
   });
 
-  it('RESULT 完了後に提案ステップを表示し、その完了後にダッシュボードへ遷移する', async () => {
+  it('RESULT 完了後に提案ステップを表示し、その完了後にアプリ（ホーム）へ遷移する', async () => {
     vi.mocked(generateCharacter).mockResolvedValue(mockProfile);
 
     render(<App />, { wrapper });
