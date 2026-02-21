@@ -26,9 +26,9 @@ function renderEntryWithRouter(initialEntries: string[] = [PATH_LANDING]) {
 }
 
 describe('Entry router mount (Task 8.1)', () => {
-  it('mounts single router and renders route tree at / (landing placeholder)', async () => {
+  it('mounts single router and renders route tree at / (landing via App, Task 8.2)', async () => {
     renderEntryWithRouter([PATH_LANDING]);
-    const el = await screen.findByTestId('route-placeholder-Landing');
+    const el = await screen.findByTestId('landing-page');
     expect(el).toBeTruthy();
   });
 

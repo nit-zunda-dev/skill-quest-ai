@@ -3,6 +3,7 @@
  * 公開（/, /login）、Genesis（/genesis, /genesis/:step）、認証必須（/app とその子）、
  * 未定義パス用キャッチオールをパスベースで一貫して定義する。
  * 8.1 で createBrowserRouter(routeConfig) によりマウントする。
+ * 8.2 で / と /login は App（ルート駆動のランディング・ログイン）を描画する。
  */
 import React from 'react';
 import type { RouteObject } from 'react-router-dom';
@@ -12,11 +13,11 @@ import {
   PATH_GENESIS,
   PATH_APP,
 } from '@/lib/paths';
+import App from '@/App';
 import { GenesisLayout } from '@/layouts/GenesisLayout';
-import { LoginRouteWrapper } from '@/components/LoginRouteWrapper';
 import NotFoundPage from '@/pages/NotFoundPage';
 
-/** プレースホルダー: 8.1 でルーター統合時に実コンポーネントに差し替える */
+/** プレースホルダー: 9.1 で実コンポーネントに差し替える */
 const Placeholder: React.FC<{ name: string }> = ({ name }) => (
   <div data-testid={`route-placeholder-${name}`}>{name}</div>
 );
@@ -33,11 +34,11 @@ const ItemsPlaceholder = () => <Placeholder name="Items" />;
 export const routeConfig: RouteObject[] = [
   {
     path: PATH_LANDING,
-    element: <Placeholder name="Landing" />,
+    element: <App />,
   },
   {
     path: PATH_LOGIN,
-    element: <LoginRouteWrapper />,
+    element: <App />,
   },
   {
     path: PATH_GENESIS,

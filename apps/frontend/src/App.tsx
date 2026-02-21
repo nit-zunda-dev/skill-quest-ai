@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useLocation, useNavigate, useOutlet, Navigate } from 'react-router-dom';
 import { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import { generateCharacter, normalizeProfileNumbers } from '@/lib/api-client';
 import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
 import SuggestStep from '@/components/SuggestStep';
-import LoginSignupForm from '@/components/LoginSignupForm';
 import LandingPage from '@/components/LandingPage';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import AppLayout from '@/layouts/AppLayout';
@@ -14,38 +13,33 @@ import QuestBoardPage from '@/pages/QuestBoardPage';
 import GrimoirePage from '@/pages/GrimoirePage';
 import PartnerPage from '@/pages/PartnerPage';
 import ItemsPage from '@/pages/ItemsPage';
+import { LoginRouteWrapper } from '@/components/LoginRouteWrapper';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
+import { PATH_LOGIN, PATH_APP } from '@/lib/paths';
 
+/** 認証済み・Genesis 完了後のダッシュボード。ルートツリーの /app の子がある場合は Outlet、ない場合は Home を表示（Task 8.2, 9.1） */
 function AuthenticatedApp({ initialProfile }: { initialProfile: CharacterProfile }) {
   const profile = normalizeProfileNumbers(initialProfile);
+  const outlet = useOutlet();
   return (
     <ProfileProvider initialProfile={profile}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="quests" element={<QuestBoardPage />} />
-            <Route path="grimoire" element={<GrimoirePage />} />
-            <Route path="partner" element={<PartnerPage />} />
-            <Route path="items" element={<ItemsPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AppLayout>
+        {outlet ?? <HomePage />}
+      </AppLayout>
     </ProfileProvider>
   );
 }
 
 const App: React.FC = () => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { session, isLoading: authLoading, isAuthenticated, refetch } = useAuth();
   const genesisOrProfile = useGenesisOrProfile({ isAuthenticated, isLoading: authLoading });
 
   // Genesis 完了直後にダッシュボードへ渡すプロフィール（サインアップ時のみ使用）
   const [justCompletedProfile, setJustCompletedProfile] = useState<CharacterProfile | null>(null);
 
-  const [showAuthForm, setShowAuthForm] = useState(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auth') === 'form'
-  );
   const [genesisStep, setGenesisStep] = useState<'INTRO' | 'QUESTIONS' | 'LOADING' | 'RESULT' | 'SUGGEST'>('INTRO');
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
@@ -59,16 +53,6 @@ const App: React.FC = () => {
       setFormData(prev => (prev.name === '' ? { ...prev, name: session.user.name ?? '' } : prev));
     }
   }, [isAuthenticated, session?.user?.name]);
-
-  // 未認証時: ブラウザの戻るでランディングに戻れるように履歴と同期する
-  useEffect(() => {
-    if (isAuthenticated) return;
-    const onPopState = () => {
-      setShowAuthForm(new URLSearchParams(window.location.search).get('auth') === 'form');
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [isAuthenticated]);
 
   const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -106,14 +90,14 @@ const App: React.FC = () => {
     );
   }
 
-  // 未認証: ランディング or ログイン/サインアップ
+  // 未認証: ルートに応じてランディング or ログイン/サインアップ（Task 8.2, Req 2.3）
   if (!isAuthenticated) {
-    if (showAuthForm) {
+    if (pathname === PATH_LOGIN) {
       return (
         <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
           <div className="w-full max-w-sm">
             <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Skill Quest AI</h1>
-            <LoginSignupForm onSuccess={refetch} />
+            <LoginRouteWrapper />
           </div>
           <div className="p-4 text-center text-slate-600 text-xs mt-8">
             Skill Quest AI v1.1.0 &bull; Powered by Workers AI
@@ -124,19 +108,18 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col bg-slate-950 text-slate-200">
         <div className="flex-1 min-h-0 flex flex-col min-w-full">
-          <LandingPage
-            onStartClick={() => {
-              setShowAuthForm(true);
-              const path = window.location.pathname;
-              window.history.pushState({ auth: 'form' }, '', `${path}?auth=form`);
-            }}
-          />
+          <LandingPage onStartClick={() => navigate(PATH_LOGIN)} />
         </div>
         <div className="shrink-0 p-4 text-center text-slate-600 text-xs">
           Skill Quest AI v1.1.0 &bull; Powered by Workers AI
         </div>
       </div>
     );
+  }
+
+  // 認証済みで / または /login にいる場合は /app へリダイレクト
+  if (pathname === '/' || pathname === PATH_LOGIN) {
+    return <Navigate to={PATH_APP} replace />;
   }
 
   // 認証済み: Genesis 完了直後 → アプリ（サインアップ時のみ）
