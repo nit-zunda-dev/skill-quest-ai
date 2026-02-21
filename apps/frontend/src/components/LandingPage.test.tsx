@@ -26,7 +26,7 @@ describe('LandingPage (Task 4.1, 5.1)', () => {
     expect(screen.getByRole('button', { name: /始める/ })).toBeTruthy();
   });
 
-  it('calls onStartClick exactly once when primary CTA is clicked', () => {
+  it('calls parent callback exactly once per primary CTA click (Task 5.1, Req 5.1)', () => {
     render(<LandingPage onStartClick={onStartClick} />);
     const cta = screen.getByRole('button', { name: /冒険を始める/ });
     fireEvent.click(cta);
