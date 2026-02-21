@@ -10,7 +10,11 @@ import {
   partnerMessageRequestSchema,
   signUpRequestSchema,
   signInRequestSchema,
+  suggestQuestsRequestSchema,
+  suggestedQuestItemSchema,
+  createQuestBatchSchema,
 } from './schemas';
+import type { SuggestQuestsRequest, SuggestedQuestItem, CreateQuestBatchRequest } from './schemas';
 import { TaskType, Difficulty, Genre } from './types';
 
 describe('createQuestSchema', () => {
@@ -615,6 +619,150 @@ describe('signInRequestSchema', () => {
         expect(result.error.issues[0]).toHaveProperty('path');
         expect(result.error.issues[0]).toHaveProperty('message');
         expect(result.error.issues[0].message).toContain('パスワードは必須です');
+      }
+    });
+  });
+});
+
+describe('suggestQuestsRequestSchema', () => {
+  describe('parse', () => {
+    it('正常系: goal のみでパースできる', () => {
+      const validData = { goal: '英語力を上げる' };
+      const result = suggestQuestsRequestSchema.parse(validData);
+      expect(result.goal).toBe('英語力を上げる');
+      expect(result.genre).toBeUndefined();
+    });
+
+    it('正常系: goal と genre でパースできる', () => {
+      const validData = { goal: '習慣化したい', genre: 'FANTASY' };
+      const result = suggestQuestsRequestSchema.parse(validData);
+      expect(result.goal).toBe('習慣化したい');
+      expect(result.genre).toBe(Genre.FANTASY);
+    });
+
+    it('異常系: goal が空文字列の場合エラーを投げる', () => {
+      expect(() => suggestQuestsRequestSchema.parse({ goal: '' })).toThrow();
+    });
+
+    it('異常系: goal が500文字を超える場合エラーを投げる', () => {
+      expect(() => suggestQuestsRequestSchema.parse({ goal: 'a'.repeat(501) })).toThrow();
+    });
+
+    it('異常系: goal が欠けている場合エラーを投げる', () => {
+      expect(() => suggestQuestsRequestSchema.parse({})).toThrow();
+    });
+  });
+
+  describe('safeParse', () => {
+    it('正常系: 有効なデータで成功する', () => {
+      const result = suggestQuestsRequestSchema.safeParse({ goal: '目標' });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const data: SuggestQuestsRequest = result.data;
+        expect(data.goal).toBe('目標');
+      }
+    });
+  });
+});
+
+describe('suggestedQuestItemSchema', () => {
+  describe('parse', () => {
+    it('正常系: title, type, difficulty でパースでき CreateQuestRequest と整合する', () => {
+      const validData = {
+        title: '毎日30分勉強する',
+        type: TaskType.DAILY,
+        difficulty: Difficulty.MEDIUM,
+      };
+      const result = suggestedQuestItemSchema.parse(validData);
+      expect(result).toEqual(validData);
+      expect(createQuestSchema.parse(result)).toEqual(validData);
+    });
+
+    it('異常系: タイトルが空の場合エラーを投げる', () => {
+      expect(() =>
+        suggestedQuestItemSchema.parse({
+          title: '',
+          type: TaskType.TODO,
+          difficulty: Difficulty.EASY,
+        })
+      ).toThrow();
+    });
+
+    it('異常系: type が不正な場合エラーを投げる', () => {
+      expect(() =>
+        suggestedQuestItemSchema.parse({
+          title: 'タスク',
+          type: 'INVALID',
+          difficulty: Difficulty.EASY,
+        })
+      ).toThrow();
+    });
+  });
+
+  describe('safeParse', () => {
+    it('正常系: 有効なデータで成功し SuggestedQuestItem 型として扱える', () => {
+      const result = suggestedQuestItemSchema.safeParse({
+        title: '習慣にする',
+        type: TaskType.HABIT,
+        difficulty: Difficulty.HARD,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const item: SuggestedQuestItem = result.data;
+        expect(item.title).toBe('習慣にする');
+        expect(item.type).toBe(TaskType.HABIT);
+        expect(item.difficulty).toBe(Difficulty.HARD);
+      }
+    });
+  });
+});
+
+describe('createQuestBatchSchema', () => {
+  describe('parse', () => {
+    it('正常系: 1件以上20件以下のクエスト配列でパースできる', () => {
+      const validData = {
+        quests: [
+          { title: 'クエスト1', type: TaskType.DAILY, difficulty: Difficulty.EASY },
+          { title: 'クエスト2', type: TaskType.TODO, difficulty: Difficulty.MEDIUM },
+        ],
+      };
+      const result = createQuestBatchSchema.parse(validData);
+      expect(result.quests).toHaveLength(2);
+      expect(result.quests[0].title).toBe('クエスト1');
+    });
+
+    it('異常系: quests が空配列の場合エラーを投げる', () => {
+      expect(() => createQuestBatchSchema.parse({ quests: [] })).toThrow();
+    });
+
+    it('異常系: quests が21件の場合エラーを投げる', () => {
+      const quests = Array.from({ length: 21 }, (_, i) => ({
+        title: `クエスト${i}`,
+        type: TaskType.DAILY,
+        difficulty: Difficulty.EASY,
+      }));
+      expect(() => createQuestBatchSchema.parse({ quests })).toThrow();
+    });
+
+    it('異常系: 要素が createQuestSchema に違反する場合エラーを投げる', () => {
+      expect(() =>
+        createQuestBatchSchema.parse({
+          quests: [{ title: '', type: TaskType.DAILY, difficulty: Difficulty.EASY }],
+        })
+      ).toThrow();
+    });
+  });
+
+  describe('safeParse', () => {
+    it('正常系: 有効なデータで成功し CreateQuestBatchRequest 型として扱える', () => {
+      const result = createQuestBatchSchema.safeParse({
+        quests: [{ title: 'バッチクエスト', type: TaskType.TODO, difficulty: Difficulty.HARD }],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const data: CreateQuestBatchRequest = result.data;
+        expect(data.quests).toHaveLength(1);
+        expect(data.quests[0].title).toBe('バッチクエスト');
       }
     });
   });
