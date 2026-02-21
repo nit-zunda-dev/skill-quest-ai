@@ -5,6 +5,7 @@ import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
 import Dashboard from '@/components/Dashboard';
 import LoginSignupForm from '@/components/LoginSignupForm';
+import LandingPage from '@/components/LandingPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
 
@@ -15,6 +16,7 @@ const App: React.FC = () => {
   // Genesis 完了直後にダッシュボードへ渡すプロフィール（サインアップ時のみ使用）
   const [justCompletedProfile, setJustCompletedProfile] = useState<CharacterProfile | null>(null);
 
+  const [showAuthForm, setShowAuthForm] = useState(false);
   const [genesisStep, setGenesisStep] = useState<'INTRO' | 'QUESTIONS' | 'LOADING' | 'RESULT'>('INTRO');
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
@@ -62,14 +64,24 @@ const App: React.FC = () => {
     );
   }
 
-  // 未認証: ログイン/サインアップ
+  // 未認証: ランディング or ログイン/サインアップ
   if (!isAuthenticated) {
+    if (showAuthForm) {
+      return (
+        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-sm">
+            <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Chronicle</h1>
+            <LoginSignupForm onSuccess={refetch} />
+          </div>
+          <div className="p-4 text-center text-slate-600 text-xs mt-8">
+            Chronicle v1.1.0 &bull; Powered by Workers AI
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-sm">
-          <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Chronicle</h1>
-          <LoginSignupForm onSuccess={refetch} />
-        </div>
+        <LandingPage onStartClick={() => setShowAuthForm(true)} />
         <div className="p-4 text-center text-slate-600 text-xs mt-8">
           Chronicle v1.1.0 &bull; Powered by Workers AI
         </div>
