@@ -168,4 +168,15 @@ describe('POST /api/quests/batch (Task 4.1)', () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it('returns 401 without authentication (Task 9.2)', async () => {
+    const res = await SELF.fetch(`${BASE}/api/quests/batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quests: [{ title: 'Batch Quest', type: TaskType.DAILY, difficulty: Difficulty.EASY }],
+      }),
+    });
+    expect(res.status).toBe(401);
+  });
 });

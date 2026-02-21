@@ -112,7 +112,9 @@ function createStubAiService(env: Bindings): AiService {
       rewardXp: 10,
       rewardGold: 5,
     }),
-    generateSuggestedQuests: async () => [],
+    generateSuggestedQuests: async () => [
+      { title: 'スタブ提案タスク', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM },
+    ],
   };
 }
 
