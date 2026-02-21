@@ -70,11 +70,11 @@ const App: React.FC = () => {
       return (
         <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
           <div className="w-full max-w-sm">
-            <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Chronicle</h1>
+            <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Skill Quest AI</h1>
             <LoginSignupForm onSuccess={refetch} />
           </div>
           <div className="p-4 text-center text-slate-600 text-xs mt-8">
-            Chronicle v1.1.0 &bull; Powered by Workers AI
+            Skill Quest AI v1.1.0 &bull; Powered by Workers AI
           </div>
         </div>
       );
@@ -83,7 +83,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
         <LandingPage onStartClick={() => setShowAuthForm(true)} />
         <div className="p-4 text-center text-slate-600 text-xs mt-8">
-          Chronicle v1.1.0 &bull; Powered by Workers AI
+          Skill Quest AI v1.1.0 &bull; Powered by Workers AI
         </div>
       </div>
     );
@@ -154,7 +154,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="p-4 text-center text-slate-600 text-xs z-10">
-        Chronicle v1.1.0 &bull; Powered by Workers AI
+        Skill Quest AI v1.1.0 &bull; Powered by Workers AI
       </div>
     </div>
   );

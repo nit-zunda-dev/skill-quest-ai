@@ -14,7 +14,7 @@ test.describe('認証フロー E2E', () => {
 
   test('ルートでログインフォームが表示される', async ({ page }) => {
     test.skip(!getE2EBaseUrl(), 'E2E_BASE_URL 未設定のためスキップ');
-    await expect(page.getByRole('heading', { name: 'Chronicle' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Skill Quest AI' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'ログイン' })).toBeVisible();
   });
 
@@ -49,7 +49,7 @@ test.describe('認証フロー E2E', () => {
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'ログアウト' }).click();
 
-    await expect(page.getByRole('heading', { name: 'Chronicle' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Skill Quest AI' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'ログイン' })).toBeVisible();
   });
 });

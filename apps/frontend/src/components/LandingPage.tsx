@@ -25,10 +25,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
         className="w-full max-w-md text-center space-y-6 relative z-10"
       >
         <h1 className="text-2xl md:text-3xl font-bold text-slate-100 font-display">
-          タスクがクエストになる。
+          資格取得や自己研鑽を楽しく
         </h1>
         <p className="text-slate-400 text-sm md:text-base">
-          ゲーム感覚で自己研鑽を続けよう。単純なToDoじゃない、続く学び。
+          ゲーム感覚。単純なToDoじゃない。
         </p>
         <Button
           onClick={onStartClick}
@@ -44,7 +44,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
         className="w-full max-w-2xl space-y-4 relative z-10"
       >
         <h2 className="text-lg font-semibold text-slate-200 text-center">
-          Chronicle でできること
+          できること
         </h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <Card className="bg-slate-800/80 border-slate-700 border-indigo-500/20 transition-colors duration-300 hover:border-indigo-500/40">

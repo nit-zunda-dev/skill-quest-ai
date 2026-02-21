@@ -6,7 +6,7 @@
 
 ## Overview
 
-本機能は、未認証訪問者向けに単一のランディングページを提供する。Tailwind CSS と shadcn/ui を用い、RPG風タスク管理アプリ（Chronicle / Skill Quest）の価値提案を、20代〜30代のデジタルネイティブでゲーム・サブカルに親和性が高く「続かない自分」に悩むペルソナに届ける。
+本機能は、未認証訪問者向けに単一のランディングページを提供する。Tailwind CSS と shadcn/ui を用い、RPG風タスク管理アプリ（Skill Quest AI / Skill Quest）の価値提案を、20代〜30代のデジタルネイティブでゲーム・サブカルに親和性が高く「続かない自分」に悩むペルソナに届ける。
 
 **Users**: 未認証の訪問者が、ランディングで価値を把握したうえで CTA からサインアップ/ログインに進む。
 
@@ -30,7 +30,7 @@
 
 ### Existing Architecture Analysis
 
-- **フロント**: React 19 + Vite。ルーターなし。`App.tsx` が認証状態（useAuth）と Genesis 状態で分岐し、未認証時は現状「Chronicle」タイトル + `LoginSignupForm` のみ表示。
+- **フロント**: React 19 + Vite。ルーターなし。`App.tsx` が認証状態（useAuth）と Genesis 状態で分岐し、未認証時は現状「Skill Quest AI」タイトル + `LoginSignupForm` のみ表示。
 - **Tailwind**: index.html で Play CDN を読み込み。tailwind.config や PostCSS は未導入。
 - **UI**: Lucide React、Recharts。shadcn/ui は未導入。コンポーネントは `src/components/`、パスエイリアスは `@/`。
 - **維持するパターン**: 1 ファイル 1 コンポーネント（PascalCase）、未認証時の分岐は App 内で完結、CTA 先は既存 `LoginSignupForm`。

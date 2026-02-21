@@ -7,7 +7,7 @@
 | 項目 | 現状 |
 |------|------|
 | **ルーティング** | クライアントルーターなし。`App.tsx` が認証状態・Genesis 状態で分岐し、単一エントリで未認証時はログイン/サインアップ画面のみ表示。 |
-| **未認証時の表示** | タイトル「Chronicle」＋ `LoginSignupForm` ＋ フッターのみ。ランディング用の説明的コンテンツ・ヒーロー・CTA は存在しない。 |
+| **未認証時の表示** | タイトル「Skill Quest AI」＋ `LoginSignupForm` ＋ フッターのみ。ランディング用の説明的コンテンツ・ヒーロー・CTA は存在しない。 |
 | **Tailwind CSS** | **CDN のみ**（`index.html` で `https://cdn.tailwindcss.com` を読み込み）。`tailwind.config.*` や PostCSS は未導入。 |
 | **shadcn/ui** | **未導入**。`package.json` に `@radix-ui/*` や `class-variance-authority` 等はなく、`components/ui` も存在しない。 |
 | **UI ライブラリ** | Lucide React、Recharts のみ。コンポーネントは自前の Tailwind ユーティリティクラスでスタイル。 |
@@ -52,7 +52,7 @@
   - Tailwind を CDN から npm+PostCSS に移行する場合、既存画面のクラスがそのまま動くか確認が必要（JIT とデフォルトテーマなら多くの場合は互換）。
 - **Research Needed**
   - shadcn/ui を Vite + React 19 で導入する手順と、既存 CDN Tailwind からの移行パス（公式ドキュメント・互換性）。
-  - デザイン：ペルソナ「ゲーム・サブカル親和」を満たす具体的なビジュアルトーン（既存 Chronicle のファンタジー寄りと統一するか、差別化するか）は設計フェーズで決定。
+  - デザイン：ペルソナ「ゲーム・サブカル親和」を満たす具体的なビジュアルトーン（既存 Skill Quest AI のファンタジー寄りと統一するか、差別化するか）は設計フェーズで決定。
 
 ---
 
@@ -99,7 +99,7 @@
   - 未認証時のフロー: ランディングのみ表示 → CTA で「ログイン/サインアップ」を同一ページ内で表示するか、スクロールでフォームセクションを表示するか、モーダルにするか。
   - Tailwind 移行: CDN 廃止と `tailwind.config` の配置（プロジェクトルートか `apps/frontend` か）、既存クラスとの互換性確認手順。
   - shadcn の導入範囲: ランディングで使うコンポーネント（Button, Card 等）のリストと、`components.json` の設定（スタイル・Tailwind パス等）。
-  - ペルソナ向けビジュアル: 既存の Chronicle 世界観（スレート・インディゴ・Cinzel）を踏襲するか、ゲーム・サブカル寄りに差別化するか。ヒーロー・イラスト・アニメーションの有無と方針。
+  - ペルソナ向けビジュアル: 既存の Skill Quest AI 世界観（スレート・インディゴ・Cinzel）を踏襲するか、ゲーム・サブカル寄りに差別化するか。ヒーロー・イラスト・アニメーションの有無と方針。
 - **Research として持ち込む項目**
   - shadcn/ui を Vite + React 19 で導入する手順と、既存 CDN Tailwind からの移行手順。
   - （必要なら）React 19 と Radix UI / shadcn の互換性情報。
