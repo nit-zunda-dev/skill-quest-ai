@@ -9,6 +9,7 @@ import {
   generateNarrative,
   generatePartnerMessage,
   generateGrimoire,
+  generateSuggestedQuests,
   MODEL_LLAMA_31_8B,
   MODEL_LLAMA_33_70B,
 } from './ai';
@@ -505,6 +506,98 @@ describe('AI service', () => {
         MODEL_LLAMA_31_8B,
         expect.objectContaining({ prompt: expect.any(String) }),
         { gateway: { id: 'gateway-999' } }
+      );
+    });
+  });
+
+  describe('generateSuggestedQuests', () => {
+    const validSuggestionsJson = JSON.stringify([
+      { title: '毎日30分勉強する', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM },
+      { title: '週3回運動する', type: TaskType.HABIT, difficulty: Difficulty.EASY },
+      { title: '英語の本を1冊読む', type: TaskType.TODO, difficulty: Difficulty.HARD },
+    ]);
+
+    it('uses Llama 3.1 8B and returns parsed suggestions when AI returns valid JSON array', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '英語力を上げる');
+
+      expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, expect.objectContaining({ prompt: expect.any(String) }), undefined);
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('英語力を上げる');
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({ title: '毎日30分勉強する', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM });
+      expect(result[1].title).toBe('週3回運動する');
+      expect(result[2].type).toBe(TaskType.TODO);
+    });
+
+    it('includes optional genre in prompt when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      await generateSuggestedQuests(ai, '目標', Genre.FANTASY);
+
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('目標');
+      expect(prompt.prompt).toContain('ハイファンタジー');
+    });
+
+    it('returns empty array when AI returns invalid JSON', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'not json at all' });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when AI returns non-array JSON', async () => {
+      const run = vi.fn().mockResolvedValue({ response: '{"single": "object"}' });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when AI throws', async () => {
+      const run = vi.fn().mockRejectedValue(new Error('AI error'));
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toEqual([]);
+    });
+
+    it('skips invalid items and normalizes valid ones (3-7 items)', async () => {
+      const mixedJson = JSON.stringify([
+        { title: '有効なタスク1', type: TaskType.DAILY, difficulty: Difficulty.EASY },
+        { title: '', type: TaskType.TODO, difficulty: Difficulty.MEDIUM },
+        { title: '有効なタスク2', type: 'INVALID_TYPE', difficulty: Difficulty.MEDIUM },
+        { title: '有効なタスク3', type: TaskType.HABIT, difficulty: 'INVALID' },
+      ]);
+      const run = vi.fn().mockResolvedValue({ response: mixedJson });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result.length).toBeLessThanOrEqual(4);
+      const first = result.find((r) => r.title === '有効なタスク1');
+      expect(first).toEqual({ title: '有効なタスク1', type: TaskType.DAILY, difficulty: Difficulty.EASY });
+    });
+
+    it('passes gatewayId to runWithLlama31_8b when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      await generateSuggestedQuests(ai, '目標', undefined, 'gateway-suggest');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: expect.any(String) }),
+        { gateway: { id: 'gateway-suggest' } }
       );
     });
   });

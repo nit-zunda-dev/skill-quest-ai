@@ -1,7 +1,8 @@
 import type { Bindings } from '../types';
 import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
-import type { NarrativeRequest, PartnerMessageRequest } from '@skill-quest/shared';
-import { Difficulty, Genre } from '@skill-quest/shared';
+import type { NarrativeRequest, PartnerMessageRequest, SuggestedQuestItem } from '@skill-quest/shared';
+import { Difficulty, Genre, TaskType } from '@skill-quest/shared';
+import { suggestedQuestItemSchema } from '@skill-quest/shared';
 
 /**
  * Workers AI モデルID（design.md / docs/architecture/06_AI設計.md に準拠）
@@ -88,6 +89,7 @@ export interface AiService {
   generateNarrative(request: NarrativeRequest, genre?: Genre): Promise<NarrativeResult>;
   generatePartnerMessage(request: PartnerMessageRequest, genre?: Genre): Promise<string>;
   generateGrimoire(completedTasks: CompletedTask[], genre?: Genre): Promise<GrimoireGenerationResult>;
+  generateSuggestedQuests(goal: string, genre?: Genre): Promise<SuggestedQuestItem[]>;
 }
 
 /**
@@ -110,6 +112,7 @@ function createStubAiService(env: Bindings): AiService {
       rewardXp: 10,
       rewardGold: 5,
     }),
+    generateSuggestedQuests: async () => [],
   };
 }
 
@@ -143,6 +146,9 @@ export function createAiService(env: Bindings): AiService {
     },
     generateGrimoire(completedTasks: CompletedTask[], genre?: Genre) {
       return generateGrimoire(ai, completedTasks, genre, gatewayId);
+    },
+    generateSuggestedQuests(goal: string, genre?: Genre) {
+      return generateSuggestedQuests(ai, goal, genre, gatewayId);
     },
   };
 }
@@ -203,6 +209,105 @@ function extractJson(text: string): unknown {
     return JSON.parse(trimmed.slice(jsonStart, end + 1));
   } catch {
     return null;
+  }
+}
+
+/** テキストから JSON 配列を抽出する（AI 応答の配列用） */
+function extractJsonArray(text: string): unknown[] | null {
+  const trimmed = text.trim();
+  const arrayStart = trimmed.indexOf('[');
+  if (arrayStart === -1) return null;
+  let depth = 0;
+  let end = -1;
+  for (let i = arrayStart; i < trimmed.length; i++) {
+    if (trimmed[i] === '[') depth++;
+    if (trimmed[i] === ']') {
+      depth--;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end === -1) return null;
+  try {
+    const parsed = JSON.parse(trimmed.slice(arrayStart, end + 1));
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 不正な要素はスキップまたはデフォルトで補正して SuggestedQuestItem[] に正規化する */
+function normalizeSuggestedQuests(raw: unknown[]): SuggestedQuestItem[] {
+  const result: SuggestedQuestItem[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const parsed = suggestedQuestItemSchema.safeParse(item);
+    if (parsed.success) {
+      result.push(parsed.data);
+      continue;
+    }
+    const o = item as Record<string, unknown>;
+    const title = typeof o.title === 'string' && o.title.trim().length > 0 ? o.title.trim() : null;
+    if (!title) continue;
+    const type =
+      typeof o.type === 'string' && Object.values(TaskType).includes(o.type as TaskType)
+        ? (o.type as TaskType)
+        : TaskType.TODO;
+    const difficulty =
+      typeof o.difficulty === 'string' && Object.values(Difficulty).includes(o.difficulty as Difficulty)
+        ? (o.difficulty as Difficulty)
+        : Difficulty.MEDIUM;
+    result.push({ title: title.slice(0, 200), type, difficulty });
+  }
+  return result;
+}
+
+function buildSuggestedQuestsPrompt(goal: string, genre?: Genre): string {
+  const genreLine = genre ? `ジャンル・世界観: ${genre}` : '';
+  return [
+    'あなたは目標を実行可能なタスクに分解するアシスタントです。',
+    '以下の目標に基づき、3〜7件のタスクをJSON配列のみで返してください。',
+    `目標: ${goal}`,
+    genreLine,
+    '【各要素の形式】',
+    'title: タスクのタイトル（1件につき1文で具体的に）',
+    'type: DAILY | HABIT | TODO のいずれか',
+    'difficulty: EASY | MEDIUM | HARD のいずれか',
+    '【出力】JSON配列のみ。例: [{"title":"毎日30分勉強する","type":"DAILY","difficulty":"MEDIUM"}, ...]',
+  ]
+    .filter((line) => line !== '')
+    .join('\n');
+}
+
+/**
+ * 目標とオプションのジャンルを受け取り、3〜7件の実行可能タスクを返す。
+ * 出力を既存クエスト形式に正規化し、不正な要素はスキップまたはデフォルトで補正する。
+ * 失敗時は空配列を返す。
+ */
+export async function generateSuggestedQuests(
+  ai: AiRunBinding,
+  goal: string,
+  genre?: Genre,
+  gatewayId?: string
+): Promise<SuggestedQuestItem[]> {
+  try {
+    const prompt = buildSuggestedQuestsPrompt(goal, genre);
+    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
+    let arr: unknown[] | null = typeof raw === 'string' ? extractJsonArray(raw) : null;
+    if (arr === null && typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        arr = Array.isArray(parsed) ? parsed : null;
+      } catch {
+        arr = null;
+      }
+    }
+    if (arr === null || arr.length === 0) return [];
+    return normalizeSuggestedQuests(arr);
+  } catch {
+    return [];
   }
 }
 
