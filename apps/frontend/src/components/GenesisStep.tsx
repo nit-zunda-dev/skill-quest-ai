@@ -10,7 +10,7 @@ export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
       </div>
     </div>
     <h1 className="text-4xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 via-white to-purple-200">
-      Chronicle
+      Skill Quest AI
     </h1>
     <p className="text-lg text-slate-400 max-w-md mx-auto leading-relaxed">
       毎日の習慣をRPGに変えよう。<br/>

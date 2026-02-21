@@ -11,7 +11,7 @@ describe('IntroStep', () => {
     const onNext = vi.fn();
     render(<IntroStep onNext={onNext} />);
 
-    expect(screen.getByText('Chronicle')).toBeDefined();
+    expect(screen.getByText('Skill Quest AI')).toBeDefined();
     expect(screen.getByText(/毎日の習慣をRPGに変えよう/)).toBeDefined();
   });
 

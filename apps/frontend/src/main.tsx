@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient } from '@/lib/query';
 import { AuthProvider } from '@/hooks/useAuth';
 import App from '@/App';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

@@ -28,7 +28,7 @@ test.describe('キャラクター生成フロー E2E', () => {
     await page.getByRole('button', { name: 'サインアップ' }).click();
 
     await expect(page.getByRole('button', { name: '冒険を始める' })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole('heading', { name: 'Chronicle' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Skill Quest AI' })).toBeVisible();
 
     await page.getByRole('button', { name: '冒険を始める' }).click();
     await expect(page.getByRole('heading', { name: 'プロフィールの作成' })).toBeVisible({ timeout: 5_000 });
