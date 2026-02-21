@@ -1,7 +1,7 @@
 /**
  * App 未認証分岐のテスト（Task 3.1, 5.2）
- * - フォーム表示フラグが偽のときランディングが表示される
- * - フォーム表示フラグが真のときログイン/サインアップフォームが表示される
+ * - フォーム表示フラグが偽のときランディングが表示される（Task 5.2, Req 1.3, 5.3）
+ * - フォーム表示フラグが真のときログイン/サインアップフォームが表示される（Task 5.2）
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -29,19 +29,16 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
 
-describe('App unauthenticated branch (Task 3.1)', () => {
+describe('App unauthenticated branch (Task 3.1, 5.2)', () => {
   beforeEach(() => {
     mockRefetch.mockClear();
   });
 
-  it('shows landing page when form flag is false (default)', () => {
+  it('shows landing when form flag is false; shows login/signup form when true (Task 5.2)', () => {
     render(<App />, { wrapper });
     expect(screen.getByTestId('landing-page')).toBeTruthy();
     expect(screen.queryByPlaceholderText('メール')).toBeNull();
-  });
 
-  it('shows login/signup form when form flag is true (after CTA click)', () => {
-    render(<App />, { wrapper });
     const cta = screen.getByRole('button', { name: /始める/ });
     fireEvent.click(cta);
     expect(screen.getByPlaceholderText('メール')).toBeTruthy();
