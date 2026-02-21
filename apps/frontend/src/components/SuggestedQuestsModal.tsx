@@ -75,7 +75,13 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
           </div>
         )}
 
-        {!isFetchingSuggestions && suggestions.length > 0 && !suggestError && (
+        {open && !goal.trim() && !isFetchingSuggestions && (
+          <div className="rounded-xl bg-slate-800/50 border border-slate-600 p-4 text-center text-slate-400 text-sm">
+            目標が設定されていません。左の「目標」で目標を入力し、確定すると提案が表示されます。
+          </div>
+        )}
+
+        {!isFetchingSuggestions && suggestions.length > 0 && !suggestError && goal.trim() && (
           <>
             <ul className="space-y-3 mb-6">
               {suggestions.map((item, i) => (

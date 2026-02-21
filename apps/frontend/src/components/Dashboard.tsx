@@ -200,6 +200,10 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
               onCompleteTask={initiateCompleteTask}
               onDeleteTask={deleteTask}
               onUpdateStatus={(taskId, status) => updateQuestStatus({ id: taskId, status })}
+              onRequestSuggestFromGoal={() => {
+                setSuggestModalGoal(profile.goal ?? '');
+                setShowSuggestModal(true);
+              }}
             />
           )}
         </div>
