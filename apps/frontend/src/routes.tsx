@@ -14,15 +14,11 @@ import {
 } from '@/lib/paths';
 import { GenesisLayout } from '@/layouts/GenesisLayout';
 import { LoginRouteWrapper } from '@/components/LoginRouteWrapper';
+import NotFoundPage from '@/pages/NotFoundPage';
 
 /** プレースホルダー: 8.1 でルーター統合時に実コンポーネントに差し替える */
 const Placeholder: React.FC<{ name: string }> = ({ name }) => (
   <div data-testid={`route-placeholder-${name}`}>{name}</div>
-);
-
-/** プレースホルダー: 6.1 で NotFoundPage に差し替える */
-const NotFoundPlaceholder = () => (
-  <Placeholder name="NotFound" />
 );
 
 /** ダッシュボード用レイアウト・ページのプレースホルダー（9.1 で AppLayout + 各 Page に接続） */
@@ -81,6 +77,6 @@ export const routeConfig: RouteObject[] = [
   },
   {
     path: '*',
-    element: <NotFoundPlaceholder />,
+    element: <NotFoundPage />,
   },
 ];
