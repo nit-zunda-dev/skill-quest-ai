@@ -119,7 +119,7 @@ export const userCharacterProfile = sqliteTable('user_character_profile', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-/** 日次AI利用回数（ナラティブ・パートナー・チャット・グリモワール） */
+/** 日次AI利用回数（ナラティブ・パートナー・チャット・グリモワール・目標更新） */
 export const aiDailyUsage = sqliteTable('ai_daily_usage', {
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   dateUtc: text('date_utc').notNull(), // YYYY-MM-DD (UTC)
@@ -127,6 +127,7 @@ export const aiDailyUsage = sqliteTable('ai_daily_usage', {
   partnerCount: integer('partner_count').notNull().default(0),
   chatCount: integer('chat_count').notNull().default(0),
   grimoireCount: integer('grimoire_count').notNull().default(0),
+  goalUpdateCount: integer('goal_update_count').notNull().default(0),
 }, (table) => ({
   pk: primaryKey({ columns: [table.userId, table.dateUtc] }),
 }));

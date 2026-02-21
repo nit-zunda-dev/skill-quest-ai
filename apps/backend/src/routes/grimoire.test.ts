@@ -112,6 +112,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 0,
+        goalUpdateCount: 0,
       });
 
       const mockProfile = {
@@ -181,6 +182,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 1, // 既に1回使用済み
+        goalUpdateCount: 0,
       });
 
       const { app, env } = createTestApp(mockEnv);
@@ -202,6 +204,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 0,
+        goalUpdateCount: 0,
       });
 
       mockEnv.DB = createMockD1ForGrimoire({
@@ -234,6 +237,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 0,
+        goalUpdateCount: 0,
       });
 
       mockEnvWithoutAI.DB = createMockD1ForGrimoire({

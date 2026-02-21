@@ -8,6 +8,7 @@ import {
   recordPartner,
   recordChat,
   recordGrimoireGeneration,
+  recordGoalUpdate,
   saveCharacterProfile,
   updateCharacterProfile,
   getCharacterProfile,
@@ -47,7 +48,7 @@ describe('ai-usage', () => {
       const db = createMockD1ForAiUsageService();
       const today = getTodayUtc();
       const usage = await getDailyUsage(db, 'user-1', today);
-      expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0 });
+      expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0, goalUpdateCount: 0 });
     });
 
     it('returns updated counts after recordNarrative, recordPartner, recordChat', async () => {
@@ -61,6 +62,38 @@ describe('ai-usage', () => {
       expect(usage.narrativeCount).toBe(1);
       expect(usage.partnerCount).toBe(1);
       expect(usage.chatCount).toBe(2);
+    });
+
+    it('returns goalUpdateCount from daily usage', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      const usageBefore = await getDailyUsage(db, 'user-1', today);
+      expect(usageBefore.goalUpdateCount).toBe(0);
+      await recordGoalUpdate(db, 'user-1', today);
+      const usageAfter1 = await getDailyUsage(db, 'user-1', today);
+      expect(usageAfter1.goalUpdateCount).toBe(1);
+      await recordGoalUpdate(db, 'user-1', today);
+      const usageAfter2 = await getDailyUsage(db, 'user-1', today);
+      expect(usageAfter2.goalUpdateCount).toBe(2);
+    });
+  });
+
+  describe('recordGoalUpdate', () => {
+    it('increments goal update count for the day', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordGoalUpdate(db, 'user-1', today);
+      await recordGoalUpdate(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.goalUpdateCount).toBe(2);
+    });
+
+    it('does not affect other users or dates', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordGoalUpdate(db, 'user-1', today);
+      const usageUser2 = await getDailyUsage(db, 'user-2', today);
+      expect(usageUser2.goalUpdateCount).toBe(0);
     });
   });
 
