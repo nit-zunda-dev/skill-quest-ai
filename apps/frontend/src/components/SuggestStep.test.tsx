@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SuggestStep from './SuggestStep';
 import { createTestCharacterProfile } from '../../../../tests/fixtures';
-import { TaskType, Difficulty, Genre } from '@skill-quest/shared';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 import type { SuggestedQuestItem } from '@skill-quest/shared';
 
 const mockFetchSuggestions = vi.fn();
@@ -43,7 +43,7 @@ describe('SuggestStep (Task 6.2)', () => {
   });
 
   it('goal がある場合に提案取得を呼び一覧表示する', async () => {
-    const profile = createTestCharacterProfile({ goal: '英語力を上げる', genre: Genre.FANTASY });
+    const profile = createTestCharacterProfile({ goal: '英語力を上げる' });
     mockUseSuggestQuests.mockReturnValue({
       ...defaultHookReturn,
       suggestions: [],
@@ -52,7 +52,7 @@ describe('SuggestStep (Task 6.2)', () => {
     const { rerender } = render(<SuggestStep profile={profile} onComplete={onComplete} />);
 
     await waitFor(() => {
-      expect(mockFetchSuggestions).toHaveBeenCalledWith({ goal: '英語力を上げる', genre: Genre.FANTASY });
+      expect(mockFetchSuggestions).toHaveBeenCalledWith({ goal: '英語力を上げる' });
     });
 
     mockUseSuggestQuests.mockReturnValue({

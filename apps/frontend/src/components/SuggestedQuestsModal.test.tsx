@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import SuggestedQuestsModal from './SuggestedQuestsModal';
 import { createTestCharacterProfile } from '../../../../tests/fixtures';
-import { TaskType, Difficulty, Genre } from '@skill-quest/shared';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 import type { SuggestedQuestItem } from '@skill-quest/shared';
 
 const mockFetchSuggestions = vi.fn();
@@ -34,7 +34,7 @@ const mockSuggestions: SuggestedQuestItem[] = [
 
 describe('SuggestedQuestsModal (Task 7.2)', () => {
   const onClose = vi.fn();
-  const profile = createTestCharacterProfile({ goal: '英語', genre: Genre.FANTASY });
+  const profile = createTestCharacterProfile({ goal: '英語' });
 
   beforeEach(() => {
     onClose.mockClear();
@@ -112,9 +112,6 @@ describe('SuggestedQuestsModal (Task 7.2)', () => {
     );
     const retryButton = screen.getByRole('button', { name: /再試行/ });
     fireEvent.click(retryButton);
-    expect(mockFetchSuggestions).toHaveBeenCalledWith({
-      goal: '英語',
-      genre: profile.genre,
-    });
+    expect(mockFetchSuggestions).toHaveBeenCalledWith({ goal: '英語' });
   });
 });

@@ -26,7 +26,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
 
   useEffect(() => {
     if (!open || !goal.trim()) return;
-    fetchSuggestions({ goal: goal.trim(), genre: profile.genre });
+    fetchSuggestions({ goal: goal.trim() });
     // モーダルを開いたときのみ取得。fetchSuggestions は useMutation.mutate で安定
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -37,7 +37,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
   };
 
   const handleRetry = () => {
-    fetchSuggestions({ goal: goal.trim(), genre: profile.genre });
+    fetchSuggestions({ goal: goal.trim() });
   };
 
   if (!open) return null;

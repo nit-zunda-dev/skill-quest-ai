@@ -15,7 +15,7 @@ import {
   createQuestBatchSchema,
 } from './schemas';
 import type { SuggestQuestsRequest, SuggestedQuestItem, CreateQuestBatchRequest } from './schemas';
-import { TaskType, Difficulty, Genre } from './types';
+import { TaskType, Difficulty } from './types';
 
 describe('createQuestSchema', () => {
   describe('parse', () => {
@@ -259,36 +259,21 @@ describe('updateProfileSchema', () => {
 
 describe('genesisFormDataSchema', () => {
   describe('parse', () => {
-    it('正常系: ジャンルキー（FANTASY）でパースできる', () => {
+    it('正常系: name と goal でパースできる', () => {
       const validData = {
         name: 'テストキャラ',
         goal: 'テスト目標',
-        genre: 'FANTASY',
       };
 
       const result = genesisFormDataSchema.parse(validData);
       expect(result.name).toBe('テストキャラ');
       expect(result.goal).toBe('テスト目標');
-      expect(result.genre).toBe(Genre.FANTASY);
-    });
-
-    it('正常系: ジャンル値（ハイファンタジー）でパースできる', () => {
-      const validData = {
-        name: 'テストキャラ',
-        goal: 'テスト目標',
-        genre: 'ハイファンタジー',
-      };
-
-      const result = genesisFormDataSchema.parse(validData);
-      expect(result.name).toBe('テストキャラ');
-      expect(result.genre).toBe(Genre.FANTASY);
     });
 
     it('異常系: 名前が空文字列の場合エラーを投げる', () => {
       const invalidData = {
         name: '',
         goal: 'テスト目標',
-        genre: 'FANTASY',
       };
 
       expect(() => genesisFormDataSchema.parse(invalidData)).toThrow();
@@ -298,7 +283,6 @@ describe('genesisFormDataSchema', () => {
       const invalidData = {
         name: 'テストキャラ',
         goal: 'a'.repeat(501),
-        genre: 'FANTASY',
       };
 
       expect(() => genesisFormDataSchema.parse(invalidData)).toThrow();
@@ -310,18 +294,8 @@ describe('genesisFormDataSchema', () => {
       const result = genesisFormDataSchema.safeParse({
         name: 'テストキャラ',
         goal: 'テスト目標',
-        genre: 'FANTASY',
       });
       expect(result.success).toBe(true);
-    });
-
-    it('異常系: 無効なジャンルで失敗する', () => {
-      const result = genesisFormDataSchema.safeParse({
-        name: 'テストキャラ',
-        goal: 'テスト目標',
-        genre: 'INVALID',
-      });
-      expect(result.success).toBe(false);
     });
   });
 });
@@ -630,14 +604,6 @@ describe('suggestQuestsRequestSchema', () => {
       const validData = { goal: '英語力を上げる' };
       const result = suggestQuestsRequestSchema.parse(validData);
       expect(result.goal).toBe('英語力を上げる');
-      expect(result.genre).toBeUndefined();
-    });
-
-    it('正常系: goal と genre でパースできる', () => {
-      const validData = { goal: '習慣化したい', genre: 'FANTASY' };
-      const result = suggestQuestsRequestSchema.parse(validData);
-      expect(result.goal).toBe('習慣化したい');
-      expect(result.genre).toBe(Genre.FANTASY);
     });
 
     it('異常系: goal が空文字列の場合エラーを投げる', () => {

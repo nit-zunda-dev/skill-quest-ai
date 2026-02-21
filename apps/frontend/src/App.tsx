@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
+import { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import { generateCharacter, normalizeProfileNumbers } from '@/lib/api-client';
 import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
@@ -50,7 +50,6 @@ const App: React.FC = () => {
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
     goal: '',
-    genre: Genre.FANTASY,
   });
   const [profile, setProfile] = useState<CharacterProfile | null>(null);
 
@@ -190,7 +189,6 @@ const App: React.FC = () => {
           <QuestionStep
             name={formData.name}
             goal={formData.goal}
-            genre={formData.genre}
             onChange={handleInputChange}
             onNext={handleGenerate}
             isGenerating={false}

@@ -30,16 +30,16 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
   useEffect(() => {
     if (!hasGoal || !profile.goal?.trim()) return;
     if (suggestions.length > 0 || isFetchingSuggestions || suggestError) return;
-    fetchSuggestions({ goal: profile.goal.trim(), genre: profile.genre });
+    fetchSuggestions({ goal: profile.goal.trim() });
     // 初回マウント時のみ実行。fetchSuggestions を依存に含めると無限ループの可能性があるため除外
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasGoal, profile.goal, profile.genre]);
+  }, [hasGoal, profile.goal]);
 
   const handleSubmitGoal = (e: React.FormEvent) => {
     e.preventDefault();
     const goal = goalInput.trim();
     if (goal.length > 0) {
-      fetchSuggestions({ goal, genre: profile.genre });
+      fetchSuggestions({ goal });
     }
   };
 

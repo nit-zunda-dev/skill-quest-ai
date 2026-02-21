@@ -4,7 +4,7 @@ RPG風のタスク管理アプリケーション。日々のタスクをクエ�
 
 ## Core Capabilities
 
-- **Genesis（世界生成）**: サインアップ時にAIがプロローグと初期クラスを生成し、ユーザー固有の世界観を構築
+- **Genesis（世界生成）**: サインアップ時にAIがプロローグと初期クラスを生成し、キャラクターと物語の導入を構築
 - **Quest Board（タスク管理）**: デイリータスク・習慣・To-Doの登録・編集・削除
 - **Narrative Check-in**: タスク完了時にAIが物語セグメントと報酬（XP等）を生成
 - **Character Status**: HP・MP・XP・Level の可視化

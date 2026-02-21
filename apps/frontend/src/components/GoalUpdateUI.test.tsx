@@ -6,7 +6,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import GoalUpdateUI from './GoalUpdateUI';
 import { createTestCharacterProfile } from '../../../../tests/fixtures';
-import { Genre } from '@skill-quest/shared';
 
 const mockUpdateGoal = vi.fn();
 vi.mock('@/lib/api-client', () => ({
@@ -22,13 +21,13 @@ describe('GoalUpdateUI (Task 7.1)', () => {
   });
 
   it('現在の目標を表示する', () => {
-    const profile = createTestCharacterProfile({ goal: '英語力を上げる', genre: Genre.FANTASY });
+    const profile = createTestCharacterProfile({ goal: '英語力を上げる' });
     render(<GoalUpdateUI profile={profile} onGoalUpdateSuccess={onGoalUpdateSuccess} />);
     expect(screen.getByDisplayValue('英語力を上げる')).toBeTruthy();
   });
 
   it('目標が無い場合はプレースホルダーで表示する', () => {
-    const profile = createTestCharacterProfile({ genre: Genre.FANTASY });
+    const profile = createTestCharacterProfile();
     const p = { ...profile, goal: undefined };
     render(<GoalUpdateUI profile={p} onGoalUpdateSuccess={onGoalUpdateSuccess} />);
     const input = screen.getByPlaceholderText(/目標|例/);
@@ -37,7 +36,7 @@ describe('GoalUpdateUI (Task 7.1)', () => {
   });
 
   it('確定時に目標更新 API を呼ぶ', async () => {
-    const profile = createTestCharacterProfile({ goal: 'もとの目標', genre: Genre.FANTASY });
+    const profile = createTestCharacterProfile({ goal: 'もとの目標' });
     mockUpdateGoal.mockResolvedValue(undefined);
     render(<GoalUpdateUI profile={profile} onGoalUpdateSuccess={onGoalUpdateSuccess} />);
 
@@ -51,7 +50,7 @@ describe('GoalUpdateUI (Task 7.1)', () => {
   });
 
   it('429 時は案内メッセージを表示する', async () => {
-    const profile = createTestCharacterProfile({ goal: '目標', genre: Genre.FANTASY });
+    const profile = createTestCharacterProfile({ goal: '目標' });
     mockUpdateGoal.mockRejectedValue(new Error('本日は目標の変更回数（2回）に達しています。'));
     render(<GoalUpdateUI profile={profile} onGoalUpdateSuccess={onGoalUpdateSuccess} />);
 
@@ -64,7 +63,7 @@ describe('GoalUpdateUI (Task 7.1)', () => {
   });
 
   it('成功時は onGoalUpdateSuccess を呼ぶ（提案モーダルを開く）', async () => {
-    const profile = createTestCharacterProfile({ goal: '目標', genre: Genre.FANTASY });
+    const profile = createTestCharacterProfile({ goal: '目標' });
     mockUpdateGoal.mockResolvedValue(undefined);
     render(<GoalUpdateUI profile={profile} onGoalUpdateSuccess={onGoalUpdateSuccess} />);
 

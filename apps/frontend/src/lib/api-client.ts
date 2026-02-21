@@ -5,7 +5,6 @@
 import { client } from './client';
 import {
   Difficulty,
-  Genre,
   type CharacterProfile,
   type CreateQuestBatchRequest,
   type GenesisFormData,
@@ -85,7 +84,6 @@ const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
   currentXp: 0,
   nextLevelXp: 100,
   gold: 0,
-  genre: Genre.FANTASY,
 });
 
 export async function generateCharacter(data: GenesisFormData): Promise<CharacterProfile> {

@@ -4,7 +4,7 @@
  */
 import { SELF, env } from 'cloudflare:test';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Genre, TaskType, Difficulty } from '@skill-quest/shared';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 
 const BASE = 'https://test.invalid';
 const TEST_EMAIL = 'ai-integration@example.com';
@@ -87,7 +87,6 @@ describe('AI endpoints integration (Task 5.4)', () => {
       body: JSON.stringify({
         name: 'TestChar',
         goal: 'Test goal',
-        genre: Genre.FANTASY,
       }),
     });
     expect(genRes.status).toBe(200);
@@ -168,7 +167,6 @@ describe('PATCH /api/ai/goal (Task 9.2)', () => {
       body: JSON.stringify({
         name: 'GoalChar',
         goal: '初期目標',
-        genre: Genre.FANTASY,
       }),
     });
     expect(genRes.status).toBe(200);

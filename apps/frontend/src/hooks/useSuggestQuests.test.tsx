@@ -10,7 +10,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useSuggestQuests } from './useSuggestQuests';
-import { TaskType, Difficulty, Genre } from '@skill-quest/shared';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 import type { SuggestedQuestItem } from '@skill-quest/shared';
 
 const mockSuggestions: SuggestedQuestItem[] = [
@@ -22,7 +22,7 @@ const mockSuggestQuests = vi.fn();
 const mockCreateQuestsBatch = vi.fn();
 
 vi.mock('@/lib/api-client', () => ({
-  suggestQuests: (req: { goal: string; genre?: Genre }) => mockSuggestQuests(req),
+  suggestQuests: (req: { goal: string }) => mockSuggestQuests(req),
   createQuestsBatch: (req: { quests: SuggestedQuestItem[] }) => mockCreateQuestsBatch(req),
 }));
 

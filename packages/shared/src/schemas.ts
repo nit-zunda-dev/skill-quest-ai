@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export { z };
-import { Genre, Difficulty, TaskType } from './types';
+import { Difficulty, TaskType } from './types';
 
 // クエスト作成リクエストスキーマ
 export const createQuestSchema = z.object({
@@ -33,20 +33,10 @@ export const updateProfileSchema = z.object({
   themeColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'テーマカラーは16進数カラーコード形式で入力してください').optional(),
 });
 
-// APIでは genre に enum キー（FANTASY 等）または値（ハイファンタジー 等）のどちらも受け付ける
-const genreKeys = ['FANTASY', 'CYBERPUNK', 'MODERN', 'HORROR', 'SCI_FI'] as const;
-const genreValues = ['ハイファンタジー', 'サイバーパンク', '現代ドラマ', 'エルドリッチホラー', 'スペースオペラ'] as const;
-
 // キャラクター生成リクエストスキーマ（GenesisFormData）
 export const genesisFormDataSchema = z.object({
   name: z.string().min(1, '名前は必須です').max(50, '名前は50文字以内で入力してください'),
   goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
-  genre: z.enum([...genreKeys, ...genreValues]).transform((v): Genre => {
-    if (genreKeys.includes(v as (typeof genreKeys)[number])) {
-      return Genre[v as keyof typeof Genre];
-    }
-    return v as Genre;
-  }),
 });
 
 // ナラティブ生成リクエストスキーマ
@@ -75,15 +65,6 @@ export const partnerMessageRequestSchema = z.object({
 // クエスト提案リクエストスキーマ（suggest-quests API）
 export const suggestQuestsRequestSchema = z.object({
   goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
-  genre: z
-    .enum([...genreKeys, ...genreValues])
-    .transform((v): Genre => {
-      if (genreKeys.includes(v as (typeof genreKeys)[number])) {
-        return Genre[v as keyof typeof Genre];
-      }
-      return v as Genre;
-    })
-    .optional(),
 });
 
 // 提案1件スキーマ（CreateQuestRequest と整合。title / type / difficulty）

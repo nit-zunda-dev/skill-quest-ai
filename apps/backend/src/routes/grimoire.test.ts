@@ -3,7 +3,6 @@ import { Hono } from 'hono';
 import type { Bindings, AuthUser } from '../types';
 import { grimoireRouter } from './grimoire';
 import { createMockAuthUser, createMockAI, createMockD1ForGrimoire } from '../../../../tests/utils';
-import { Genre } from '@skill-quest/shared';
 
 const testUser = createMockAuthUser();
 
@@ -120,7 +119,6 @@ describe('grimoire router', () => {
         currentXp: 0,
         nextLevelXp: 100,
         gold: 0,
-        genre: Genre.FANTASY,
       };
       vi.mocked(getCharacterProfile).mockResolvedValue(mockProfile);
 

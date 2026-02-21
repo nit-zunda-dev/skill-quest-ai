@@ -3,14 +3,6 @@ export enum AppMode {
   DASHBOARD = 'DASHBOARD',
 }
 
-export enum Genre {
-  FANTASY = 'ハイファンタジー',
-  CYBERPUNK = 'サイバーパンク',
-  MODERN = '現代ドラマ',
-  HORROR = 'エルドリッチホラー',
-  SCI_FI = 'スペースオペラ',
-}
-
 export enum Difficulty {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
@@ -26,7 +18,6 @@ export enum TaskType {
 export interface GenesisFormData {
   name: string;
   goal: string;
-  genre: Genre;
 }
 
 export interface CharacterProfile {
@@ -39,7 +30,6 @@ export interface CharacterProfile {
   currentXp: number;
   nextLevelXp: number;
   gold: number;
-  genre: Genre;
   /** 目標（クエスト自動生成の入力）。既存ユーザーは未設定のためオプショナル。 */
   goal?: string;
 }

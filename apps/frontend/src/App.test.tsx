@@ -114,7 +114,6 @@ describe('Genesis flow: RESULT → SUGGEST → アプリ (Task 6.1)', () => {
     fireEvent.click(screen.getByRole('button', { name: /冒険を始める/ }));
     const goalInput = screen.getByPlaceholderText(/英語学習/);
     fireEvent.change(goalInput, { target: { value: '英語' } });
-    fireEvent.click(screen.getByText('ハイファンタジー'));
     fireEvent.click(screen.getByRole('button', { name: /決定して次へ/ }));
 
     await waitFor(() => {

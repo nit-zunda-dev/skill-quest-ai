@@ -2,7 +2,7 @@
  * API クライアントのテスト（タスク 5.1: 提案取得・目標更新・クエスト一括作成）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Difficulty, Genre, TaskType } from '@skill-quest/shared';
+import { Difficulty, TaskType } from '@skill-quest/shared';
 import {
   suggestQuests,
   updateGoal,
@@ -46,14 +46,6 @@ describe('suggestQuests', () => {
 
     expect(mockSuggestPost).toHaveBeenCalledWith({ json: { goal: '英語力を上げる' } });
     expect(result).toEqual(expected);
-  });
-
-  it('goal と genre を渡すと両方含めてリクエストする', async () => {
-    mockSuggestPost.mockResolvedValue({ ok: true, json: () => Promise.resolve({ suggestions: [] }) });
-    await suggestQuests({ goal: '目標', genre: Genre.FANTASY });
-    expect(mockSuggestPost).toHaveBeenCalledWith({
-      json: { goal: '目標', genre: Genre.FANTASY },
-    });
   });
 
   it('400 のときエラーをスローする', async () => {

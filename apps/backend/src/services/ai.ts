@@ -1,7 +1,7 @@
 import type { Bindings } from '../types';
 import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest, SuggestedQuestItem } from '@skill-quest/shared';
-import { Difficulty, Genre, TaskType } from '@skill-quest/shared';
+import { Difficulty, TaskType } from '@skill-quest/shared';
 import { suggestedQuestItemSchema } from '@skill-quest/shared';
 
 /**
@@ -86,10 +86,10 @@ export interface AiService {
   runWithLlama31_8b(prompt: string): Promise<string>;
   runWithLlama33_70b(prompt: string): Promise<string>;
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
-  generateNarrative(request: NarrativeRequest, genre?: Genre): Promise<NarrativeResult>;
-  generatePartnerMessage(request: PartnerMessageRequest, genre?: Genre): Promise<string>;
-  generateGrimoire(completedTasks: CompletedTask[], genre?: Genre): Promise<GrimoireGenerationResult>;
-  generateSuggestedQuests(goal: string, genre?: Genre): Promise<SuggestedQuestItem[]>;
+  generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
+  generatePartnerMessage(request: PartnerMessageRequest): Promise<string>;
+  generateGrimoire(completedTasks: CompletedTask[]): Promise<GrimoireGenerationResult>;
+  generateSuggestedQuests(goal: string): Promise<SuggestedQuestItem[]>;
 }
 
 /**
@@ -100,7 +100,7 @@ function createStubAiService(env: Bindings): AiService {
     runWithLlama31_8b: async () => '',
     runWithLlama33_70b: async () => '',
     generateCharacter: async (data: GenesisFormData) =>
-      defaultCharacterProfile(data.name, data.goal, data.genre),
+      defaultCharacterProfile(data.name, data.goal),
     generateNarrative: async () => ({
       narrative: 'Stub narrative.',
       rewardXp: 10,
@@ -140,23 +140,23 @@ export function createAiService(env: Bindings): AiService {
     generateCharacter(data: GenesisFormData) {
       return generateCharacter(ai, data, gatewayId);
     },
-    generateNarrative(request: NarrativeRequest, genre?: Genre) {
-      return generateNarrative(ai, request, genre, gatewayId);
+    generateNarrative(request: NarrativeRequest) {
+      return generateNarrative(ai, request, gatewayId);
     },
-    generatePartnerMessage(request: PartnerMessageRequest, genre?: Genre) {
-      return generatePartnerMessage(ai, request, genre, gatewayId);
+    generatePartnerMessage(request: PartnerMessageRequest) {
+      return generatePartnerMessage(ai, request, gatewayId);
     },
-    generateGrimoire(completedTasks: CompletedTask[], genre?: Genre) {
-      return generateGrimoire(ai, completedTasks, genre, gatewayId);
+    generateGrimoire(completedTasks: CompletedTask[]) {
+      return generateGrimoire(ai, completedTasks, gatewayId);
     },
-    generateSuggestedQuests(goal: string, genre?: Genre) {
-      return generateSuggestedQuests(ai, goal, genre, gatewayId);
+    generateSuggestedQuests(goal: string) {
+      return generateSuggestedQuests(ai, goal, gatewayId);
     },
   };
 }
 
 /** フォールバック用のデフォルトプロフィール */
-function defaultCharacterProfile(name: string, goal: string, genre: Genre): CharacterProfile {
+function defaultCharacterProfile(name: string, goal: string): CharacterProfile {
   return {
     name,
     className: '冒険者',
@@ -167,7 +167,6 @@ function defaultCharacterProfile(name: string, goal: string, genre: Genre): Char
     currentXp: 0,
     nextLevelXp: 100,
     gold: 0,
-    genre,
     goal,
   };
 }
@@ -186,7 +185,6 @@ function isCharacterProfile(obj: unknown): obj is CharacterProfile {
     typeof o.nextLevelXp === 'number' &&
     typeof o.gold === 'number'
   );
-  // genreは後方互換性のためオプショナル（既存プロフィールには含まれていない可能性がある）
   return hasRequiredFields;
 }
 
@@ -266,36 +264,31 @@ function normalizeSuggestedQuests(raw: unknown[]): SuggestedQuestItem[] {
   return result;
 }
 
-function buildSuggestedQuestsPrompt(goal: string, genre?: Genre): string {
-  const genreLine = genre ? `ジャンル・世界観: ${genre}` : '';
+function buildSuggestedQuestsPrompt(goal: string): string {
   return [
     'あなたは目標を実行可能なタスクに分解するアシスタントです。',
     '以下の目標に基づき、3〜7件のタスクをJSON配列のみで返してください。',
     `目標: ${goal}`,
-    genreLine,
     '【各要素の形式】',
     'title: タスクのタイトル（1件につき1文で具体的に）',
     'type: DAILY | HABIT | TODO のいずれか',
     'difficulty: EASY | MEDIUM | HARD のいずれか',
     '【出力】JSON配列のみ。例: [{"title":"毎日30分勉強する","type":"DAILY","difficulty":"MEDIUM"}, ...]',
-  ]
-    .filter((line) => line !== '')
-    .join('\n');
+  ].join('\n');
 }
 
 /**
- * 目標とオプションのジャンルを受け取り、3〜7件の実行可能タスクを返す。
+ * 目標を受け取り、3〜7件の実行可能タスクを返す。
  * 出力を既存クエスト形式に正規化し、不正な要素はスキップまたはデフォルトで補正する。
  * 失敗時は空配列を返す。
  */
 export async function generateSuggestedQuests(
   ai: AiRunBinding,
   goal: string,
-  genre?: Genre,
   gatewayId?: string
 ): Promise<SuggestedQuestItem[]> {
   try {
-    const prompt = buildSuggestedQuestsPrompt(goal, genre);
+    const prompt = buildSuggestedQuestsPrompt(goal);
     const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     let arr: unknown[] | null = typeof raw === 'string' ? extractJsonArray(raw) : null;
     if (arr === null && typeof raw === 'string') {
@@ -334,17 +327,12 @@ export async function generateCharacter(
       }
     }
     if (isCharacterProfile(parsed)) {
-      const profile = parsed as CharacterProfile;
-      // genreが含まれていない場合は追加
-      if (!profile.genre) {
-        profile.genre = data.genre;
-      }
-      return profile;
+      return parsed as CharacterProfile;
     }
   } catch {
     // fall through to fallback
   }
-  return defaultCharacterProfile(data.name, data.goal, data.genre);
+  return defaultCharacterProfile(data.name, data.goal);
 }
 
 function buildCharacterPrompt(data: GenesisFormData): string {
@@ -352,10 +340,8 @@ function buildCharacterPrompt(data: GenesisFormData): string {
     `以下の条件でゲームのキャラクターを1体生成し、JSONのみで返してください。`,
     `名前: ${data.name}`,
     `目標: ${data.goal}`,
-    `ジャンル: ${data.genre}`,
-    `必須フィールド: name, className, title, prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, gold, genre.`,
+    `必須フィールド: name, className, title, prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, gold.`,
     `nameは「${data.name}」にすること。`,
-    `genreは「${data.genre}」にすること。`,
   ].join('\n');
 }
 
@@ -384,38 +370,18 @@ function isNarrativeResult(obj: unknown): obj is NarrativeResult {
   );
 }
 
-function buildNarrativePrompt(request: NarrativeRequest, genre?: Genre): string {
+function buildNarrativePrompt(request: NarrativeRequest): string {
   const comment = request.userComment ? `ユーザーのコメント: ${request.userComment}` : 'ユーザーのコメント: なし';
-  const genreText = genre ? `世界観: ${genre}` : '';
-  const narrativeStyle = genre ? getNarrativeStyleByGenre(genre) : 'TRPGのアクションとして誇張的に';
   return [
     'あなたはTRPGのゲームマスターです。TRPGのタスク完了イベントを生成し、JSONのみで返してください。',
-    genreText,
     `完了したタスク: ${request.taskTitle} (タスク種別: ${request.taskType}, 難易度: ${request.difficulty})`,
     comment,
     '【出力ルール】',
-    `1. narrative: タスク完了を${narrativeStyle}として誇張的に描写する（2文程度）。`,
+    '1. narrative: タスク完了をTRPGのアクションとして誇張的に描写する（2文程度）。',
     '2. rewardXp: 難易度に応じた経験値 (EASY: 10-20, MEDIUM: 25-40, HARD: 50-80)',
     '3. rewardGold: 難易度に応じた報酬 (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
     '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
-  ].filter(line => line !== '').join('\n');
-}
-
-function getNarrativeStyleByGenre(genre: Genre): string {
-  switch (genre) {
-    case Genre.FANTASY:
-      return 'ハイファンタジー世界の冒険として';
-    case Genre.CYBERPUNK:
-      return 'サイバーパンク世界のミッションとして';
-    case Genre.MODERN:
-      return '現代ドラマのシーンとして';
-    case Genre.HORROR:
-      return 'エルドリッチホラー世界の出来事として';
-    case Genre.SCI_FI:
-      return 'スペースオペラ世界の任務として';
-    default:
-      return 'TRPGのアクションとして';
-  }
+  ].join('\n');
 }
 
 /**
@@ -425,10 +391,9 @@ function getNarrativeStyleByGenre(genre: Genre): string {
 export async function generateNarrative(
   ai: AiRunBinding,
   request: NarrativeRequest,
-  genre?: Genre,
   gatewayId?: string
 ): Promise<NarrativeResult> {
-  const prompt = buildNarrativePrompt(request, genre);
+  const prompt = buildNarrativePrompt(request);
   
   try {
     const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
@@ -456,14 +421,11 @@ export async function generateNarrative(
 
 const DEFAULT_PARTNER_MESSAGE = '一緒に頑張ろう。';
 
-function buildPartnerMessagePrompt(request: PartnerMessageRequest, genre?: Genre): string {
+function buildPartnerMessagePrompt(request: PartnerMessageRequest): string {
   const lines = [
     'あなたはRPGの相棒キャラクターです。プレイヤーに短く（1文）声をかけてください。',
+    '【状況】',
   ];
-  if (genre) {
-    lines.push(`【世界観】${genre}`);
-  }
-  lines.push('【状況】');
   if (request.timeOfDay) {
     lines.push(`時間帯: ${request.timeOfDay}`);
   }
@@ -484,10 +446,9 @@ function buildPartnerMessagePrompt(request: PartnerMessageRequest, genre?: Genre
 export async function generatePartnerMessage(
   ai: AiRunBinding,
   request: PartnerMessageRequest,
-  genre?: Genre,
   gatewayId?: string
 ): Promise<string> {
-  const prompt = buildPartnerMessagePrompt(request, genre);
+  const prompt = buildPartnerMessagePrompt(request);
   try {
     const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     const trimmed = typeof raw === 'string' ? raw.trim() : '';
@@ -498,7 +459,7 @@ export async function generatePartnerMessage(
   return DEFAULT_PARTNER_MESSAGE;
 }
 
-function buildGrimoirePrompt(completedTasks: CompletedTask[], genre?: Genre): string {
+function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
   if (completedTasks.length === 0) {
     return '完了したタスクがありません。';
   }
@@ -508,20 +469,16 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[], genre?: Genre): st
     return `${index + 1}. ${task.title} (種別: ${task.type}, 難易度: ${task.difficulty}, 完了日: ${completedDate})`;
   }).join('\n');
   
-  const genreText = genre ? `世界観: ${genre}` : '';
-  const narrativeStyle = genre ? getNarrativeStyleByGenre(genre) : '物語として';
-  
   return [
     'あなたはTRPGのゲームマスターです。完了したタスクすべてを参考に、冒険の記録（グリモワールエントリ）を生成し、JSONのみで返してください。',
-    genreText,
     '【完了したタスク一覧】',
     taskList,
     '【出力ルール】',
-    `1. narrative: 完了したタスクすべてを統合した${narrativeStyle}、冒険の記録を2-3文で描写してください。`,
+    '1. narrative: 完了したタスクすべてを統合した物語として、冒険の記録を2-3文で描写してください。',
     '2. rewardXp: 完了したタスクの合計経験値（各タスクの難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
     '3. rewardGold: 完了したタスクの合計報酬（各タスクの難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
     '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
-  ].filter(line => line !== '').join('\n');
+  ].join('\n');
 }
 
 function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
@@ -541,7 +498,6 @@ function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
 export async function generateGrimoire(
   ai: AiRunBinding,
   completedTasks: CompletedTask[],
-  genre?: Genre,
   gatewayId?: string
 ): Promise<GrimoireGenerationResult> {
   if (completedTasks.length === 0) {
@@ -552,7 +508,7 @@ export async function generateGrimoire(
     };
   }
   
-  const prompt = buildGrimoirePrompt(completedTasks, genre);
+  const prompt = buildGrimoirePrompt(completedTasks);
   
   // フォールバック用の報酬計算
   const totalRewards = completedTasks.reduce(
