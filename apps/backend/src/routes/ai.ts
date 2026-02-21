@@ -7,7 +7,8 @@ import {
   narrativeRequestSchema,
   partnerMessageRequestSchema,
   chatRequestSchema,
-  Genre,
+  suggestQuestsRequestSchema,
+  updateGoalRequestSchema,
 } from '@skill-quest/shared';
 import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
 import { prepareUserPrompt } from '../services/prompt-safety';
@@ -89,20 +90,21 @@ aiRouter.post(
     const sanitized = { ...data, name: nameResult.sanitized, goal: goalResult.sanitized };
     const service = createAiService(c.env);
     const profile = await service.generateCharacter(sanitized);
+    const profileWithGoal = { ...profile, goal: sanitized.goal };
     await recordCharacterGenerated(c.env.DB, user.id);
-    await saveCharacterProfile(c.env.DB, user.id, profile);
-    
+    await saveCharacterProfile(c.env.DB, user.id, profileWithGoal);
+
     // プロローグを第一回のグリモワールとして保存
-    if (profile.prologue) {
+    if (profileWithGoal.prologue) {
       await createGrimoireEntry(c.env.DB, user.id, {
         taskTitle: 'プロローグ',
-        narrative: profile.prologue,
+        narrative: profileWithGoal.prologue,
         rewardXp: 0,
         rewardGold: 0,
       });
     }
-    
-    return c.json(profile);
+
+    return c.json(profileWithGoal);
   }
 );
 
@@ -124,18 +126,9 @@ aiRouter.post(
       if (!commentResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: commentResult.reason }, 400);
       sanitized.userComment = commentResult.sanitized;
     }
-    // プロフィール取得（genreを取得するため）
     const profileRaw = await getCharacterProfile(c.env.DB, user.id);
-    let genre: Genre | undefined;
-    if (profileRaw && typeof profileRaw === 'object') {
-      const p = profileRaw as Record<string, unknown>;
-      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
-        genre = p.genre as Genre;
-      }
-    }
-
     const service = createAiService(c.env);
-    const result = await service.generateNarrative(sanitized, genre);
+    const result = await service.generateNarrative(sanitized);
 
     // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
     let updatedProfile = profileRaw as Record<string, unknown> | null;
@@ -201,20 +194,91 @@ aiRouter.post(
         sanitized[key] = result.sanitized;
       }
     }
-    // プロフィール取得（genreを取得するため）
-    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
-    let genre: Genre | undefined;
-    if (profileRaw && typeof profileRaw === 'object') {
-      const p = profileRaw as Record<string, unknown>;
-      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
-        genre = p.genre as Genre;
-      }
-    }
-
     const service = createAiService(c.env);
-    const message = await service.generatePartnerMessage(sanitized, genre);
+    const message = await service.generatePartnerMessage(sanitized);
     await recordPartner(c.env.DB, user.id, today);
     return c.json({ message });
+  }
+);
+
+aiRouter.post(
+  '/suggest-quests',
+  zValidator('json', suggestQuestsRequestSchema),
+  async (c) => {
+    const user = c.get('user');
+    const data = c.req.valid('json');
+    const goalResult = prepareUserPrompt(data.goal);
+    if (!goalResult.ok) {
+      return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
+    }
+    const goal = goalResult.sanitized;
+
+    try {
+      const service = createAiService(c.env);
+      const suggestions = await service.generateSuggestedQuests(goal);
+      if (suggestions.length === 0) {
+        return c.json(
+          { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
+          500
+        );
+      }
+      return c.json({ suggestions }, 200);
+    } catch {
+      return c.json(
+        { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
+        502
+      );
+    }
+  }
+);
+
+/** 目標更新（1日2回まで。更新時にクエスト全削除） */
+aiRouter.patch(
+  '/goal',
+  zValidator('json', updateGoalRequestSchema),
+  async (c) => {
+    const user = c.get('user');
+    const data = c.req.valid('json');
+    const goalResult = prepareUserPrompt(data.goal);
+    if (!goalResult.ok) {
+      return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
+    }
+    const goal = goalResult.sanitized;
+
+    const today = getTodayUtc();
+    const usage = await getDailyUsage(c.env.DB, user.id, today);
+    if (usage.goalUpdateCount >= 2) {
+      return c.json(
+        { error: 'Too Many Requests', message: '本日は目標の変更回数（2回）に達しています。' },
+        429
+      );
+    }
+
+    const profile = await getCharacterProfile(c.env.DB, user.id);
+    if (profile == null || typeof profile !== 'object') {
+      return c.json({ error: 'Profile not found', message: 'キャラクターが生成されていません。' }, 404);
+    }
+
+    const merged = { ...(profile as Record<string, unknown>), goal };
+    const updateStmt = c.env.DB.prepare(
+      'UPDATE user_character_profile SET profile = ? WHERE user_id = ?'
+    ).bind(JSON.stringify(merged), user.id);
+    const deleteStmt = c.env.DB.prepare('DELETE FROM quests WHERE user_id = ?').bind(user.id);
+    const recordStmt = c.env.DB.prepare(
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
+       VALUES (?, ?, 0, 0, 0, 0, 1)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET goal_update_count = goal_update_count + 1`
+    ).bind(user.id, today);
+
+    try {
+      await c.env.DB.batch([updateStmt, deleteStmt, recordStmt]);
+      return c.json({ ok: true }, 200);
+    } catch {
+      return c.json(
+        { error: 'Internal Server Error', message: '目標の更新に失敗しました。しばらく経ってから再試行してください。' },
+        500
+      );
+    }
   }
 );
 
@@ -231,20 +295,7 @@ aiRouter.post(
     const msgResult = prepareUserPrompt(data.message);
     if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
 
-    // プロフィール取得（genreを取得するため）
-    const profileRaw = await getCharacterProfile(c.env.DB, user.id);
-    let genre: Genre | undefined;
-    if (profileRaw && typeof profileRaw === 'object') {
-      const p = profileRaw as Record<string, unknown>;
-      if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
-        genre = p.genre as Genre;
-      }
-    }
-
-    // システムメッセージに世界観を含める
-    const systemMessage = genre 
-      ? `あなたは${genre}世界観のRPGのゲームマスターです。プレイヤーの質問に答えてください。`
-      : 'あなたはRPGのゲームマスターです。プレイヤーの質問に答えてください。';
+    const systemMessage = 'あなたはRPGのゲームマスターです。プレイヤーの質問に答えてください。';
     const messages = [
       { role: 'system' as const, content: systemMessage },
       { role: 'user' as const, content: msgResult.sanitized }

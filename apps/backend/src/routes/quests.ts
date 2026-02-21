@@ -8,9 +8,11 @@ import type { AuthUser } from '../types';
 import { schema } from '../db/schema';
 import {
   createQuestSchema,
+  createQuestBatchSchema,
   updateQuestSchema,
   updateQuestStatusSchema,
   type CreateQuestRequest,
+  type CreateQuestBatchRequest,
   type UpdateQuestRequest,
   type UpdateQuestStatusRequest,
 } from '@skill-quest/shared';
@@ -100,6 +102,46 @@ questsRouter.post(
       },
       201
     );
+  }
+);
+
+questsRouter.post(
+  '/batch',
+  zValidator('json', createQuestBatchSchema),
+  async (c) => {
+    const user = c.get('user');
+    const db = drizzle(c.env.DB, { schema });
+    const { quests: questsData } = c.req.valid('json') as CreateQuestBatchRequest;
+    const now = new Date();
+    const created: typeof schema.quests.$inferSelect[] = [];
+
+    for (const data of questsData) {
+      const id = crypto.randomUUID();
+      const difficultyNum = DIFFICULTY_TO_NUM[data.difficulty];
+      const winCondition = data.winCondition
+        ? { ...data.winCondition, type: data.type }
+        : { type: data.type };
+
+      await db.insert(schema.quests).values({
+        id,
+        userId: user.id,
+        skillId: data.skillId ?? null,
+        title: data.title,
+        scenario: data.scenario ?? null,
+        difficulty: difficultyNum,
+        winCondition: winCondition as Record<string, unknown>,
+        status: 'todo',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const rows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
+      const row = rows[0];
+      if (row) created.push(row);
+    }
+
+    const body = created.map((row) => toQuestResponse(row));
+    return c.json(body, 201);
   }
 );
 

@@ -198,4 +198,30 @@ describe('QuestBoard', () => {
 
     expect(screen.getByText(/5/)).toBeDefined();
   });
+
+  it('クエスト0件かつonRequestSuggestFromGoalがあるとき、目標からタスクを生成する案内とCTAを表示する（Task 8.1）', () => {
+    const onRequestSuggestFromGoal = vi.fn();
+    render(
+      <QuestBoard
+        {...defaultProps}
+        tasks={[]}
+        onRequestSuggestFromGoal={onRequestSuggestFromGoal}
+      />
+    );
+
+    const cta = screen.getByRole('button', { name: /目標からタスクを生成/ });
+    expect(cta).toBeDefined();
+    expect(screen.getByText(/目標からタスクを生成|目標に沿ったタスクを提案/)).toBeDefined();
+
+    fireEvent.click(cta);
+    expect(onRequestSuggestFromGoal).toHaveBeenCalledTimes(1);
+  });
+
+  it('クエスト0件でonRequestSuggestFromGoalがないとき、案内CTAは表示しない（従来の3列の空表示）', () => {
+    render(<QuestBoard {...defaultProps} tasks={[]} />);
+
+    expect(screen.queryByRole('button', { name: /目標からタスクを生成/ })).toBeNull();
+    const emptyMessages = screen.getAllByText(/タスクなし/);
+    expect(emptyMessages.length).toBeGreaterThan(0);
+  });
 });

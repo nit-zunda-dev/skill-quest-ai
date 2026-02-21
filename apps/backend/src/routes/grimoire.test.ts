@@ -3,7 +3,6 @@ import { Hono } from 'hono';
 import type { Bindings, AuthUser } from '../types';
 import { grimoireRouter } from './grimoire';
 import { createMockAuthUser, createMockAI, createMockD1ForGrimoire } from '../../../../tests/utils';
-import { Genre } from '@skill-quest/shared';
 
 const testUser = createMockAuthUser();
 
@@ -112,6 +111,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 0,
+        goalUpdateCount: 0,
       });
 
       const mockProfile = {
@@ -119,7 +119,6 @@ describe('grimoire router', () => {
         currentXp: 0,
         nextLevelXp: 100,
         gold: 0,
-        genre: Genre.FANTASY,
       };
       vi.mocked(getCharacterProfile).mockResolvedValue(mockProfile);
 
@@ -181,6 +180,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 1, // 既に1回使用済み
+        goalUpdateCount: 0,
       });
 
       const { app, env } = createTestApp(mockEnv);
@@ -202,6 +202,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 0,
+        goalUpdateCount: 0,
       });
 
       mockEnv.DB = createMockD1ForGrimoire({
@@ -234,6 +235,7 @@ describe('grimoire router', () => {
         partnerCount: 0,
         chatCount: 0,
         grimoireCount: 0,
+        goalUpdateCount: 0,
       });
 
       mockEnvWithoutAI.DB = createMockD1ForGrimoire({

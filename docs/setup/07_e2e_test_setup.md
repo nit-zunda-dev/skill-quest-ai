@@ -52,7 +52,7 @@ E2E_BASE_URL=http://localhost:5173 E2E_API_URL=http://localhost:8787 pnpm test:e
 
 ### 現状
 
-- **CI に E2E ジョブが含まれています**（タスク 7.3 で追加）。**main への PR 時のみ**、`check` ジョブ成功後に `e2e` ジョブが実行されます。
+- **CI に E2E ジョブが含まれている場合**、`check` ジョブ成功後に `e2e` ジョブが実行されます。
 - `e2e` ジョブ: Playwright ブラウザインストール → プレビュー待機（`E2E_BASE_URL` 設定時）→ `pnpm run test:e2e`（CI 時はヘッドレス）。失敗時は playwright-report と e2e/test-results を成果物としてアップロードします。
 - プレビュー URL を渡すには、リポジトリの GitHub Secrets に `E2E_BASE_URL`（と必要なら `E2E_API_URL`）を設定してください。未設定の場合はサーバー依存の E2E テストはスキップされ、ジョブは成功します。
 
@@ -77,9 +77,7 @@ E2E_BASE_URL=http://localhost:5173 E2E_API_URL=http://localhost:8787 pnpm test:e
 5. **タイムアウト・リトライ**
    - `playwright.config.ts` でタイムアウト 30 分・CI 時リトライ 3 回は既に設定済みです。必要に応じてジョブの `timeout-minutes` も調整してください。
 
-### タスクとの対応
-
-上記の「CI で E2E を通す」ための具体的な実装は、`.kiro/specs/test-strategy-implementation/tasks.md` の **タスク 7.3（E2E テストの CI 統合）** に記載されています。CI で E2E を必ず通すようにする場合は、7.3 を実施してください。
+CI でサーバー依存の E2E を通すには、上記の準備のほか、`.github/workflows/` にプレビューデプロイ後の E2E ステップを追加する必要があります。
 
 ## 環境変数一覧
 
@@ -92,4 +90,4 @@ E2E_BASE_URL=http://localhost:5173 E2E_API_URL=http://localhost:8787 pnpm test:e
 
 - `E2E_BASE_URL` が未設定の場合、認証フローやテストデータセットアップのテストは **スキップ** されます。
 - 「ログイン後ダッシュボードでログアウト」では、キャラクター生成 API が失敗した場合（スタブやプレビュー AI が無い場合）も **スキップ** されます。
-- そのため、`pnpm test:e2e` を CI でそのまま実行しても、サーバー依存のテストはスキップされ、設定のスモークなどだけが実行され、ジョブは成功します。CI で「サーバー依存の E2E まで通す」には、上記の準備とタスク 7.3 の実施が必要です。
+- そのため、`pnpm test:e2e` を CI でそのまま実行すると、`E2E_BASE_URL` 未設定時はサーバー依存のテストはスキップされ、設定のスモークなどだけが実行されてジョブは成功します。CI でサーバー依存の E2E まで通すには、上記の準備とワークフローへの E2E ステップ追加が必要です。

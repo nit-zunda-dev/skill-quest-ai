@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Task, TaskType, Difficulty } from '@skill-quest/shared';
-import { Plus, Trash2, Repeat, Check } from 'lucide-react';
+import { Plus, Trash2, Repeat, Check, Sparkles } from 'lucide-react';
 
 interface QuestBoardProps {
   tasks: Task[];
@@ -8,9 +8,11 @@ interface QuestBoardProps {
   onCompleteTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateStatus?: (taskId: string, status: 'todo' | 'in_progress' | 'done') => void;
+  /** クエスト0件時に「目標からタスクを生成」案内を表示する場合に渡す。CTAクリックで呼ばれる。 */
+  onRequestSuggestFromGoal?: () => void;
 }
 
-const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTask, onDeleteTask, onUpdateStatus }) => {
+const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTask, onDeleteTask, onUpdateStatus, onRequestSuggestFromGoal }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDifficulty, setNewTaskDifficulty] = useState<Difficulty>(Difficulty.EASY);
@@ -179,56 +181,74 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
         </div>
       )}
 
-      {/* Kanban Board */}
-      <div className="flex-grow grid grid-cols-3 gap-4 min-h-0">
-        {/* To Do Column */}
-        <div className="flex flex-col min-h-0">
-          <div className="mb-3 px-2 py-1 bg-slate-700/50 rounded text-sm font-semibold text-slate-300 text-center">
-            To Do ({tasksByStatus.todo.length})
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-            {tasksByStatus.todo.length === 0 ? (
-              <div className="text-center text-slate-500 py-8 text-xs italic">
-                タスクなし
-              </div>
-            ) : (
-              tasksByStatus.todo.map(renderTaskCard)
-            )}
-          </div>
+      {/* 空状態: クエスト0件かつ目標から提案を促す場合（Task 8.1） */}
+      {tasks.length === 0 && onRequestSuggestFromGoal ? (
+        <div className="flex-grow flex flex-col items-center justify-center py-12 px-4 text-center min-h-0">
+          <p className="text-slate-400 text-sm mb-4">
+            目標に沿ったタスクをAIが提案します。まずは提案を取得してみましょう。
+          </p>
+          <button
+            type="button"
+            onClick={onRequestSuggestFromGoal}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
+            aria-label="目標からタスクを生成"
+          >
+            <Sparkles className="w-5 h-5" />
+            目標からタスクを生成する
+          </button>
         </div>
+      ) : (
+        /* Kanban Board */
+        <div className="flex-grow grid grid-cols-3 gap-4 min-h-0">
+          {/* To Do Column */}
+          <div className="flex flex-col min-h-0">
+            <div className="mb-3 px-2 py-1 bg-slate-700/50 rounded text-sm font-semibold text-slate-300 text-center">
+              To Do ({tasksByStatus.todo.length})
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {tasksByStatus.todo.length === 0 ? (
+                <div className="text-center text-slate-500 py-8 text-xs italic">
+                  タスクなし
+                </div>
+              ) : (
+                tasksByStatus.todo.map(renderTaskCard)
+              )}
+            </div>
+          </div>
 
-        {/* In Progress Column */}
-        <div className="flex flex-col min-h-0">
-          <div className="mb-3 px-2 py-1 bg-yellow-900/30 border border-yellow-500/30 rounded text-sm font-semibold text-yellow-300 text-center">
-            In Progress ({tasksByStatus.inProgress.length})
+          {/* In Progress Column */}
+          <div className="flex flex-col min-h-0">
+            <div className="mb-3 px-2 py-1 bg-yellow-900/30 border border-yellow-500/30 rounded text-sm font-semibold text-yellow-300 text-center">
+              In Progress ({tasksByStatus.inProgress.length})
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {tasksByStatus.inProgress.length === 0 ? (
+                <div className="text-center text-slate-500 py-8 text-xs italic">
+                  タスクなし
+                </div>
+              ) : (
+                tasksByStatus.inProgress.map(renderTaskCard)
+              )}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-            {tasksByStatus.inProgress.length === 0 ? (
-              <div className="text-center text-slate-500 py-8 text-xs italic">
-                タスクなし
-              </div>
-            ) : (
-              tasksByStatus.inProgress.map(renderTaskCard)
-            )}
-          </div>
-        </div>
 
-        {/* Done Column */}
-        <div className="flex flex-col min-h-0">
-          <div className="mb-3 px-2 py-1 bg-green-900/30 border border-green-500/30 rounded text-sm font-semibold text-green-300 text-center">
-            Done ({tasksByStatus.done.length})
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-            {tasksByStatus.done.length === 0 ? (
-              <div className="text-center text-slate-500 py-8 text-xs italic">
-                タスクなし
-              </div>
-            ) : (
-              tasksByStatus.done.map(renderTaskCard)
-            )}
+          {/* Done Column */}
+          <div className="flex flex-col min-h-0">
+            <div className="mb-3 px-2 py-1 bg-green-900/30 border border-green-500/30 rounded text-sm font-semibold text-green-300 text-center">
+              Done ({tasksByStatus.done.length})
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {tasksByStatus.done.length === 0 ? (
+                <div className="text-center text-slate-500 py-8 text-xs italic">
+                  タスクなし
+                </div>
+              ) : (
+                tasksByStatus.done.map(renderTaskCard)
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

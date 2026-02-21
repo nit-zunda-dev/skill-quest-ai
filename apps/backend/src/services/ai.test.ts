@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Bindings } from '../types';
-import { Genre, Difficulty, TaskType } from '@skill-quest/shared';
+import { Difficulty, TaskType } from '@skill-quest/shared';
 import {
   createAiService,
   runWithLlama31_8b,
@@ -9,6 +9,7 @@ import {
   generateNarrative,
   generatePartnerMessage,
   generateGrimoire,
+  generateSuggestedQuests,
   MODEL_LLAMA_31_8B,
   MODEL_LLAMA_33_70B,
 } from './ai';
@@ -110,7 +111,7 @@ describe('AI service', () => {
     it('uses Llama 3.1 8B and returns parsed CharacterProfile when AI returns valid JSON', async () => {
       const run = vi.fn().mockResolvedValue({ response: validProfileJson });
       const ai = { run };
-      const data = { name: 'テスト', goal: '目標', genre: Genre.FANTASY };
+      const data = { name: 'テスト', goal: '目標' };
 
       const result = await generateCharacter(ai, data);
 
@@ -125,7 +126,7 @@ describe('AI service', () => {
     it('returns fallback profile when AI returns invalid JSON', async () => {
       const run = vi.fn().mockResolvedValue({ response: 'not json at all' });
       const ai = { run };
-      const data = { name: 'フォールバック', goal: '目指す', genre: Genre.MODERN };
+      const data = { name: 'フォールバック', goal: '目指す' };
 
       const result = await generateCharacter(ai, data);
 
@@ -137,7 +138,7 @@ describe('AI service', () => {
     it('returns fallback profile when AI throws', async () => {
       const run = vi.fn().mockRejectedValue(new Error('AI error'));
       const ai = { run };
-      const data = { name: 'エラー時', goal: '目標', genre: Genre.SCI_FI };
+      const data = { name: 'エラー時', goal: '目標' };
 
       const result = await generateCharacter(ai, data);
 
@@ -148,7 +149,7 @@ describe('AI service', () => {
     it('passes gatewayId to runWithLlama31_8b when provided', async () => {
       const run = vi.fn().mockResolvedValue({ response: validProfileJson });
       const ai = { run };
-      const data = { name: 'テスト', goal: '目標', genre: Genre.FANTASY };
+      const data = { name: 'テスト', goal: '目標' };
 
       await generateCharacter(ai, data, 'gateway-123');
 
@@ -254,7 +255,7 @@ describe('AI service', () => {
         difficulty: Difficulty.MEDIUM,
       };
 
-      await generateNarrative(ai, request, Genre.FANTASY, 'gateway-456');
+      await generateNarrative(ai, request, 'gateway-456');
 
       expect(run).toHaveBeenCalledWith(
         MODEL_LLAMA_31_8B,
@@ -327,7 +328,7 @@ describe('AI service', () => {
         timeOfDay: '朝',
       };
 
-      await generatePartnerMessage(ai, request, Genre.CYBERPUNK, 'gateway-789');
+      await generatePartnerMessage(ai, request, 'gateway-789');
 
       expect(run).toHaveBeenCalledWith(
         MODEL_LLAMA_31_8B,
@@ -384,25 +385,6 @@ describe('AI service', () => {
       expect(result.narrative).toBe('今日は3つのタスクを達成した。冒険の記録として刻まれる。');
       expect(result.rewardXp).toBe(105);
       expect(result.rewardGold).toBe(61);
-    });
-
-    it('includes genre in prompt when provided', async () => {
-      const run = vi.fn().mockResolvedValue({ response: validGrimoireJson });
-      const ai = { run };
-      const completedTasks = [
-        {
-          id: 't1',
-          title: 'タスク',
-          type: TaskType.TODO,
-          difficulty: Difficulty.HARD,
-          completedAt: Math.floor(Date.now() / 1000),
-        },
-      ];
-
-      await generateGrimoire(ai, completedTasks, Genre.FANTASY);
-
-      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
-      expect(prompt.prompt).toContain('ハイファンタジー');
     });
 
     it('returns fallback with calculated rewards when AI returns invalid JSON', async () => {
@@ -499,12 +481,122 @@ describe('AI service', () => {
         },
       ];
 
-      await generateGrimoire(ai, completedTasks, Genre.FANTASY, 'gateway-999');
+      await generateGrimoire(ai, completedTasks, 'gateway-999');
 
       expect(run).toHaveBeenCalledWith(
         MODEL_LLAMA_31_8B,
         expect.objectContaining({ prompt: expect.any(String) }),
         { gateway: { id: 'gateway-999' } }
+      );
+    });
+  });
+
+  describe('generateSuggestedQuests', () => {
+    const validSuggestionsJson = JSON.stringify([
+      { title: '毎日30分勉強する', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM },
+      { title: '週3回運動する', type: TaskType.HABIT, difficulty: Difficulty.EASY },
+      { title: '英語の本を1冊読む', type: TaskType.TODO, difficulty: Difficulty.HARD },
+    ]);
+
+    it('uses Llama 3.1 8B and returns parsed suggestions when AI returns valid JSON array', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '英語力を上げる');
+
+      expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, expect.objectContaining({ prompt: expect.any(String) }), undefined);
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('英語力を上げる');
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({ title: '毎日30分勉強する', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM });
+      expect(result[1].title).toBe('週3回運動する');
+      expect(result[2].type).toBe(TaskType.TODO);
+    });
+
+    it('builds prompt with 3-7 items instruction and title/type/difficulty format', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      await generateSuggestedQuests(ai, 'テスト目標');
+
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toMatch(/3.*7/);
+      expect(prompt.prompt).toContain('title');
+      expect(prompt.prompt).toContain('type');
+      expect(prompt.prompt).toContain('difficulty');
+      expect(prompt.prompt).toContain('テスト目標');
+    });
+
+    it('returns empty array when AI returns invalid JSON', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'not json at all' });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when AI returns non-array JSON', async () => {
+      const run = vi.fn().mockResolvedValue({ response: '{"single": "object"}' });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when AI throws', async () => {
+      const run = vi.fn().mockRejectedValue(new Error('AI error'));
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toEqual([]);
+    });
+
+    it('skips invalid items and normalizes valid ones (3-7 items)', async () => {
+      const mixedJson = JSON.stringify([
+        { title: '有効なタスク1', type: TaskType.DAILY, difficulty: Difficulty.EASY },
+        { title: '', type: TaskType.TODO, difficulty: Difficulty.MEDIUM },
+        { title: '有効なタスク2', type: 'INVALID_TYPE', difficulty: Difficulty.MEDIUM },
+        { title: '有効なタスク3', type: TaskType.HABIT, difficulty: 'INVALID' },
+      ]);
+      const run = vi.fn().mockResolvedValue({ response: mixedJson });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result.length).toBeLessThanOrEqual(4);
+      const first = result.find((r) => r.title === '有効なタスク1');
+      expect(first).toEqual({ title: '有効なタスク1', type: TaskType.DAILY, difficulty: Difficulty.EASY });
+    });
+
+    it('applies default type TODO and difficulty MEDIUM when type/difficulty are invalid', async () => {
+      const singleItemJson = JSON.stringify([
+        { title: 'タイトルのみ有効', type: 'INVALID_TYPE', difficulty: 'INVALID_DIFF' },
+      ]);
+      const run = vi.fn().mockResolvedValue({ response: singleItemJson });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('タイトルのみ有効');
+      expect(result[0].type).toBe(TaskType.TODO);
+      expect(result[0].difficulty).toBe(Difficulty.MEDIUM);
+    });
+
+    it('passes gatewayId to runWithLlama31_8b when provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      await generateSuggestedQuests(ai, '目標', 'gateway-suggest');
+
+      expect(run).toHaveBeenCalledWith(
+        MODEL_LLAMA_31_8B,
+        expect.objectContaining({ prompt: expect.any(String) }),
+        { gateway: { id: 'gateway-suggest' } }
       );
     });
   });

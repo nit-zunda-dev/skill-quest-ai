@@ -171,10 +171,7 @@ wrangler d1 execute skill-quest-db --local --command "SELECT 1;"
 
 ## 次のステップ
 
-ローカル開発用D1データベースの作成が完了したら、次の手順に進みます：
-
-- データベーススキーマの定義（タスク4.1）
-- マイグレーションの生成と適用（タスク4.2、4.3）
+ローカル開発用D1データベースの作成が完了したら、スキーマ（`apps/backend/src/db/schema.ts`）の変更後、`pnpm db:generate` でマイグレーションを生成し、`pnpm db:migrate:local` で適用します。詳細は [データベース設計](../architecture/04_データベース設計.md) を参照してください。
 
 ## 参考情報
 

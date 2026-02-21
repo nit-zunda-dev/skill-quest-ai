@@ -7,7 +7,7 @@ import {
 } from './factories';
 import type { AuthUser } from '../../apps/backend/src/types';
 import type { Task, CharacterProfile, GrimoireEntry } from '@skill-quest/shared';
-import { TaskType, Difficulty, Genre } from '@skill-quest/shared';
+import { TaskType, Difficulty } from '@skill-quest/shared';
 
 describe('Test Data Factories', () => {
   describe('createTestUser', () => {
@@ -89,7 +89,6 @@ describe('Test Data Factories', () => {
       expect(profile).toHaveProperty('currentXp');
       expect(profile).toHaveProperty('nextLevelXp');
       expect(profile).toHaveProperty('gold');
-      expect(profile).toHaveProperty('genre');
       expect(typeof profile.name).toBe('string');
       expect(typeof profile.className).toBe('string');
       expect(typeof profile.title).toBe('string');
@@ -99,7 +98,6 @@ describe('Test Data Factories', () => {
       expect(typeof profile.currentXp).toBe('number');
       expect(typeof profile.nextLevelXp).toBe('number');
       expect(typeof profile.gold).toBe('number');
-      expect(Object.values(Genre)).toContain(profile.genre);
     });
 
     it('should allow overriding default values', () => {
@@ -107,13 +105,11 @@ describe('Test Data Factories', () => {
         name: 'Custom Character',
         className: 'Mage',
         level: 5,
-        genre: Genre.CYBERPUNK,
       };
       const profile = createTestCharacterProfile(overrides);
       expect(profile.name).toBe('Custom Character');
       expect(profile.className).toBe('Mage');
       expect(profile.level).toBe(5);
-      expect(profile.genre).toBe(Genre.CYBERPUNK);
     });
   });
 
