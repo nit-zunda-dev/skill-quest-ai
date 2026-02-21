@@ -175,8 +175,8 @@ cd apps/frontend && pnpm test:watch
 
 - [アーキテクチャ設計書](./docs/architecture/)
 - [セットアップガイド](./docs/setup/)
-- [要件定義書](./docs/要件定義書.md)
 - [Postmanコレクション](./docs/postman/)
+- [ZAP セキュリティ対策状況](./docs/ZAP_REMEDIATION.md)
 
 ## Spec-Driven Development
 
