@@ -28,7 +28,7 @@ describe('LandingPage (Task 4.1, 5.1)', () => {
 
   it('calls parent callback exactly once per primary CTA click (Task 5.1, Req 5.1)', () => {
     render(<LandingPage onStartClick={onStartClick} />);
-    const cta = screen.getByRole('button', { name: /冒険を始める/ });
+    const cta = screen.getByRole('button', { name: /始める/ });
     fireEvent.click(cta);
     expect(onStartClick).toHaveBeenCalledTimes(1);
     fireEvent.click(cta);
@@ -39,11 +39,11 @@ describe('LandingPage (Task 4.1, 5.1)', () => {
 describe('LandingPage value proposition (Task 4.2, Req 2.1, 2.2, 2.3)', () => {
   it('renders a value proposition section with RPG/gamification/game-like learning copy', () => {
     render(<LandingPage onStartClick={vi.fn()} />);
-    const valueSection = screen.getByRole('region', { name: /価値提案|value/i });
+    const valueSection = screen.getByRole('region', { name: /このアプリでできること/i });
     expect(valueSection).toBeTruthy();
     const text = valueSection.textContent ?? '';
     expect(
-      /クエスト|ゲーム|自己研鑽|資格|ゲーミフィケーション|ToDo/.test(text)
+      /クエスト|ゲーム|資格|ゲーミフィケーション|ToDo/.test(text)
     ).toBe(true);
   });
 
@@ -103,7 +103,7 @@ describe('LandingPage responsive and accessibility (Task 4.4, Req 4.1, 4.2)', ()
 
   it('primary CTA is focusable and has visible focus', () => {
     render(<LandingPage onStartClick={vi.fn()} />);
-    const cta = screen.getByRole('button', { name: /冒険を始める/ });
+    const cta = screen.getByRole('button', { name: /始める/ });
     expect(cta.getAttribute('tabindex')).not.toBe('-1');
     expect(cta.tagName).toBe('BUTTON');
   });

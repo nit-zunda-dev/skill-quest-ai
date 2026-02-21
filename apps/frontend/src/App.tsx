@@ -92,15 +92,17 @@ const App: React.FC = () => {
       );
     }
     return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-        <LandingPage
-          onStartClick={() => {
-            setShowAuthForm(true);
-            const path = window.location.pathname;
-            window.history.pushState({ auth: 'form' }, '', `${path}?auth=form`);
-          }}
-        />
-        <div className="p-4 text-center text-slate-600 text-xs mt-8">
+      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-200">
+        <div className="flex-1 min-h-0 flex flex-col min-w-full">
+          <LandingPage
+            onStartClick={() => {
+              setShowAuthForm(true);
+              const path = window.location.pathname;
+              window.history.pushState({ auth: 'form' }, '', `${path}?auth=form`);
+            }}
+          />
+        </div>
+        <div className="shrink-0 p-4 text-center text-slate-600 text-xs">
           Skill Quest AI v1.1.0 &bull; Powered by Workers AI
         </div>
       </div>
