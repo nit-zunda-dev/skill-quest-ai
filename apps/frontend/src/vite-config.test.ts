@@ -108,3 +108,34 @@ describe('Tailwind migration: build and styles (Req 1.1, Task 1.3)', () => {
     ).toBe(true);
   }, 35000);
 });
+
+describe('shadcn/ui initialized (Req 1.2, 4.2, Task 2.1)', () => {
+  const frontendRoot = resolve(__dirname, '..');
+
+  it('components.json exists and configures style and base color for dark theme (slate/indigo)', () => {
+    const configPath = resolve(frontendRoot, 'components.json');
+    expect(existsSync(configPath)).toBe(true);
+    const content = readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content) as { style?: string; tailwind?: { baseColor?: string } };
+    expect(config.style).toBeDefined();
+    expect(['default', 'new-york']).toContain(config.style);
+    expect(config.tailwind?.baseColor).toBeDefined();
+    expect(config.tailwind!.baseColor!.toLowerCase()).toBe('slate');
+  });
+
+  it('components.json aliases point to @/components and @/components/ui', () => {
+    const configPath = resolve(frontendRoot, 'components.json');
+    const content = readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content) as { aliases?: { components?: string; ui?: string; utils?: string } };
+    expect(config.aliases?.components).toMatch(/@\/components/);
+    expect(config.aliases?.ui).toMatch(/@\/components\/ui/);
+    expect(config.aliases?.utils).toMatch(/@\/lib\/utils/);
+  });
+
+  it('utils file exists for shadcn (cn helper)', () => {
+    const utilsPath = resolve(frontendRoot, 'src/lib/utils.ts');
+    expect(existsSync(utilsPath)).toBe(true);
+    const content = readFileSync(utilsPath, 'utf-8');
+    expect(content).toMatch(/clsx|class-variance-authority|tailwind-merge|cn\s*\(/);
+  });
+});
