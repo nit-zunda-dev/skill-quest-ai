@@ -35,3 +35,25 @@ describe('LandingPage (Task 4.1, 5.1)', () => {
     expect(onStartClick).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('LandingPage value proposition (Task 4.2, Req 2.1, 2.2, 2.3)', () => {
+  it('renders a value proposition section with RPG/gamification/game-like learning copy', () => {
+    render(<LandingPage onStartClick={vi.fn()} />);
+    const valueSection = screen.getByRole('region', { name: /価値提案|value/i });
+    expect(valueSection).toBeTruthy();
+    const text = valueSection.textContent ?? '';
+    expect(
+      /クエスト|ゲーム|自己研鑽|資格|ゲーミフィケーション|ToDo/.test(text)
+    ).toBe(true);
+  });
+
+  it('uses encouraging tone (no self-blame); motivation copy is positive', () => {
+    render(<LandingPage onStartClick={vi.fn()} />);
+    const page = screen.getByTestId('landing-page');
+    const fullText = page.textContent ?? '';
+    expect(fullText).not.toMatch(/続かないあなた|怠け|だらしな/);
+    expect(
+      /続け|楽しく|ゲーム|クエスト|応援|一緒|前向き/.test(fullText)
+    ).toBe(true);
+  });
+});
