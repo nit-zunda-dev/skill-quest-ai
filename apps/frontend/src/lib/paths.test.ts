@@ -12,6 +12,9 @@ import {
   PATH_APP_GRIMOIRE,
   PATH_APP_PARTNER,
   PATH_APP_ITEMS,
+  GENESIS_STEP_SLUGS,
+  getGenesisStepPath,
+  PATH_GENESIS_INTRO,
 } from '@/lib/paths';
 
 describe('path constants (Task 1.1)', () => {
@@ -43,5 +46,23 @@ describe('path constants (Task 1.1)', () => {
     expect(PATH_APP_GRIMOIRE.startsWith(PATH_APP)).toBe(true);
     expect(PATH_APP_PARTNER.startsWith(PATH_APP)).toBe(true);
     expect(PATH_APP_ITEMS.startsWith(PATH_APP)).toBe(true);
+  });
+});
+
+describe('Genesis step paths (Task 10.1)', () => {
+  it('defines GENESIS_STEP_SLUGS as intro, questions, loading, result, suggest', () => {
+    expect(GENESIS_STEP_SLUGS).toEqual(['intro', 'questions', 'loading', 'result', 'suggest']);
+  });
+
+  it('getGenesisStepPath returns /genesis/<step> for each slug', () => {
+    expect(getGenesisStepPath('intro')).toBe('/genesis/intro');
+    expect(getGenesisStepPath('questions')).toBe('/genesis/questions');
+    expect(getGenesisStepPath('loading')).toBe('/genesis/loading');
+    expect(getGenesisStepPath('result')).toBe('/genesis/result');
+    expect(getGenesisStepPath('suggest')).toBe('/genesis/suggest');
+  });
+
+  it('PATH_GENESIS_INTRO is /genesis/intro', () => {
+    expect(PATH_GENESIS_INTRO).toBe('/genesis/intro');
   });
 });

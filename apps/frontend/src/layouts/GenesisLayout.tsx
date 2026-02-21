@@ -1,12 +1,13 @@
 /**
- * Genesis 用ルートの親レイアウト（Task 4.1, Requirements 1.4）
+ * Genesis 用ルートの親レイアウト（Task 4.1, 10.1）
  * 認証済みかつ Genesis 完了済みの場合は /app へリダイレクトする。
- * それ以外は Outlet を表示する。
+ * それ以外は GenesisFlowProvider でラップして Outlet を表示する。
  */
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
+import { GenesisFlowProvider } from '@/contexts/GenesisFlowContext';
 import { PATH_APP } from '@/lib/paths';
 
 export function GenesisLayout() {
@@ -25,5 +26,9 @@ export function GenesisLayout() {
     );
   }
 
-  return <Outlet />;
+  return (
+    <GenesisFlowProvider>
+      <Outlet />
+    </GenesisFlowProvider>
+  );
 }

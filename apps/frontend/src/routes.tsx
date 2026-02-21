@@ -13,6 +13,7 @@ import {
   PATH_LOGIN,
   PATH_GENESIS,
   PATH_APP,
+  PATH_GENESIS_INTRO,
 } from '@/lib/paths';
 import App from '@/App';
 import { GenesisLayout } from '@/layouts/GenesisLayout';
@@ -25,11 +26,8 @@ import QuestBoardPage from '@/pages/QuestBoardPage';
 import GrimoirePage from '@/pages/GrimoirePage';
 import PartnerPage from '@/pages/PartnerPage';
 import ItemsPage from '@/pages/ItemsPage';
-
-/** Genesis :step 用プレースホルダー（Task 10.1 で URL 同期時に実コンポーネントに差し替え） */
-const GenesisStepPlaceholder = () => (
-  <div data-testid="route-placeholder-GenesisStep">GenesisStep</div>
-);
+import { GenesisStepView } from '@/components/GenesisStepView';
+import { Navigate } from 'react-router-dom';
 
 /** createBrowserRouter に渡すルート配列 */
 export const routeConfig: RouteObject[] = [
@@ -46,8 +44,12 @@ export const routeConfig: RouteObject[] = [
     element: <GenesisLayout />,
     children: [
       {
+        index: true,
+        element: <Navigate to={PATH_GENESIS_INTRO} replace />,
+      },
+      {
         path: ':step',
-        element: <GenesisStepPlaceholder />,
+        element: <GenesisStepView />,
       },
     ],
   },

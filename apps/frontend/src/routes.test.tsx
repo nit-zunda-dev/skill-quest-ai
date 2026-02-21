@@ -65,6 +65,22 @@ describe('routeConfig (Task 1.2)', () => {
     expect(hasStep).toBe(true);
   });
 
+  it('Genesis has index route and :step uses GenesisStepView (Task 10.1)', () => {
+    const genesis = findRouteByPath(routeConfig, PATH_GENESIS) as {
+      children?: { index?: boolean; path?: string; element?: React.ReactElement }[];
+    };
+    expect(genesis?.children).toBeDefined();
+    const hasIndex = genesis.children?.some((c) => c.index === true);
+    expect(hasIndex).toBe(true);
+    const stepRoute = genesis.children?.find((c) => c.path === ':step');
+    expect(stepRoute?.element).toBeDefined();
+    const typeName =
+      stepRoute?.element?.type && typeof stepRoute.element.type === 'function'
+        ? (stepRoute.element.type as { name?: string }).name
+        : '';
+    expect(typeName).toBe('GenesisStepView');
+  });
+
   it('defines app (dashboard) route with children: index, quests, grimoire, partner, items', () => {
     const app = findRouteByPath(routeConfig, PATH_APP);
     expect(app).toBeDefined();

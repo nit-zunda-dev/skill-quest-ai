@@ -76,7 +76,7 @@
 
 ## 10. Genesis の URL 同期と完了後の遷移
 
-- [ ] 10.1 Genesis の各ステップ（INTRO → QUESTIONS → LOADING → RESULT → SUGGEST）への遷移時に、対応する URL へナビゲートする。ブラウザの戻る・進むでステップが復元されるようにする。
+- [x] 10.1 Genesis の各ステップ（INTRO → QUESTIONS → LOADING → RESULT → SUGGEST）への遷移時に、対応する URL へナビゲートする。ブラウザの戻る・進むでステップが復元されるようにする。
   - _Requirements: 2.1_
 
 - [ ] 10.2 Genesis 完了時（「世界へ旅立つ」等）にダッシュボード URL へ遷移する。リロード時もプロフィール取得によりダッシュボードが表示され、Genesis を再実行しないようにする。
