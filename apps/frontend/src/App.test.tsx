@@ -48,3 +48,18 @@ describe('App unauthenticated branch (Task 3.1)', () => {
     expect(screen.queryByTestId('landing-page')).toBeNull();
   });
 });
+
+describe('Landing CTA switches to form (Task 3.2, Req 5.1, 5.3)', () => {
+  it('clicking landing primary CTA sets form flag and shows login/signup form', () => {
+    render(<App />, {
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={createQueryClient()}>{children}</QueryClientProvider>
+      ),
+    });
+    expect(screen.getByTestId('landing-page')).toBeTruthy();
+    const cta = screen.getByRole('button', { name: '冒険を始める' });
+    fireEvent.click(cta);
+    expect(screen.getByPlaceholderText('メール')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'ログイン' })).toBeTruthy();
+  });
+});
