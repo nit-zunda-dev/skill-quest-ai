@@ -29,9 +29,14 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
 
+function resetHistoryToLanding() {
+  window.history.replaceState(null, '', window.location.pathname || '/');
+}
+
 describe('App unauthenticated branch (Task 3.1, 5.2)', () => {
   beforeEach(() => {
     mockRefetch.mockClear();
+    resetHistoryToLanding();
   });
 
   it('shows landing when form flag is false; shows login/signup form when true (Task 5.2)', () => {
@@ -47,6 +52,10 @@ describe('App unauthenticated branch (Task 3.1, 5.2)', () => {
 });
 
 describe('Landing CTA switches to form (Task 3.2, Req 5.1, 5.3)', () => {
+  beforeEach(() => {
+    resetHistoryToLanding();
+  });
+
   it('clicking landing primary CTA sets form flag and shows login/signup form', () => {
     render(<App />, {
       wrapper: ({ children }: { children: React.ReactNode }) => (

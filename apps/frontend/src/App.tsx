@@ -16,7 +16,9 @@ const App: React.FC = () => {
   // Genesis 完了直後にダッシュボードへ渡すプロフィール（サインアップ時のみ使用）
   const [justCompletedProfile, setJustCompletedProfile] = useState<CharacterProfile | null>(null);
 
-  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [showAuthForm, setShowAuthForm] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auth') === 'form'
+  );
   const [genesisStep, setGenesisStep] = useState<'INTRO' | 'QUESTIONS' | 'LOADING' | 'RESULT'>('INTRO');
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
@@ -31,6 +33,16 @@ const App: React.FC = () => {
       setFormData(prev => (prev.name === '' ? { ...prev, name: session.user.name ?? '' } : prev));
     }
   }, [isAuthenticated, session?.user?.name]);
+
+  // 未認証時: ブラウザの戻るでランディングに戻れるように履歴と同期する
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const onPopState = () => {
+      setShowAuthForm(new URLSearchParams(window.location.search).get('auth') === 'form');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isAuthenticated]);
 
   const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -81,7 +93,13 @@ const App: React.FC = () => {
     }
     return (
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-        <LandingPage onStartClick={() => setShowAuthForm(true)} />
+        <LandingPage
+          onStartClick={() => {
+            setShowAuthForm(true);
+            const path = window.location.pathname;
+            window.history.pushState({ auth: 'form' }, '', `${path}?auth=form`);
+          }}
+        />
         <div className="p-4 text-center text-slate-600 text-xs mt-8">
           Skill Quest AI v1.1.0 &bull; Powered by Workers AI
         </div>
