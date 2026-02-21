@@ -4,6 +4,8 @@ import StatusPanel from './StatusPanel';
 import QuestBoard from './QuestBoard';
 import Grimoire from './Grimoire';
 import PartnerWidget from './PartnerWidget';
+import GoalUpdateUI from './GoalUpdateUI';
+import SuggestedQuestsModal from './SuggestedQuestsModal';
 import { generateTaskNarrative, normalizeProfileNumbers, deleteAccount } from '@/lib/api-client';
 import { X, Sparkles, LogOut, Trash2 } from 'lucide-react';
 import { useQuests } from '@/hooks/useQuests';
@@ -47,6 +49,10 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
 
   /** グリモワール生成結果モーダル */
   const [showGrimoireModal, setShowGrimoireModal] = useState(false);
+
+  /** 目標更新成功後に開く提案モーダル（Task 7.1） */
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [suggestModalGoal, setSuggestModalGoal] = useState('');
 
   // グリモワール生成結果が来たらモーダルを表示
   React.useEffect(() => {
@@ -149,6 +155,13 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
       {/* Left: Status (Fixed on Desktop, Top on Mobile) */}
       <div className="w-full md:w-80 flex-shrink-0 z-10 flex flex-col gap-4">
         <StatusPanel profile={profile} />
+        <GoalUpdateUI
+          profile={profile}
+          onGoalUpdateSuccess={(updatedGoal) => {
+            setSuggestModalGoal(updatedGoal);
+            setShowSuggestModal(true);
+          }}
+        />
         <button
           type="button"
           onClick={() => signOut()}
@@ -346,6 +359,14 @@ const Dashboard: React.FC<DashboardProps> = ({ initialProfile }) => {
           </div>
         </div>
       )}
+
+      {/* 提案モーダル（目標更新成功時に開く・Task 7.1） */}
+      <SuggestedQuestsModal
+        open={showSuggestModal}
+        onClose={() => setShowSuggestModal(false)}
+        goal={suggestModalGoal}
+        profile={profile}
+      />
 
       {/* アカウント削除確認モーダル */}
       {showDeleteAccountModal && (
