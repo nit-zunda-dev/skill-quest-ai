@@ -3,6 +3,7 @@
  * 公開（/, /login）、Genesis（/genesis, /genesis/:step）、認証必須（/app とその子）、
  * キャッチオールが一貫してパスベースで定義されていることを検証する。
  */
+import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { routeConfig } from '@/routes';
 import {
@@ -77,6 +78,16 @@ describe('routeConfig (Task 1.2)', () => {
     const children = (app as { children?: { index?: boolean }[] }).children ?? [];
     const hasIndex = children.some((c) => (c as { index?: boolean }).index === true);
     expect(hasIndex).toBe(true);
+  });
+
+  it('app route uses dashboard layout and real components, not placeholders (Task 9.1)', () => {
+    const app = findRouteByPath(routeConfig, PATH_APP);
+    expect(app).toBeDefined();
+    expect((app as { element?: unknown }).element).toBeDefined();
+    const el = (app as { element?: React.ReactElement }).element;
+    const typeName = el?.type && typeof el.type === 'function' ? (el.type as { name?: string }).name : '';
+    expect(typeName).not.toBe('AppLayoutPlaceholder');
+    expect(typeName).not.toBe('Placeholder');
   });
 
   it('defines catch-all route for undefined paths', () => {

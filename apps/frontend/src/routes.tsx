@@ -4,6 +4,7 @@
  * 未定義パス用キャッチオールをパスベースで一貫して定義する。
  * 8.1 で createBrowserRouter(routeConfig) によりマウントする。
  * 8.2 で / と /login は App（ルート駆動のランディング・ログイン）を描画する。
+ * 9.1 で /app 配下にダッシュボードレイアウトと各ページを接続。
  */
 import React from 'react';
 import type { RouteObject } from 'react-router-dom';
@@ -15,20 +16,20 @@ import {
 } from '@/lib/paths';
 import App from '@/App';
 import { GenesisLayout } from '@/layouts/GenesisLayout';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
+import { RequireAuth } from '@/components/guards/RequireAuth';
+import { RequireGenesis } from '@/components/guards/RequireGenesis';
 import NotFoundPage from '@/pages/NotFoundPage';
+import HomePage from '@/pages/HomePage';
+import QuestBoardPage from '@/pages/QuestBoardPage';
+import GrimoirePage from '@/pages/GrimoirePage';
+import PartnerPage from '@/pages/PartnerPage';
+import ItemsPage from '@/pages/ItemsPage';
 
-/** プレースホルダー: 9.1 で実コンポーネントに差し替える */
-const Placeholder: React.FC<{ name: string }> = ({ name }) => (
-  <div data-testid={`route-placeholder-${name}`}>{name}</div>
+/** Genesis :step 用プレースホルダー（Task 10.1 で URL 同期時に実コンポーネントに差し替え） */
+const GenesisStepPlaceholder = () => (
+  <div data-testid="route-placeholder-GenesisStep">GenesisStep</div>
 );
-
-/** ダッシュボード用レイアウト・ページのプレースホルダー（9.1 で AppLayout + 各 Page に接続） */
-const AppLayoutPlaceholder = () => <Placeholder name="AppLayout" />;
-const HomePlaceholder = () => <Placeholder name="Home" />;
-const QuestBoardPlaceholder = () => <Placeholder name="QuestBoard" />;
-const GrimoirePlaceholder = () => <Placeholder name="Grimoire" />;
-const PartnerPlaceholder = () => <Placeholder name="Partner" />;
-const ItemsPlaceholder = () => <Placeholder name="Items" />;
 
 /** createBrowserRouter に渡すルート配列 */
 export const routeConfig: RouteObject[] = [
@@ -46,33 +47,39 @@ export const routeConfig: RouteObject[] = [
     children: [
       {
         path: ':step',
-        element: <Placeholder name="GenesisStep" />,
+        element: <GenesisStepPlaceholder />,
       },
     ],
   },
   {
     path: PATH_APP,
-    element: <AppLayoutPlaceholder />,
+    element: (
+      <RequireAuth>
+        <RequireGenesis>
+          <DashboardLayout />
+        </RequireGenesis>
+      </RequireAuth>
+    ),
     children: [
       {
         index: true,
-        element: <HomePlaceholder />,
+        element: <HomePage />,
       },
       {
         path: 'quests',
-        element: <QuestBoardPlaceholder />,
+        element: <QuestBoardPage />,
       },
       {
         path: 'grimoire',
-        element: <GrimoirePlaceholder />,
+        element: <GrimoirePage />,
       },
       {
         path: 'partner',
-        element: <PartnerPlaceholder />,
+        element: <PartnerPage />,
       },
       {
         path: 'items',
-        element: <ItemsPlaceholder />,
+        element: <ItemsPage />,
       },
     ],
   },

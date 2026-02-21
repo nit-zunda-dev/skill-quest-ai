@@ -32,9 +32,8 @@ describe('Entry router mount (Task 8.1)', () => {
     expect(el).toBeTruthy();
   });
 
-  it('renders route tree at /app (dashboard placeholder) when navigated', async () => {
+  it('redirects to login when /app is accessed unauthenticated (Task 9.1)', async () => {
     renderEntryWithRouter(['/app']);
-    const el = await screen.findByTestId('route-placeholder-AppLayout');
-    expect(el).toBeTruthy();
+    await screen.findByRole('heading', { name: 'Skill Quest AI' });
   });
 });

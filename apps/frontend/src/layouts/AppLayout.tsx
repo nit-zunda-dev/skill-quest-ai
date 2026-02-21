@@ -10,15 +10,16 @@ import SuggestedQuestsModal from '@/components/SuggestedQuestsModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAccount } from '@/lib/api-client';
+import { PATH_APP, PATH_APP_QUESTS, PATH_APP_GRIMOIRE, PATH_APP_PARTNER, PATH_APP_ITEMS } from '@/lib/paths';
 
 const CONFIRM_DELETE_TEXT = '削除する';
 
 const navItems = [
-  { to: '/', label: 'ホーム', icon: Home },
-  { to: '/quests', label: 'タスクボード', icon: ListTodo },
-  { to: '/grimoire', label: 'グリモワール', icon: Scroll },
-  { to: '/partner', label: 'AIパートナー', icon: MessageCircle },
-  { to: '/items', label: '獲得アイテム', icon: Package },
+  { to: PATH_APP, label: 'ホーム', icon: Home },
+  { to: PATH_APP_QUESTS, label: 'タスクボード', icon: ListTodo },
+  { to: PATH_APP_GRIMOIRE, label: 'グリモワール', icon: Scroll },
+  { to: PATH_APP_PARTNER, label: 'AIパートナー', icon: MessageCircle },
+  { to: PATH_APP_ITEMS, label: '獲得アイテム', icon: Package },
 ];
 
 export default function AppLayout() {
@@ -70,7 +71,7 @@ export default function AppLayout() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === PATH_APP}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }: { isActive: boolean }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
