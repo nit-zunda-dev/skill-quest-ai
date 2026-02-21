@@ -8,6 +8,7 @@ import {
   partnerMessageRequestSchema,
   chatRequestSchema,
   suggestQuestsRequestSchema,
+  updateGoalRequestSchema,
   Genre,
 } from '@skill-quest/shared';
 import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
@@ -257,6 +258,56 @@ aiRouter.post(
       return c.json(
         { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
         502
+      );
+    }
+  }
+);
+
+/** 目標更新（1日2回まで。更新時にクエスト全削除） */
+aiRouter.patch(
+  '/goal',
+  zValidator('json', updateGoalRequestSchema),
+  async (c) => {
+    const user = c.get('user');
+    const data = c.req.valid('json');
+    const goalResult = prepareUserPrompt(data.goal);
+    if (!goalResult.ok) {
+      return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
+    }
+    const goal = goalResult.sanitized;
+
+    const today = getTodayUtc();
+    const usage = await getDailyUsage(c.env.DB, user.id, today);
+    if (usage.goalUpdateCount >= 2) {
+      return c.json(
+        { error: 'Too Many Requests', message: '本日は目標の変更回数（2回）に達しています。' },
+        429
+      );
+    }
+
+    const profile = await getCharacterProfile(c.env.DB, user.id);
+    if (profile == null || typeof profile !== 'object') {
+      return c.json({ error: 'Profile not found', message: 'キャラクターが生成されていません。' }, 404);
+    }
+
+    const merged = { ...(profile as Record<string, unknown>), goal };
+    const updateStmt = c.env.DB.prepare(
+      'UPDATE user_character_profile SET profile = ? WHERE user_id = ?'
+    ).bind(JSON.stringify(merged), user.id);
+    const deleteStmt = c.env.DB.prepare('DELETE FROM quests WHERE user_id = ?').bind(user.id);
+    const recordStmt = c.env.DB.prepare(
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
+       VALUES (?, ?, 0, 0, 0, 0, 1)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET goal_update_count = goal_update_count + 1`
+    ).bind(user.id, today);
+
+    try {
+      await c.env.DB.batch([updateStmt, deleteStmt, recordStmt]);
+      return c.json({ ok: true }, 200);
+    } catch {
+      return c.json(
+        { error: 'Internal Server Error', message: '目標の更新に失敗しました。しばらく経ってから再試行してください。' },
+        500
       );
     }
   }

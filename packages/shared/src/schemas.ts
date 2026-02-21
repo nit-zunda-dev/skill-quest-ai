@@ -93,6 +93,11 @@ export const suggestedQuestItemSchema = createQuestSchema.pick({
   difficulty: true,
 });
 
+// 目標更新リクエストスキーマ（PATCH /api/ai/goal）
+export const updateGoalRequestSchema = z.object({
+  goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
+});
+
 // クエスト一括作成リクエストスキーマ
 export const createQuestBatchSchema = z.object({
   quests: z.array(createQuestSchema).min(1, '1件以上必要です').max(20, '20件以内で入力してください'),
@@ -122,4 +127,5 @@ export type SignInRequest = z.infer<typeof signInRequestSchema>;
 export type PartnerMessageRequest = z.infer<typeof partnerMessageRequestSchema>;
 export type SuggestQuestsRequest = z.infer<typeof suggestQuestsRequestSchema>;
 export type SuggestedQuestItem = z.infer<typeof suggestedQuestItemSchema>;
+export type UpdateGoalRequest = z.infer<typeof updateGoalRequestSchema>;
 export type CreateQuestBatchRequest = z.infer<typeof createQuestBatchSchema>;
