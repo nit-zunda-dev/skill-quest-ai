@@ -12,6 +12,7 @@ import {
   PATH_GENESIS,
   PATH_APP,
 } from '@/lib/paths';
+import { GenesisLayout } from '@/layouts/GenesisLayout';
 
 /** プレースホルダー: 8.1 でルーター統合時に実コンポーネントに差し替える */
 const Placeholder: React.FC<{ name: string }> = ({ name }) => (
@@ -43,7 +44,7 @@ export const routeConfig: RouteObject[] = [
   },
   {
     path: PATH_GENESIS,
-    element: <Placeholder name="GenesisLayout" />,
+    element: <GenesisLayout />,
     children: [
       {
         path: ':step',
