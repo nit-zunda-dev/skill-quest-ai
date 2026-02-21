@@ -735,6 +735,16 @@ describe('createQuestBatchSchema', () => {
       expect(() => createQuestBatchSchema.parse({ quests: [] })).toThrow();
     });
 
+    it('境界値: quests が20件ちょうどでパースできる', () => {
+      const quests = Array.from({ length: 20 }, (_, i) => ({
+        title: `クエスト${i}`,
+        type: TaskType.DAILY,
+        difficulty: Difficulty.EASY,
+      }));
+      const result = createQuestBatchSchema.parse({ quests });
+      expect(result.quests).toHaveLength(20);
+    });
+
     it('異常系: quests が21件の場合エラーを投げる', () => {
       const quests = Array.from({ length: 21 }, (_, i) => ({
         title: `クエスト${i}`,

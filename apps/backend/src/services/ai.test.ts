@@ -532,6 +532,20 @@ describe('AI service', () => {
       expect(result[2].type).toBe(TaskType.TODO);
     });
 
+    it('builds prompt with 3-7 items instruction and title/type/difficulty format', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
+      const ai = { run };
+
+      await generateSuggestedQuests(ai, 'テスト目標');
+
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toMatch(/3.*7/);
+      expect(prompt.prompt).toContain('title');
+      expect(prompt.prompt).toContain('type');
+      expect(prompt.prompt).toContain('difficulty');
+      expect(prompt.prompt).toContain('テスト目標');
+    });
+
     it('includes optional genre in prompt when provided', async () => {
       const run = vi.fn().mockResolvedValue({ response: validSuggestionsJson });
       const ai = { run };
@@ -586,6 +600,21 @@ describe('AI service', () => {
       expect(result.length).toBeLessThanOrEqual(4);
       const first = result.find((r) => r.title === '有効なタスク1');
       expect(first).toEqual({ title: '有効なタスク1', type: TaskType.DAILY, difficulty: Difficulty.EASY });
+    });
+
+    it('applies default type TODO and difficulty MEDIUM when type/difficulty are invalid', async () => {
+      const singleItemJson = JSON.stringify([
+        { title: 'タイトルのみ有効', type: 'INVALID_TYPE', difficulty: 'INVALID_DIFF' },
+      ]);
+      const run = vi.fn().mockResolvedValue({ response: singleItemJson });
+      const ai = { run };
+
+      const result = await generateSuggestedQuests(ai, '目標');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('タイトルのみ有効');
+      expect(result[0].type).toBe(TaskType.TODO);
+      expect(result[0].difficulty).toBe(Difficulty.MEDIUM);
     });
 
     it('passes gatewayId to runWithLlama31_8b when provided', async () => {

@@ -441,6 +441,46 @@ describe('ai router', () => {
       expect(batchMock.mock.calls[0][0]).toHaveLength(3);
     });
 
+    it('executes DELETE FROM quests in batch when goal update succeeds (1-day-2-times and quest reset)', async () => {
+      const executedSql: string[] = [];
+      const firstFor = (sql: string) => {
+        if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
+          return { narrative_count: 0, partner_count: 0, chat_count: 0, grimoire_count: 0, goal_update_count: 0 };
+        if (sql.includes('user_character_profile') && sql.includes('profile'))
+          return { profile: JSON.stringify({ name: 'Test', goal: 'old' }) };
+        return null;
+      };
+      const prepare = (sql: string) => ({
+        bind: (..._args: unknown[]) => ({
+          run: async () => {
+            executedSql.push(sql);
+            return { success: true, meta: {} };
+          },
+          first: async () => firstFor(sql),
+        }),
+      });
+      const batch = async (statements: Array<{ run: () => Promise<unknown> }>) => {
+        const out: unknown[] = [];
+        for (const s of statements) {
+          await s.run();
+          out.push({ success: true, meta: {} });
+        }
+        return out;
+      };
+      const envWithRecordedBatch = {
+        ...mockEnv,
+        DB: { prepare, batch } as unknown as Bindings['DB'],
+      };
+      const { app, env } = createTestApp(envWithRecordedBatch);
+      const res = await app.request('/goal', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: '新しい目標' }),
+      }, env);
+      expect(res.status).toBe(200);
+      expect(executedSql.some((sql) => sql.includes('DELETE FROM quests') && sql.includes('user_id'))).toBe(true);
+    });
+
     it('returns 500 when batch fails', async () => {
       const batchMock = vi.fn().mockRejectedValue(new Error('DB error'));
       const baseMock = createMockD1ForAiUsage({
