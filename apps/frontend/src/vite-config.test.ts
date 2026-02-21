@@ -43,3 +43,25 @@ describe('Production _headers file (Cloudflare Pages)', () => {
     expect(content).toMatch(/font-src[^;]*fonts\.gstatic\.com/);
   });
 });
+
+describe('Tailwind CSS npm bundle (Req 1.1)', () => {
+  it('Vite config includes @tailwindcss/vite plugin', () => {
+    const configPath = resolve(__dirname, '../vite.config.ts');
+    const content = readFileSync(configPath, 'utf-8');
+    expect(content).toContain('@tailwindcss/vite');
+    expect(content).toMatch(/tailwindcss\s*\(\s*\)/);
+  });
+
+  it('main CSS file exists and imports Tailwind', () => {
+    const cssPath = resolve(__dirname, 'index.css');
+    expect(existsSync(cssPath)).toBe(true);
+    const content = readFileSync(cssPath, 'utf-8');
+    expect(content).toMatch(/@import\s+["']tailwindcss["']/);
+  });
+
+  it('main entry imports the main CSS so styles are bundled', () => {
+    const mainPath = resolve(__dirname, 'main.tsx');
+    const content = readFileSync(mainPath, 'utf-8');
+    expect(content).toMatch(/import\s+['"].*\.css['"]/);
+  });
+});
