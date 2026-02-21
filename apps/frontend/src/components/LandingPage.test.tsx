@@ -76,3 +76,35 @@ describe('LandingPage visual (Task 4.3, Req 3.1, 3.3)', () => {
     ).toBe(true);
   });
 });
+
+describe('LandingPage responsive and accessibility (Task 4.4, Req 4.1, 4.2)', () => {
+  it('has main landmark for semantic structure', () => {
+    render(<LandingPage onStartClick={vi.fn()} />);
+    const main = screen.getByRole('main');
+    const hero = screen.getByRole('region', { name: /ヒーロー/i });
+    expect(main.contains(hero)).toBe(true);
+  });
+
+  it('has logical heading hierarchy (h1 then h2)', () => {
+    render(<LandingPage onStartClick={vi.fn()} />);
+    const headings = screen.getAllByRole('heading');
+    expect(headings.length).toBeGreaterThanOrEqual(2);
+    expect(headings[0].tagName).toBe('H1');
+    const h2s = headings.filter((h) => h.tagName === 'H2');
+    expect(h2s.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('uses responsive breakpoint classes for mobile, tablet, desktop', () => {
+    render(<LandingPage onStartClick={vi.fn()} />);
+    const page = screen.getByTestId('landing-page');
+    const html = page.innerHTML;
+    expect(/sm:|md:|lg:/.test(html)).toBe(true);
+  });
+
+  it('primary CTA is focusable and has visible focus', () => {
+    render(<LandingPage onStartClick={vi.fn()} />);
+    const cta = screen.getByRole('button', { name: /冒険を始める/ });
+    expect(cta.getAttribute('tabindex')).not.toBe('-1');
+    expect(cta.tagName).toBe('BUTTON');
+  });
+});

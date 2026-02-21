@@ -10,8 +10,9 @@ export interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
   return (
     <div data-testid="landing-page" className="min-h-screen flex flex-col items-center justify-center p-4 gap-12 relative">
-      {/* 報酬感を補強する軽いアクセント（Req 3.3） */}
-      <div
+      <main className="contents">
+        {/* 報酬感を補強する軽いアクセント（Req 3.3） */}
+        <div
         className="absolute inset-0 overflow-hidden pointer-events-none aria-hidden"
         aria-hidden
       >
@@ -68,6 +69,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
           </Card>
         </div>
       </section>
+      </main>
     </div>
   );
 };
