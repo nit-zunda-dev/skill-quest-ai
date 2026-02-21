@@ -12,7 +12,7 @@
   - パッケージ追加と Vite 設定にプラグインを追加する
   - メインの CSS に Tailwind のインポートを追加する
   - _Requirements: 1.1_
-- [ ] 1.2 index.html から Tailwind の CDN スクリプトを削除する
+- [x] 1.2 index.html から Tailwind の CDN スクリプトを削除する
   - 既存のインラインスタイル（フォント・背景・スクロールバー）は維持する
   - _Requirements: 1.1_
 - [ ] 1.3 ビルドと開発サーバーで既存画面（ログイン、Genesis、ダッシュボード）の見た目が変わっていないことを確認する

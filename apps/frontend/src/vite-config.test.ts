@@ -34,10 +34,9 @@ describe('Production _headers file (Cloudflare Pages)', () => {
     );
   });
 
-  it('CSP allows index.html external resources (cdn.tailwindcss.com, esm.sh, fonts)', () => {
+  it('CSP allows index.html external resources (esm.sh, fonts)', () => {
     const headersPath = resolve(__dirname, '../public/_headers');
     const content = readFileSync(headersPath, 'utf-8');
-    expect(content).toMatch(/script-src[^;]*cdn\.tailwindcss\.com/);
     expect(content).toMatch(/script-src[^;]*esm\.sh/);
     expect(content).toMatch(/style-src[^;]*fonts\.googleapis\.com/);
     expect(content).toMatch(/font-src[^;]*fonts\.gstatic\.com/);
@@ -63,5 +62,23 @@ describe('Tailwind CSS npm bundle (Req 1.1)', () => {
     const mainPath = resolve(__dirname, 'main.tsx');
     const content = readFileSync(mainPath, 'utf-8');
     expect(content).toMatch(/import\s+['"].*\.css['"]/);
+  });
+});
+
+describe('Tailwind CDN removed from index.html (Req 1.1, Task 1.2)', () => {
+  it('index.html does not load Tailwind CDN script', () => {
+    const indexPath = resolve(__dirname, '../index.html');
+    const content = readFileSync(indexPath, 'utf-8');
+    expect(content).not.toMatch(/cdn\.tailwindcss\.com/);
+  });
+
+  it('index.html preserves inline styles (fonts, body, scrollbar)', () => {
+    const indexPath = resolve(__dirname, '../index.html');
+    const content = readFileSync(indexPath, 'utf-8');
+    expect(content).toMatch(/fonts\.googleapis\.com/);
+    expect(content).toMatch(/Zen Kaku Gothic New|Cinzel/);
+    expect(content).toMatch(/#0f172a|Slate 900/);
+    expect(content).toMatch(/\.font-display/);
+    expect(content).toMatch(/::-webkit-scrollbar/);
   });
 });
