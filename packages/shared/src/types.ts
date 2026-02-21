@@ -40,6 +40,8 @@ export interface CharacterProfile {
   nextLevelXp: number;
   gold: number;
   genre: Genre;
+  /** 目標（クエスト自動生成の入力）。既存ユーザーは未設定のためオプショナル。 */
+  goal?: string;
 }
 
 export interface Task {

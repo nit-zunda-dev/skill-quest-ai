@@ -69,6 +69,8 @@ describe('ai router', () => {
       expect(body).toHaveProperty('name');
       expect(body).toHaveProperty('className');
       expect(body).toHaveProperty('prologue');
+      expect(body).toHaveProperty('goal');
+      expect(body.goal).toBe('目標');
     });
 
     it('returns 400 when prompt injection is detected in name', async () => {
@@ -125,6 +127,19 @@ describe('ai router', () => {
       const body = (await res.json()) as Record<string, unknown>;
       expect(body.name).toBe(stubProfile.name);
       expect(body.className).toBe(stubProfile.className);
+    });
+
+    it('returns profile with goal when stored profile has goal', async () => {
+      const profileWithGoal = { ...stubProfile, goal: '英語力を上げる' };
+      const envWithProfile = {
+        ...mockEnv,
+        DB: createMockD1ForAiUsage({ hasCharacter: true, storedProfile: profileWithGoal }) as unknown as Bindings['DB'],
+      };
+      const { app, env } = createTestApp(envWithProfile);
+      const res = await app.request('/character', { method: 'GET' }, env);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.goal).toBe('英語力を上げる');
     });
   });
 

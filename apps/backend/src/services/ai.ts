@@ -160,6 +160,7 @@ function defaultCharacterProfile(name: string, goal: string, genre: Genre): Char
     nextLevelXp: 100,
     gold: 0,
     genre,
+    goal,
   };
 }
 

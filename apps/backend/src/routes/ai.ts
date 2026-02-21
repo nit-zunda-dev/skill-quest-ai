@@ -89,20 +89,21 @@ aiRouter.post(
     const sanitized = { ...data, name: nameResult.sanitized, goal: goalResult.sanitized };
     const service = createAiService(c.env);
     const profile = await service.generateCharacter(sanitized);
+    const profileWithGoal = { ...profile, goal: sanitized.goal };
     await recordCharacterGenerated(c.env.DB, user.id);
-    await saveCharacterProfile(c.env.DB, user.id, profile);
-    
+    await saveCharacterProfile(c.env.DB, user.id, profileWithGoal);
+
     // プロローグを第一回のグリモワールとして保存
-    if (profile.prologue) {
+    if (profileWithGoal.prologue) {
       await createGrimoireEntry(c.env.DB, user.id, {
         taskTitle: 'プロローグ',
-        narrative: profile.prologue,
+        narrative: profileWithGoal.prologue,
         rewardXp: 0,
         rewardGold: 0,
       });
     }
-    
-    return c.json(profile);
+
+    return c.json(profileWithGoal);
   }
 );
 
