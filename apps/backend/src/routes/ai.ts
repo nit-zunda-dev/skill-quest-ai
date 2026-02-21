@@ -7,6 +7,7 @@ import {
   narrativeRequestSchema,
   partnerMessageRequestSchema,
   chatRequestSchema,
+  suggestQuestsRequestSchema,
   Genre,
 } from '@skill-quest/shared';
 import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
@@ -216,6 +217,48 @@ aiRouter.post(
     const message = await service.generatePartnerMessage(sanitized, genre);
     await recordPartner(c.env.DB, user.id, today);
     return c.json({ message });
+  }
+);
+
+aiRouter.post(
+  '/suggest-quests',
+  zValidator('json', suggestQuestsRequestSchema),
+  async (c) => {
+    const user = c.get('user');
+    const data = c.req.valid('json');
+    const goalResult = prepareUserPrompt(data.goal);
+    if (!goalResult.ok) {
+      return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
+    }
+    const goal = goalResult.sanitized;
+
+    let genre: Genre | undefined = data.genre;
+    if (genre == null) {
+      const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+      if (profileRaw && typeof profileRaw === 'object') {
+        const p = profileRaw as Record<string, unknown>;
+        if (p.genre && Object.values(Genre).includes(p.genre as Genre)) {
+          genre = p.genre as Genre;
+        }
+      }
+    }
+
+    try {
+      const service = createAiService(c.env);
+      const suggestions = await service.generateSuggestedQuests(goal, genre);
+      if (suggestions.length === 0) {
+        return c.json(
+          { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
+          500
+        );
+      }
+      return c.json({ suggestions }, 200);
+    } catch {
+      return c.json(
+        { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
+        502
+      );
+    }
   }
 );
 
