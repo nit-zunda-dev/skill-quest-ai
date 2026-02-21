@@ -3,6 +3,7 @@ import { CharacterProfile, Genre, GenesisFormData } from '@skill-quest/shared';
 import { generateCharacter } from '@/lib/api-client';
 import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
+import SuggestStep from '@/components/SuggestStep';
 import Dashboard from '@/components/Dashboard';
 import LoginSignupForm from '@/components/LoginSignupForm';
 import LandingPage from '@/components/LandingPage';
@@ -19,7 +20,7 @@ const App: React.FC = () => {
   const [showAuthForm, setShowAuthForm] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auth') === 'form'
   );
-  const [genesisStep, setGenesisStep] = useState<'INTRO' | 'QUESTIONS' | 'LOADING' | 'RESULT'>('INTRO');
+  const [genesisStep, setGenesisStep] = useState<'INTRO' | 'QUESTIONS' | 'LOADING' | 'RESULT' | 'SUGGEST'>('INTRO');
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
     goal: '',
@@ -64,6 +65,10 @@ const App: React.FC = () => {
   };
 
   const handleCompleteGenesis = () => {
+    if (profile) setGenesisStep('SUGGEST');
+  };
+
+  const handleCompleteSuggest = () => {
     if (profile) setJustCompletedProfile(profile);
   };
 
@@ -114,9 +119,9 @@ const App: React.FC = () => {
     return <Dashboard initialProfile={justCompletedProfile} />;
   }
 
-  // Genesis の RESULT ステップ中は、genesisOrProfile の結果を無視して Genesis 画面を表示し続ける
-  // （プロフィール生成後、useGenesisOrProfile が再評価されて dashboard を返しても、RESULT 画面を表示し続ける）
-  const isShowingGenesisResult = genesisStep === 'RESULT';
+  // Genesis の RESULT / SUGGEST ステップ中は、genesisOrProfile の結果を無視して Genesis 画面を表示し続ける
+  // （プロフィール生成後、useGenesisOrProfile が再評価されて dashboard を返しても、RESULT/SUGGEST 画面を表示し続ける）
+  const isShowingGenesisResult = genesisStep === 'RESULT' || genesisStep === 'SUGGEST';
   
   if (!isShowingGenesisResult) {
     // 認証済み: キャラ取得中 or エラー
@@ -170,6 +175,10 @@ const App: React.FC = () => {
 
         {genesisStep === 'RESULT' && profile && (
           <ResultStep profile={profile} onComplete={handleCompleteGenesis} />
+        )}
+
+        {genesisStep === 'SUGGEST' && profile && (
+          <SuggestStep profile={profile} onComplete={handleCompleteSuggest} />
         )}
       </div>
 
