@@ -7,8 +7,12 @@ import {
   Difficulty,
   Genre,
   type CharacterProfile,
+  type CreateQuestBatchRequest,
   type GenesisFormData,
+  type SuggestQuestsRequest,
+  type SuggestedQuestItem,
   type Task,
+  type UpdateGoalRequest,
 } from '@skill-quest/shared';
 
 type HcClient = {
@@ -18,6 +22,11 @@ type HcClient = {
       'generate-character': { $post: (opts: { json: GenesisFormData }) => Promise<Response> };
       'generate-narrative': { $post: (opts: { json: object }) => Promise<Response> };
       'generate-partner-message': { $post: (opts: { json: object }) => Promise<Response> };
+      'suggest-quests': { $post: (opts: { json: SuggestQuestsRequest }) => Promise<Response> };
+      goal: { $patch: (opts: { json: UpdateGoalRequest }) => Promise<Response> };
+    };
+    quests: {
+      batch: { $post: (opts: { json: CreateQuestBatchRequest }) => Promise<Response> };
     };
     users: {
       ':userId': { $delete: (opts: { param: { userId: string } }) => Promise<Response> };
@@ -167,4 +176,34 @@ export async function generatePartnerMessage(
   } catch (e) {
     return '次の冒険の準備はできているか？';
   }
+}
+
+/** 提案取得（POST /api/ai/suggest-quests）。目標とオプションのジャンルで AI がタスク提案を返す。 */
+export async function suggestQuests(req: SuggestQuestsRequest): Promise<SuggestedQuestItem[]> {
+  const res = await api.ai['suggest-quests'].$post({ json: req });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+    throw new Error(err?.message ?? err?.error ?? `提案の取得に失敗しました (${res.status})`);
+  }
+  const data = (await res.json()) as { suggestions: SuggestedQuestItem[] };
+  return data.suggestions ?? [];
+}
+
+/** 目標更新（PATCH /api/ai/goal）。1日2回まで。超過時は429。 */
+export async function updateGoal(req: UpdateGoalRequest): Promise<void> {
+  const res = await api.ai.goal.$patch({ json: req });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+    throw new Error(err?.message ?? err?.error ?? `目標の更新に失敗しました (${res.status})`);
+  }
+}
+
+/** クエスト一括作成（POST /api/quests/batch）。作成されたクエスト一覧を返す。 */
+export async function createQuestsBatch(req: CreateQuestBatchRequest): Promise<Task[]> {
+  const res = await api.quests.batch.$post({ json: req });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+    throw new Error(err?.message ?? err?.error ?? `クエストの一括作成に失敗しました (${res.status})`);
+  }
+  return (await res.json()) as Task[];
 }
