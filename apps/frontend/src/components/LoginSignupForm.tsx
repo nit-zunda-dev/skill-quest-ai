@@ -14,10 +14,12 @@ const MIN_PASSWORD_LENGTH = 8;
 interface LoginSignupFormProps {
   /** ログイン/サインアップ成功時に呼ばれる（認証状態の再取得用） */
   onSuccess?: () => void;
+  /** 初期表示モード（URL 正規化後の値。Task 12.1, Req 5.3） */
+  initialMode?: Mode;
 }
 
-const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess }) => {
-  const [mode, setMode] = useState<Mode>('login');
+const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess, initialMode = 'login' }) => {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');

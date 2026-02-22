@@ -77,4 +77,5 @@ describe('useAuth', () => {
     expect(result.current.session).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
   });
+
 });

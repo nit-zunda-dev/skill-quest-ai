@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient } from '@/lib/query';
 import { AuthProvider } from '@/hooks/useAuth';
-import App from '@/App';
+import { routeConfig } from '@/routes';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -12,12 +13,13 @@ if (!rootElement) {
 }
 
 const queryClient = createQueryClient();
+const router = createBrowserRouter(routeConfig);
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <RouterProvider router={router} />
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>
