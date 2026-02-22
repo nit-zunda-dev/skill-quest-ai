@@ -37,13 +37,21 @@ export const NOT_FOUND_META: RouteMetaEntry = {
   noindex: true,
 };
 
+/** XSS 対策: DOM に流す前に pathname を安全な文字のみに制限する（location.pathname 用に export） */
+export function sanitizePathname(pathname: string): string {
+  const sanitized = pathname.replace(/[^/a-zA-Z0-9\-_.]/g, '');
+  return sanitized.length > 0 ? sanitized : '/';
+}
+
 /**
  * パスに対応するメタ情報を返す。公開ルートは一意な title/description、非公開は汎用＋noindex。
+ * location.pathname はサニタイズしてから使用し、DOM への XSS を防ぐ。
  */
 export function getRouteMeta(pathname: string): RouteMetaEntry {
-  const exact = PUBLIC_META[pathname];
+  const safePath = sanitizePathname(pathname);
+  const exact = PUBLIC_META[safePath];
   if (exact) return exact;
-  if (pathname === PATH_APP || pathname.startsWith(`${PATH_APP}/`)) return PRIVATE_META;
-  if (pathname === PATH_GENESIS || pathname.startsWith(`${PATH_GENESIS}/`)) return PRIVATE_META;
+  if (safePath === PATH_APP || safePath.startsWith(`${PATH_APP}/`)) return PRIVATE_META;
+  if (safePath === PATH_GENESIS || safePath.startsWith(`${PATH_GENESIS}/`)) return PRIVATE_META;
   return PRIVATE_META;
 }
