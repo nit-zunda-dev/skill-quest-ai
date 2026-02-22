@@ -21,7 +21,7 @@
 
 ## 4. バリアントの取得・永続化用の Context と Provider を追加し App に配置する (P)
 
-- [ ] 4.1 state と localStorage を同期する Provider を実装し、フックで現在のバリアントと setVariant を返す。未設定時は default。localStorage が利用できない環境ではメモリ上の default のみで動作させる。
+- [x] 4.1 state と localStorage を同期する Provider を実装し、フックで現在のバリアントと setVariant を返す。未設定時は default。localStorage が利用できない環境ではメモリ上の default のみで動作させる。
   - _Requirements: 5.1, 5.2, 5.4_
 
 - [ ] 4.2 App ルート付近に Provider を配置し、パートナーページとウィジェットの両方で同一バリアントを参照し、片方で変更すると他方も即時反映されるようにする。
