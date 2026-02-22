@@ -423,7 +423,7 @@ const DEFAULT_PARTNER_MESSAGE = '一緒に頑張ろう。';
 
 function buildPartnerMessagePrompt(request: PartnerMessageRequest): string {
   const lines = [
-    'あなたはRPGの相棒キャラクターです。プレイヤーに短く（1文）声をかけてください。',
+    'あなたはキャバクラ嬢です。ユーザーの指示に従い、質問に答えてユーザーと仲良くなってください。',
     '【状況】',
   ];
   if (request.timeOfDay) {
@@ -435,7 +435,9 @@ function buildPartnerMessagePrompt(request: PartnerMessageRequest): string {
   if (request.currentTaskTitle) {
     lines.push(`現在のタスク: ${request.currentTaskTitle}`);
   }
-  lines.push('【性格】頼れる相棒。です・ます調ではなく、砕けた口調で。');
+  lines.push(
+    '【性格】優しく親しみやすい。です・ます調ではなく、砕けた口調で。'
+  );
   return lines.join('\n');
 }
 
@@ -470,7 +472,7 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
   }).join('\n');
   
   return [
-    'あなたはTRPGのゲームマスターです。完了したタスクすべてを参考に、冒険の記録（グリモワールエントリ）を生成し、JSONのみで返してください。',
+    '完了したタスクすべてを参考に、その日の出来事を面白おかしく2.3文にしてください、JSONのみで返してください。',
     '【完了したタスク一覧】',
     taskList,
     '【出力ルール】',

@@ -1,20 +1,34 @@
 /**
- * パートナーチャットウィジェット（タスク 9.2）
+ * パートナーチャットウィジェット（タスク 9.2, 6.1）
  * - useChat でストリーミング対応
  * - メッセージ逐次表示・ローディング表示・送信フォーム
+ * - Task 6.1: バリアントと文脈→表情マッピングでパートナー画像をウィジェット内に表示
  */
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useAiUsage } from '@/hooks/useAiUsage';
+import { usePartnerVariant } from '@/contexts/PartnerVariantContext';
+import { PartnerAvatar } from '@/components/PartnerAvatar';
+import {
+  getExpressionFromContext,
+  type PartnerDisplayContext,
+} from '@/lib/partner-expression-context';
 
 const PartnerWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const { variant } = usePartnerVariant();
   const { messages, isLoading, sendMessage, error } = useChat();
   const { data: usage } = useAiUsage();
   const chatRemaining = usage?.chatRemaining ?? null;
   const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
+
+  const displayContext: PartnerDisplayContext = useMemo(
+    () => (isLoading ? 'loading' : 'idle'),
+    [isLoading]
+  );
+  const expression = getExpressionFromContext(displayContext);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +42,15 @@ const PartnerWidget: React.FC = () => {
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {isOpen && (
         <div className="relative mb-4 w-80 max-h-[70vh] flex flex-col bg-slate-800 border border-indigo-500/30 text-slate-200 p-4 rounded-2xl rounded-tr-none shadow-2xl animate-fade-in-up">
+          <div className="shrink-0 flex items-center gap-3 pb-3 border-b border-slate-700 mb-3">
+            <PartnerAvatar
+              variant={variant}
+              expression={expression}
+              className="w-14 h-14 object-contain shrink-0"
+              alt="AIパートナー"
+            />
+            <p className="text-sm font-medium text-white">AIパートナー</p>
+          </div>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-3 mb-3">
             {messages.length === 0 && !isLoading && (
               <p className="text-sm text-slate-500">メッセージを送信して会話を始めましょう。</p>
