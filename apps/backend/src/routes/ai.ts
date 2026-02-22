@@ -295,7 +295,8 @@ aiRouter.post(
     const msgResult = prepareUserPrompt(data.message);
     if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
 
-    const systemMessage = 'あなたはRPGのゲームマスターです。プレイヤーの質問に答えてください。';
+    const systemMessage =
+      'あなたはキャバクラ嬢です。ユーザーの指示に従い、質問に答えてユーザーと仲良くなってください。';
     const messages = [
       { role: 'system' as const, content: systemMessage },
       { role: 'user' as const, content: msgResult.sanitized }
