@@ -2,7 +2,7 @@
  * 認証済みアプリの共通レイアウト。サイドバーナビ・プロフィール・目標更新・ログアウト・アカウント削除。
  */
 import React, { useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { X, LogOut, Trash2, Home, ListTodo, Scroll, MessageCircle, Package } from 'lucide-react';
 import StatusPanel from '@/components/StatusPanel';
 import GoalUpdateUI from '@/components/GoalUpdateUI';
@@ -10,7 +10,7 @@ import SuggestedQuestsModal from '@/components/SuggestedQuestsModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAccount } from '@/lib/api-client';
-import { PATH_APP, PATH_APP_QUESTS, PATH_APP_GRIMOIRE, PATH_APP_PARTNER, PATH_APP_ITEMS } from '@/lib/paths';
+import { PATH_APP, PATH_APP_QUESTS, PATH_APP_GRIMOIRE, PATH_APP_PARTNER, PATH_APP_ITEMS, PATH_LOGIN } from '@/lib/paths';
 
 const CONFIRM_DELETE_TEXT = '削除する';
 
@@ -25,6 +25,7 @@ const navItems = [
 export default function AppLayout() {
   const { profile } = useProfile();
   const { signOut, session } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteAccountConfirmText, setDeleteAccountConfirmText] = useState('');
@@ -54,6 +55,7 @@ export default function AppLayout() {
       await deleteAccount(session.user.id);
       await signOut();
       closeDeleteAccountModal();
+      navigate(PATH_LOGIN);
     } catch (e) {
       setDeleteAccountError(e instanceof Error ? e.message : 'アカウント削除に失敗しました');
     } finally {
@@ -97,7 +99,10 @@ export default function AppLayout() {
         />
         <button
           type="button"
-          onClick={() => signOut()}
+          onClick={async () => {
+            await signOut();
+            navigate(PATH_LOGIN);
+          }}
           className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-slate-600 hover:bg-slate-500 border border-slate-500 text-slate-100 rounded-lg text-sm transition-colors cursor-pointer"
           aria-label="ログアウト"
         >
