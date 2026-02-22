@@ -1,11 +1,11 @@
 /**
- * PartnerAvatar のテスト（Task 3.1, 7.3）
- * バリアント・表情で正しい src、className・aspectRatio・alt の適用を検証する。
+ * PartnerAvatar のテスト（Task 3.1, 3.2, 7.3）
+ * バリアント・表情で正しい src、className・aspectRatio・alt、onError 時のフォールバックを検証する。
  */
 /// <reference types="vitest" />
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PartnerAvatar } from './PartnerAvatar';
 import { getPartnerImagePath } from '@/lib/partner-assets';
 
@@ -56,5 +56,22 @@ describe('PartnerAvatar (Task 3.1)', () => {
     );
     const img = screen.getByRole('img', { name: '相棒の立ち絵' });
     expect(img).toBeTruthy();
+  });
+});
+
+describe('PartnerAvatar fallback on image error (Task 3.2)', () => {
+  it('shows fallback with supportive message when image fails to load (Req 6.1, 6.2)', () => {
+    render(<PartnerAvatar variant="default" expression="standing" />);
+    const img = screen.getByRole('img');
+    fireEvent.error(img);
+    expect(screen.getByText(/相棒がここにいる/)).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('does not crash on image load error', () => {
+    render(<PartnerAvatar variant="male" expression="happy" />);
+    const img = screen.getByRole('img');
+    expect(() => fireEvent.error(img)).not.toThrow();
+    expect(screen.getByText(/相棒がここにいる/)).toBeTruthy();
   });
 });
