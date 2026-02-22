@@ -1,6 +1,7 @@
 /**
- * LoginRouteWrapper の単体テスト（Task 5.1, Requirements 4.1）
+ * LoginRouteWrapper の単体テスト（Task 5.1, Requirements 4.1 / Task 12.1, 5.3）
  * 認証成功後に returnUrl が有効ならその URL へ、無効または無ければダッシュボードへ遷移する。
+ * クエリ mode / returnUrl の正規化を検証する。
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -11,12 +12,18 @@ import { PATH_APP } from '@/lib/paths';
 
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
+const mockSetSearchParams = vi.fn();
 
 vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+  const mod = await importOriginal<typeof import('react-router-dom')>();
+  const realUseSearchParams = mod.useSearchParams;
   return {
-    ...actual,
+    ...mod,
     useNavigate: () => mockNavigate,
+    useSearchParams: () => {
+      const [params, setSearchParams] = realUseSearchParams();
+      return [params, mockSetSearchParams];
+    },
   };
 });
 
@@ -25,10 +32,19 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 vi.mock('@/components/LoginSignupForm', () => ({
-  default: ({ onSuccess }: { onSuccess?: () => void }) => (
-    <button type="button" data-testid="simulate-success" onClick={() => onSuccess?.()}>
-      Simulate success
-    </button>
+  default: ({
+    onSuccess,
+    initialMode,
+  }: {
+    onSuccess?: () => void;
+    initialMode?: 'login' | 'signup';
+  }) => (
+    <>
+      <span data-testid="initial-mode">{initialMode ?? 'login'}</span>
+      <button type="button" data-testid="simulate-success" onClick={() => onSuccess?.()}>
+        Simulate success
+      </button>
+    </>
   ),
 }));
 
@@ -73,5 +89,35 @@ describe('LoginRouteWrapper', () => {
     renderWithRouter('/login?returnUrl=%2Fapp', <LoginRouteWrapper />);
     fireEvent.click(screen.getByTestId('simulate-success'));
     expect(mockNavigate).toHaveBeenCalledWith(PATH_APP);
+  });
+
+  describe('Task 12.1: クエリ・ハッシュの正規化 (Req 5.3)', () => {
+    it('mode=signup のときフォームに initialMode=signup を渡す', () => {
+      renderWithRouter('/login?mode=signup', <LoginRouteWrapper />);
+      expect(screen.getByTestId('initial-mode').textContent).to.equal('signup');
+    });
+
+    it('mode=invalid のとき initialMode=login をデフォルトとする', () => {
+      renderWithRouter('/login?mode=invalid', <LoginRouteWrapper />);
+      expect(screen.getByTestId('initial-mode').textContent).to.equal('login');
+    });
+
+    it('mode が欠落しているとき initialMode=login を渡す', () => {
+      renderWithRouter('/login', <LoginRouteWrapper />);
+      expect(screen.getByTestId('initial-mode').textContent).to.equal('login');
+    });
+
+    it('returnUrl が無効なときマウント時に URL を正規化する（setSearchParams を呼ぶ）', () => {
+      renderWithRouter('/login?returnUrl=http%3A%2F%2Fevil.com', <LoginRouteWrapper />);
+      expect(mockSetSearchParams).toHaveBeenCalled();
+      const setSearchParamsArg = mockSetSearchParams.mock.calls[0][0];
+      if (typeof setSearchParamsArg === 'function') {
+        const prev = new URLSearchParams('returnUrl=http%3A%2F%2Fevil.com');
+        const next = setSearchParamsArg(prev);
+        expect(next.get('returnUrl')).toBeFalsy();
+      } else {
+        expect(setSearchParamsArg.get?.('returnUrl')).toBeFalsy();
+      }
+    });
   });
 });
