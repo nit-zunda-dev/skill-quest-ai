@@ -14,7 +14,9 @@ import {
   GENESIS_STEP_SLUGS,
   getGenesisStepPath,
   PATH_GENESIS_INTRO,
+  PATH_APP,
 } from '@/lib/paths';
+import { useQueryClient } from '@tanstack/react-query';
 import type { GenesisStepSlug } from '@/lib/paths';
 
 function normalizeStep(step: string | undefined): GenesisStepSlug {
@@ -27,6 +29,7 @@ function normalizeStep(step: string | undefined): GenesisStepSlug {
 export function GenesisStepView() {
   const { step: paramStep } = useParams<{ step: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { formData, setFormData, profile, setProfile } = useGenesisFlow();
   const { session } = useAuth();
   const step = normalizeStep(paramStep);
@@ -85,8 +88,9 @@ export function GenesisStepView() {
   };
 
   const handleCompleteSuggest = () => {
-    // 10.2 でダッシュボード URL へ遷移する。ここではコンテキストに保持するだけでも可。
-    navigate('/app', { state: { fromGenesis: true, profile: profile ?? undefined } });
+    queryClient.invalidateQueries({ queryKey: ['ai-usage'] });
+    queryClient.invalidateQueries({ queryKey: ['ai', 'character'] });
+    navigate(PATH_APP, { state: { fromGenesis: true, profile: profile ?? undefined } });
   };
 
   return (

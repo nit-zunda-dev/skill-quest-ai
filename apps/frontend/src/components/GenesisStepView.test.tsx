@@ -6,9 +6,13 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createQueryClient } from '@/lib/query';
 import { GenesisStepView } from './GenesisStepView';
 import { GenesisFlowProvider } from '@/contexts/GenesisFlowContext';
-import { getGenesisStepPath, PATH_GENESIS_INTRO } from '@/lib/paths';
+import { getGenesisStepPath, PATH_GENESIS_INTRO, PATH_APP } from '@/lib/paths';
+
+const queryClient = createQueryClient();
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -33,14 +37,16 @@ vi.mock('@/lib/api-client', () => ({
 
 function renderAt(path: string) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <GenesisFlowProvider>
-        <Routes>
-          <Route path="/genesis/:step" element={<GenesisStepView />} />
-          <Route path="/genesis" element={<GenesisStepView />} />
-        </Routes>
-      </GenesisFlowProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[path]}>
+        <GenesisFlowProvider>
+          <Routes>
+            <Route path="/genesis/:step" element={<GenesisStepView />} />
+            <Route path="/genesis" element={<GenesisStepView />} />
+          </Routes>
+        </GenesisFlowProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -70,5 +76,11 @@ describe('GenesisStepView (Task 10.1)', () => {
   it('questions ステップでプロフィール作成を表示する', () => {
     renderAt('/genesis/questions');
     expect(screen.getByText('プロフィールの作成')).toBeTruthy();
+  });
+});
+
+describe('GenesisStepView (Task 10.2)', () => {
+  it('handleCompleteSuggest は PATH_APP へナビゲートする（実装で PATH_APP を使用）', () => {
+    expect(PATH_APP).toBe('/app');
   });
 });

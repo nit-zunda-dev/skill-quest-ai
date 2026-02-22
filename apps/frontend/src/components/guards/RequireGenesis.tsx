@@ -1,10 +1,10 @@
 /**
- * Genesis 完了必須ガード（Task 3.1, Requirements 1.3, 4.2）
+ * Genesis 完了必須ガード（Task 3.1, 10.2, Requirements 1.3, 4.2, 4.3）
  * 認証済みユーザーのうち、Genesis 未完了の場合は /genesis へリダイレクトする。
- * 完了済みの場合のみ子要素を描画。ローディング・エラー時は既存方針に合わせて表示する。
+ * location.state に fromGenesis と profile がある場合は Genesis 完了直後として子を表示する。
  */
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
 import { PATH_GENESIS } from '@/lib/paths';
@@ -14,8 +14,13 @@ type RequireGenesisProps = {
 };
 
 export function RequireGenesis({ children }: RequireGenesisProps) {
+  const location = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const state = useGenesisOrProfile({ isAuthenticated, isLoading: authLoading });
+
+  if (location.state?.fromGenesis === true && location.state?.profile != null) {
+    return <>{children}</>;
+  }
 
   if (state.kind === 'loading') {
     return (

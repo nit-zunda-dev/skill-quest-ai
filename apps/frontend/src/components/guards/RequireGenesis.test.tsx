@@ -92,4 +92,30 @@ describe('RequireGenesis', () => {
     expect(screen.getByText('キャラクター情報の取得に失敗しました。')).toBeTruthy();
     expect(screen.queryByText('Child content')).toBeNull();
   });
+
+  it('(Task 10.2) location.state に fromGenesis と profile があるときは /genesis へリダイレクトせず子を描画する', () => {
+    const stateProfile = {
+      name: 'Test',
+      className: 'A',
+      title: 'B',
+      prologue: 'P',
+      themeColor: '#',
+      level: 1,
+      currentXp: 0,
+      nextLevelXp: 100,
+      gold: 0,
+    };
+    mockUseGenesisOrProfile.mockReturnValue({ kind: 'genesis' });
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: '/app', state: { fromGenesis: true, profile: stateProfile } }]}
+      >
+        <RequireGenesis>
+          <span>Child content</span>
+        </RequireGenesis>
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Child content')).toBeTruthy();
+    expect(screen.queryByTestId('require-genesis-redirect')).toBeNull();
+  });
 });
