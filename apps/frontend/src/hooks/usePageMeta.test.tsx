@@ -17,6 +17,11 @@ function getRobotsContent(): string | null {
   return el?.getAttribute('content') ?? null;
 }
 
+function getOgTitleContent(): string | null {
+  const el = document.querySelector('meta[property="og:title"]');
+  return el?.getAttribute('content') ?? null;
+}
+
 function TestSubject({ title, description, noindex }: { title: string; description?: string; noindex?: boolean }) {
   usePageMeta({ title, description, noindex });
   return null;
@@ -29,6 +34,8 @@ describe('usePageMeta (Task 7.1)', () => {
     document.title = initialTitle;
     document.querySelector('meta[name="description"]')?.remove();
     document.querySelector('meta[name="robots"]')?.remove();
+    document.querySelector('meta[property="og:title"]')?.remove();
+    document.querySelector('meta[property="og:description"]')?.remove();
   });
 
   it('sets document.title when meta.title is provided', () => {
@@ -55,5 +62,10 @@ describe('usePageMeta (Task 7.1)', () => {
     expect(document.title).toBe('Second');
     expect(getDescriptionContent()).toBe('Second desc');
     expect(getRobotsContent()).toBe('noindex, nofollow');
+  });
+
+  it('sets og:title for link preview (Task 13.1, Req 3.2)', () => {
+    render(<TestSubject title="OG Test Title" />);
+    expect(getOgTitleContent()).toBe('OG Test Title');
   });
 });

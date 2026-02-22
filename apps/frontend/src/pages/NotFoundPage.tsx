@@ -1,20 +1,17 @@
 /**
- * 未定義パス用の 404 画面（Task 6.1, Requirements 5.1）
+ * 未定義パス用の 404 画面（Task 6.1, 13.1, Requirements 5.1, 3.1）
  * ページタイトルを「見つかりません」と分かる文言に設定し、
- * ランディング・ログインへのリンクを提供する。
+ * ランディング・ログインへのリンクを提供する。ルート別メタは NOT_FOUND_META で適用。
  */
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { PATH_LANDING, PATH_LOGIN } from '@/lib/paths';
-
-const PAGE_TITLE = 'ページが見つかりません | Skill Quest AI';
+import { PageMeta } from '@/components/PageMeta';
+import { NOT_FOUND_META } from '@/lib/route-meta';
 
 export default function NotFoundPage() {
-  useEffect(() => {
-    document.title = PAGE_TITLE;
-  }, []);
-
   return (
+    <PageMeta {...NOT_FOUND_META}>
     <main className="min-h-[60vh] flex flex-col items-center justify-center px-4" data-testid="not-found-page">
       <h1 className="text-6xl font-bold text-slate-300 mb-2">404</h1>
       <p className="text-xl text-slate-400 mb-8">ページが見つかりません</p>
@@ -33,5 +30,6 @@ export default function NotFoundPage() {
         </Link>
       </nav>
     </main>
+    </PageMeta>
   );
 }

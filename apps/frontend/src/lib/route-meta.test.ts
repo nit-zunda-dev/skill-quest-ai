@@ -3,7 +3,7 @@
  * 公開ルートは一意な title と description、非公開は汎用 title と noindex を返すことを検証する。
  */
 import { describe, it, expect } from 'vitest';
-import { getRouteMeta } from './route-meta';
+import { getRouteMeta, NOT_FOUND_META } from './route-meta';
 import { PATH_LANDING, PATH_LOGIN, PATH_GENESIS, PATH_APP } from './paths';
 
 describe('getRouteMeta (Task 7.1)', () => {
@@ -43,5 +43,10 @@ describe('getRouteMeta (Task 7.1)', () => {
     const meta = getRouteMeta('/unknown');
     expect(meta.title).toBeTruthy();
     expect(meta.noindex).toBe(true);
+  });
+
+  it('exports NOT_FOUND_META for 404 page (Task 13.1)', () => {
+    expect(NOT_FOUND_META.title).toContain('見つかりません');
+    expect(NOT_FOUND_META.noindex).toBe(true);
   });
 });

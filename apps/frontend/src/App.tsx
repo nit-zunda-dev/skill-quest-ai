@@ -14,9 +14,11 @@ import GrimoirePage from '@/pages/GrimoirePage';
 import PartnerPage from '@/pages/PartnerPage';
 import ItemsPage from '@/pages/ItemsPage';
 import { LoginRouteWrapper } from '@/components/LoginRouteWrapper';
+import { PageMeta } from '@/components/PageMeta';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
-import { PATH_LOGIN, PATH_APP } from '@/lib/paths';
+import { PATH_LOGIN, PATH_APP, PATH_LANDING } from '@/lib/paths';
+import { getRouteMeta } from '@/lib/route-meta';
 
 /** 認証済み・Genesis 完了後のダッシュボード。ルートツリーの /app の子がある場合は Outlet、ない場合は Home を表示（Task 8.2, 9.1） */
 function AuthenticatedApp({ initialProfile }: { initialProfile: CharacterProfile }) {
@@ -90,30 +92,34 @@ const App: React.FC = () => {
     );
   }
 
-  // 未認証: ルートに応じてランディング or ログイン/サインアップ（Task 8.2, Req 2.3）
+  // 未認証: ルートに応じてランディング or ログイン/サインアップ（Task 8.2, 13.1, Req 2.3, 3.1）
   if (!isAuthenticated) {
     if (pathname === PATH_LOGIN) {
       return (
-        <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-          <div className="w-full max-w-sm">
-            <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Skill Quest AI</h1>
-            <LoginRouteWrapper />
+        <PageMeta {...getRouteMeta(PATH_LOGIN)}>
+          <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-sm">
+              <h1 className="text-xl font-bold text-center text-slate-200 mb-6">Skill Quest AI</h1>
+              <LoginRouteWrapper />
+            </div>
+            <div className="p-4 text-center text-slate-600 text-xs mt-8">
+              Skill Quest AI v1.1.0 &bull; Powered by Workers AI
+            </div>
           </div>
-          <div className="p-4 text-center text-slate-600 text-xs mt-8">
-            Skill Quest AI v1.1.0 &bull; Powered by Workers AI
-          </div>
-        </div>
+        </PageMeta>
       );
     }
     return (
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-200">
-        <div className="flex-1 min-h-0 flex flex-col min-w-full">
-          <LandingPage onStartClick={() => navigate(PATH_LOGIN)} />
+      <PageMeta {...getRouteMeta(PATH_LANDING)}>
+        <div className="min-h-screen flex flex-col bg-slate-950 text-slate-200">
+          <div className="flex-1 min-h-0 flex flex-col min-w-full">
+            <LandingPage onStartClick={() => navigate(PATH_LOGIN)} />
+          </div>
+          <div className="shrink-0 p-4 text-center text-slate-600 text-xs">
+            Skill Quest AI v1.1.0 &bull; Powered by Workers AI
+          </div>
         </div>
-        <div className="shrink-0 p-4 text-center text-slate-600 text-xs">
-          Skill Quest AI v1.1.0 &bull; Powered by Workers AI
-        </div>
-      </div>
+      </PageMeta>
     );
   }
 

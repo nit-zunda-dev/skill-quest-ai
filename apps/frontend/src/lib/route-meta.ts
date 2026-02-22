@@ -30,6 +30,13 @@ const PRIVATE_META: RouteMetaEntry = {
   noindex: true,
 };
 
+/** 404 用メタ（Task 13.1, Requirements 5.1） */
+export const NOT_FOUND_META: RouteMetaEntry = {
+  title: `ページが見つかりません | ${APP_NAME}`,
+  description: 'お探しのページは見つかりませんでした。',
+  noindex: true,
+};
+
 /**
  * パスに対応するメタ情報を返す。公開ルートは一意な title/description、非公開は汎用＋noindex。
  */

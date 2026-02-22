@@ -7,6 +7,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import NotFoundPage from './NotFoundPage';
 import { PATH_LANDING, PATH_LOGIN } from '@/lib/paths';
+import { NOT_FOUND_META } from '@/lib/route-meta';
 
 const TITLE_NOT_FOUND = 'ページが見つかりません';
 const TITLE_APP = 'Skill Quest AI';
@@ -52,5 +53,12 @@ describe('NotFoundPage (Task 6.1, Req 5.1)', () => {
     const links = screen.getAllByRole('link');
     const toLogin = links.find((el) => el.getAttribute('href') === PATH_LOGIN);
     expect(toLogin).toBeTruthy();
+  });
+
+  it('uses NOT_FOUND_META for document.title (Task 13.1, Req 3.1)', async () => {
+    renderNotFound();
+    await waitFor(() => {
+      expect(document.title).toBe(NOT_FOUND_META.title);
+    });
   });
 });
