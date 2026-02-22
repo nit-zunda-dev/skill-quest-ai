@@ -9,7 +9,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PartnerAvatar } from './PartnerAvatar';
 import { getPartnerImagePath } from '@/lib/partner-assets';
 
-describe('PartnerAvatar (Task 3.1)', () => {
+describe('PartnerAvatar (Task 3.1, 7.3)', () => {
   it('sets img src from getPartnerImagePath for given variant and expression', () => {
     render(<PartnerAvatar variant="default" expression="standing" />);
     const img = screen.getByRole('img');
@@ -59,7 +59,7 @@ describe('PartnerAvatar (Task 3.1)', () => {
   });
 });
 
-describe('PartnerAvatar fallback on image error (Task 3.2)', () => {
+describe('PartnerAvatar fallback on image error (Task 3.2, 7.3)', () => {
   it('shows fallback with supportive message when image fails to load (Req 6.1, 6.2)', () => {
     render(<PartnerAvatar variant="default" expression="standing" />);
     const img = screen.getByRole('img');

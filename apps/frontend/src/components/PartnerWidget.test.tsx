@@ -1,15 +1,19 @@
 /**
- * PartnerWidget のテスト（タスク 9.2, 6.1）
+ * PartnerWidget のテスト（タスク 9.2, 6.1, 7.4）
  * - ストリーミングメッセージを表示するUIを検証
  * - ローディングインジケーターを検証
  * - メッセージ送信フォームを検証
  * - Task 6.1: ウィジェット内にパートナー画像を表示
+ * - Task 7.4: バリアントが共有・反映される結合テスト
  */
 /// <reference types="vitest" />
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PartnerVariantProvider } from '@/contexts/PartnerVariantContext';
+import {
+  PartnerVariantProvider,
+  PARTNER_VARIANT_STORAGE_KEY,
+} from '@/contexts/PartnerVariantContext';
 import PartnerWidget from './PartnerWidget';
 
 const mockSendMessage = vi.fn();
@@ -143,5 +147,14 @@ describe('PartnerWidget with PartnerAvatar (Task 6.1)', () => {
     fireEvent.click(screen.getAllByRole('button')[0]);
     const img = screen.getByRole('img', { name: /AIパートナー/i });
     expect((img as HTMLImageElement).src).toContain('expression-cheer.png');
+  });
+
+  it('ウィジェットを開くと male バリアントでパートナー画像が表示される（Task 7.4）', () => {
+    localStorage.setItem(PARTNER_VARIANT_STORAGE_KEY, 'male');
+    renderPartnerWidget();
+    fireEvent.click(screen.getByRole('button', { name: /チャットを開く/ }));
+    const img = screen.getByRole('img', { name: /AIパートナー/i });
+    expect((img as HTMLImageElement).src).toContain('/images/partner/male/');
+    localStorage.removeItem(PARTNER_VARIANT_STORAGE_KEY);
   });
 });

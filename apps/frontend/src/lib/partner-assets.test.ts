@@ -1,5 +1,6 @@
 /**
- * パートナー画像パス組み立ての単体テスト（Task 1.1, Requirements 1.1–1.4, 6.3）
+ * パートナー画像パス組み立ての単体テスト（Task 1.1, 7.1, Requirements 1.1–1.4, 6.3）
+ * Task 7.1: パス組み立ての戻り値がバリアント・表情に応じて正しいこと、不正バリアント時に default にフォールバックすることを検証する。
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -9,7 +10,7 @@ import {
   type PartnerExpression,
 } from '@/lib/partner-assets';
 
-describe('partner-assets (Task 1.1)', () => {
+describe('partner-assets (Task 1.1, 7.1)', () => {
   describe('PARTNER_BASE_PATH', () => {
     it('is /images/partner', () => {
       expect(PARTNER_BASE_PATH).toBe('/images/partner');
