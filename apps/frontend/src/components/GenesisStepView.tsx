@@ -41,19 +41,6 @@ export function GenesisStepView() {
     }
   }, [session?.user?.name, formData.name, setFormData]);
 
-  // 不正な step は intro へリダイレクト
-  if (paramStep !== undefined && step !== paramStep) {
-    return <Navigate to={PATH_GENESIS_INTRO} replace />;
-  }
-
-  const handleInputChange = (field: string, value: unknown) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleGenerate = () => {
-    navigate(getGenesisStepPath('loading'));
-  };
-
   // loading ステップ表示中に API を実行（戻る/進むで loading に来た場合は既に profile があれば result へ）
   useEffect(() => {
     if (step !== 'loading') return;
@@ -82,6 +69,19 @@ export function GenesisStepView() {
       cancelled = true;
     };
   }, [step, formData, profile, navigate, setProfile]);
+
+  // 不正な step は intro へリダイレクト（すべての Hooks の後に配置）
+  if (paramStep !== undefined && step !== paramStep) {
+    return <Navigate to={PATH_GENESIS_INTRO} replace />;
+  }
+
+  const handleInputChange = (field: string, value: unknown) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleGenerate = () => {
+    navigate(getGenesisStepPath('loading'));
+  };
 
   const handleCompleteResult = () => {
     navigate(getGenesisStepPath('suggest'));
