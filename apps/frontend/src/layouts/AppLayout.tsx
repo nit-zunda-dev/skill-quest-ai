@@ -22,7 +22,11 @@ const navItems = [
   { to: PATH_APP_ITEMS, label: '獲得アイテム', icon: Package },
 ];
 
-export default function AppLayout() {
+type AppLayoutProps = {
+  children?: React.ReactNode;
+};
+
+export default function AppLayout({ children }: AppLayoutProps) {
   const { profile } = useProfile();
   const { signOut, session } = useAuth();
   const navigate = useNavigate();
@@ -176,7 +180,7 @@ export default function AppLayout() {
 
       {/* Main */}
       <main className="flex-1 min-h-0 flex flex-col p-4 md:p-8 z-10 overflow-auto">
-        <Outlet />
+        {children ?? <Outlet />}
       </main>
 
       <SuggestedQuestsModal
