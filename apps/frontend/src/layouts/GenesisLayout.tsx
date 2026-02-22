@@ -4,16 +4,15 @@
  * それ以外は GenesisFlowProvider でラップして Outlet を表示する。ルート別メタを適用する。
  */
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { PageMeta } from '@/components/PageMeta';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
 import { GenesisFlowProvider } from '@/contexts/GenesisFlowContext';
-import { PATH_APP } from '@/lib/paths';
-import { getRouteMeta, sanitizePathname } from '@/lib/route-meta';
+import { PATH_APP, PATH_GENESIS } from '@/lib/paths';
+import { getRouteMeta } from '@/lib/route-meta';
 
 export function GenesisLayout() {
-  const location = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const state = useGenesisOrProfile({ isAuthenticated, isLoading: authLoading });
 
@@ -30,7 +29,7 @@ export function GenesisLayout() {
   }
 
   return (
-    <PageMeta {...getRouteMeta(sanitizePathname(location.pathname))}>
+    <PageMeta {...getRouteMeta(PATH_GENESIS)}>
       <GenesisFlowProvider>
         <Outlet />
       </GenesisFlowProvider>
