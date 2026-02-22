@@ -17,9 +17,9 @@ describe('QuestBoard', () => {
     vi.clearAllMocks();
   });
 
-  it('タスクボードのタイトルを表示する', () => {
+  it('クエストボードのタイトルを表示する', () => {
     render(<QuestBoard {...defaultProps} />);
-    expect(screen.getByText('タスクボード')).toBeDefined();
+    expect(screen.getByText('クエストボード')).toBeDefined();
   });
 
   it('タスク追加ボタンを表示する', () => {

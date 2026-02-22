@@ -295,8 +295,15 @@ aiRouter.post(
     const msgResult = prepareUserPrompt(data.message);
     if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
 
-    const systemMessage =
-      'あなたはキャバクラ嬢です。ユーザーの指示に従い、質問に答えてユーザーと仲良くなってください。';
+    const systemMessage = [
+      'あなたはサイバーパンク都市のバーで働くスタッフ（ウェイトレスまたはウェイター）です。',
+      '冒険者（ユーザー）にとっての「相棒」であり、クエストの相談相手です。',
+      '【性格・トーン】',
+      '- 優しく親しみやすい。砕けた口調（です・ます調は使わない）。',
+      '- 失敗しても責めない。「また挑戦しよう」と前向きに励ます。',
+      '- クエストの相談、学習の悩み、雑談、何でも気軽に応じる。',
+      '- バーの常連を迎えるように、安心感と応援の気持ちを込めて話す。',
+    ].join('\n');
     const messages = [
       { role: 'system' as const, content: systemMessage },
       { role: 'user' as const, content: msgResult.sanitized }

@@ -266,14 +266,14 @@ function normalizeSuggestedQuests(raw: unknown[]): SuggestedQuestItem[] {
 
 function buildSuggestedQuestsPrompt(goal: string): string {
   return [
-    'あなたは目標を実行可能なタスクに分解するアシスタントです。',
-    '以下の目標に基づき、3〜7件のタスクをJSON配列のみで返してください。',
-    `目標: ${goal}`,
+    'あなたはTRPGのゲームマスターです。冒険者（ユーザー）の目標を達成するためのクエストを提案してください。',
+    '以下の目標に基づき、3〜7件のクエストをJSON配列のみで返してください。',
+    `冒険者の目標: ${goal}`,
     '【各要素の形式】',
-    'title: タスクのタイトル（1件につき1文で具体的に）',
+    'title: クエスト名（冒険風の名前で、具体的な行動がわかるように。例: 「英単語の迷宮に挑む」「コードの試練・第一章」）',
     'type: DAILY | HABIT | TODO のいずれか',
     'difficulty: EASY | MEDIUM | HARD のいずれか',
-    '【出力】JSON配列のみ。例: [{"title":"毎日30分勉強する","type":"DAILY","difficulty":"MEDIUM"}, ...]',
+    '【出力】JSON配列のみ。例: [{"title":"英単語の迷宮に挑む","type":"DAILY","difficulty":"MEDIUM"}, ...]',
   ].join('\n');
 }
 
@@ -337,11 +337,18 @@ export async function generateCharacter(
 
 function buildCharacterPrompt(data: GenesisFormData): string {
   return [
-    `以下の条件でゲームのキャラクターを1体生成し、JSONのみで返してください。`,
-    `名前: ${data.name}`,
-    `目標: ${data.goal}`,
-    `必須フィールド: name, className, title, prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, gold.`,
-    `nameは「${data.name}」にすること。`,
+    'あなたはノベルゲー／TRPGの世界を紡ぐゲームマスターです。',
+    '冒険者（プレイヤー）のプロフィールを生成し、JSONのみで返してください。',
+    `冒険者の名前: ${data.name}`,
+    `冒険者の目標: ${data.goal}`,
+    '【生成ルール】',
+    `- name: 「${data.name}」をそのまま使用。`,
+    '- className: 目標に応じたTRPG的なクラス名（例: 目標が語学なら「言霊使い」、プログラミングなら「魔導技師」、資格なら「賢者見習い」など）。',
+    '- title: 冒険者の二つ名・称号（例: 「暁の探求者」「未踏の挑戦者」）。',
+    '- prologue: この冒険者の物語の始まりを2〜3文で描写する。目標に向かって旅立つ導入シーンを、ノベルゲーの冒頭のように情景豊かに書く。',
+    '- themeColor: キャラクターの雰囲気に合う色（#で始まる6桁のカラーコード）。',
+    '- level: 1, currentXp: 0, nextLevelXp: 100, gold: 0（固定）。',
+    '必須フィールド: name, className, title, prologue, themeColor, level, currentXp, nextLevelXp, gold。',
   ].join('\n');
 }
 
@@ -371,17 +378,18 @@ function isNarrativeResult(obj: unknown): obj is NarrativeResult {
 }
 
 function buildNarrativePrompt(request: NarrativeRequest): string {
-  const comment = request.userComment ? `ユーザーのコメント: ${request.userComment}` : 'ユーザーのコメント: なし';
+  const comment = request.userComment ? `冒険者のコメント: ${request.userComment}` : '';
   return [
-    'あなたはTRPGのゲームマスターです。TRPGのタスク完了イベントを生成し、JSONのみで返してください。',
-    `完了したタスク: ${request.taskTitle} (タスク種別: ${request.taskType}, 難易度: ${request.difficulty})`,
+    'あなたはTRPGのゲームマスターです。冒険者がクエストをクリアした瞬間の物語セグメントを生成してください。',
+    'この物語はグリモワール（冒険日誌）に記録されるストーリーログの1ページとなります。',
+    `クリアしたクエスト: ${request.taskTitle} (種別: ${request.taskType}, 難易度: ${request.difficulty})`,
     comment,
     '【出力ルール】',
-    '1. narrative: タスク完了をTRPGのアクションとして誇張的に描写する（2文程度）。',
+    '1. narrative: クエストクリアの瞬間をノベルゲーの1シーンのように描写する（2〜3文）。冒険者の成長や達成感が伝わるように。',
     '2. rewardXp: 難易度に応じた経験値 (EASY: 10-20, MEDIUM: 25-40, HARD: 50-80)',
-    '3. rewardGold: 難易度に応じた報酬 (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
-    '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
-  ].join('\n');
+    '3. rewardGold: 難易度に応じたゴールド (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
+    '必須フィールド: narrative, rewardXp, rewardGold。JSONのみで返してください。',
+  ].join('\n').trim();
 }
 
 /**
@@ -413,30 +421,34 @@ export async function generateNarrative(
   }
   const rewards = difficultyBasedRewards(request.difficulty);
   return {
-    narrative: `${request.taskTitle}を達成した。心地よい疲労感と共に、力が湧いてくるのを感じる。`,
+    narrative: `冒険者は「${request.taskTitle}」のクエストを見事クリアした。新たな経験が血肉となり、次なる冒険への力が静かに湧き上がる。`,
     rewardXp: rewards.rewardXp,
     rewardGold: rewards.rewardGold,
   };
 }
 
-const DEFAULT_PARTNER_MESSAGE = '一緒に頑張ろう。';
+const DEFAULT_PARTNER_MESSAGE = 'お疲れ様、冒険者。次のクエストの話でもしようか。';
 
 function buildPartnerMessagePrompt(request: PartnerMessageRequest): string {
   const lines = [
-    'あなたはキャバクラ嬢です。ユーザーの指示に従い、質問に答えてユーザーと仲良くなってください。',
+    'あなたはサイバーパンク都市のバーで働くスタッフ（ウェイトレスまたはウェイター）です。',
+    '冒険者（ユーザー）にとっての「相棒」であり、クエストを一緒に見守り、励ます存在です。',
     '【状況】',
   ];
   if (request.timeOfDay) {
     lines.push(`時間帯: ${request.timeOfDay}`);
   }
   if (request.progressSummary) {
-    lines.push(`進捗状況: ${request.progressSummary}`);
+    lines.push(`冒険者の進捗: ${request.progressSummary}`);
   }
   if (request.currentTaskTitle) {
-    lines.push(`現在のタスク: ${request.currentTaskTitle}`);
+    lines.push(`現在のクエスト: ${request.currentTaskTitle}`);
   }
   lines.push(
-    '【性格】優しく親しみやすい。です・ます調ではなく、砕けた口調で。'
+    '【性格・トーン】',
+    '- 優しく親しみやすい。砕けた口調（です・ます調は使わない）。',
+    '- 失敗しても責めない。「また挑戦しよう」と前向きに励ます。',
+    '- バーの常連を迎えるように、安心感と応援の気持ちを込めて話す。',
   );
   return lines.join('\n');
 }
@@ -472,14 +484,15 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
   }).join('\n');
   
   return [
-    '完了したタスクすべてを参考に、その日の出来事を面白おかしく2.3文にしてください、JSONのみで返してください。',
-    '【完了したタスク一覧】',
+    'あなたはTRPGのゲームマスターです。冒険者のグリモワール（冒険日誌）に記すセッション記録を生成してください。',
+    '完了したクエストをもとに、その日の冒険をノベルゲーの1ページのように描写します。',
+    '【完了したクエスト一覧】',
     taskList,
     '【出力ルール】',
-    '1. narrative: 完了したタスクすべてを統合した物語として、冒険の記録を2-3文で描写してください。',
-    '2. rewardXp: 完了したタスクの合計経験値（各タスクの難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
-    '3. rewardGold: 完了したタスクの合計報酬（各タスクの難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
-    '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
+    '1. narrative: クエストすべてを統合した物語として、冒険の記録を2〜3文で描写する。読み返したくなるような、情景が浮かぶ文体で。',
+    '2. rewardXp: 完了したクエストの合計経験値（各難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
+    '3. rewardGold: 完了したクエストの合計ゴールド（各難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
+    '必須フィールド: narrative, rewardXp, rewardGold。JSONのみで返してください。',
   ].join('\n');
 }
 
@@ -504,7 +517,7 @@ export async function generateGrimoire(
 ): Promise<GrimoireGenerationResult> {
   if (completedTasks.length === 0) {
     return {
-      narrative: 'まだ完了したタスクがありません。冒険を続けましょう。',
+      narrative: 'まだクエストをクリアしていない。グリモワールに記す物語は、これから始まる。',
       rewardXp: 0,
       rewardGold: 0,
     };
@@ -559,7 +572,7 @@ export async function generateGrimoire(
   // フォールバック
   const taskTitles = completedTasks.map(t => t.title).join('、');
   return {
-    narrative: `今日は${completedTasks.length}つのタスクを達成した。${taskTitles}。これらの成果は、冒険者としての成長の証である。`,
+    narrative: `今日、冒険者は${completedTasks.length}つのクエストをクリアした。${taskTitles}――その一つひとつが、グリモワールに刻まれる物語の1ページとなる。`,
     rewardXp: totalRewards.xp,
     rewardGold: totalRewards.gold,
   };

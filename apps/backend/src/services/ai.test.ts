@@ -350,7 +350,7 @@ describe('AI service', () => {
       const ai = { run };
       const result = await generateGrimoire(ai, []);
 
-      expect(result.narrative).toBe('まだ完了したタスクがありません。冒険を続けましょう。');
+      expect(result.narrative).toBe('まだクエストをクリアしていない。グリモワールに記す物語は、これから始まる。');
       expect(result.rewardXp).toBe(0);
       expect(result.rewardGold).toBe(0);
       expect(run).not.toHaveBeenCalled();

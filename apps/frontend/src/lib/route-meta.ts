@@ -15,12 +15,12 @@ const APP_NAME = 'Skill Quest AI';
 /** 公開ルート用の一意なメタ */
 const PUBLIC_META: Record<string, RouteMetaEntry> = {
   [PATH_LANDING]: {
-    title: `冒険を始めよう | ${APP_NAME}`,
-    description: 'タスク管理とRPG要素を融合した、AIが一人ひとりに合わせた物語を紡ぐ冒険体験。',
+    title: `退屈なTODOを、自分だけの物語に | ${APP_NAME}`,
+    description: '目標を入力するだけでクエストが生成され、クリアするたびにAIが物語と報酬を届ける。AIパートナーと一緒に、自分だけの冒険を始めよう。',
   },
   [PATH_LOGIN]: {
     title: `ログイン・サインアップ | ${APP_NAME}`,
-    description: 'Skill Quest AI にログインまたは新規登録して冒険を始めましょう。',
+    description: 'Skill Quest AI にログインまたは新規登録して、あなただけの冒険を始めましょう。',
   },
 };
 

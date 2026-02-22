@@ -16,7 +16,7 @@ const CONFIRM_DELETE_TEXT = '削除する';
 
 const navItems = [
   { to: PATH_APP, label: 'ホーム', icon: Home },
-  { to: PATH_APP_QUESTS, label: 'タスクボード', icon: ListTodo },
+  { to: PATH_APP_QUESTS, label: 'クエストボード', icon: ListTodo },
   { to: PATH_APP_GRIMOIRE, label: 'グリモワール', icon: Scroll },
   { to: PATH_APP_PARTNER, label: 'AIパートナー', icon: MessageCircle },
   { to: PATH_APP_ITEMS, label: '獲得アイテム', icon: Package },

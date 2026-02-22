@@ -130,7 +130,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
     <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex flex-col shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">タスクボード</span>
+          <span className="mr-2">クエストボード</span>
         </h2>
         <button 
           onClick={() => setIsAdding(true)}
