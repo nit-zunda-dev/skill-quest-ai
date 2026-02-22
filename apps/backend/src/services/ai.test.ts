@@ -340,20 +340,40 @@ describe('AI service', () => {
 
   describe('generateGrimoire', () => {
     const validGrimoireJson = JSON.stringify({
+      title: '第一章: 知識の塔への挑戦',
       narrative: '今日は3つのタスクを達成した。冒険の記録として刻まれる。',
       rewardXp: 105,
       rewardGold: 61,
     });
+
+    const testContext = {
+      characterName: 'テスト冒険者',
+      className: '魔導技師',
+      title: '暁の探求者',
+      level: 3,
+      goal: 'プログラミング',
+      previousNarratives: ['前回の冒険の記録。'],
+    };
 
     it('returns fallback when completedTasks is empty', async () => {
       const run = vi.fn();
       const ai = { run };
       const result = await generateGrimoire(ai, []);
 
-      expect(result.narrative).toBe('まだクエストをクリアしていない。グリモワールに記す物語は、これから始まる。');
+      expect(result.title).toBe('物語の始まりを待つ');
+      expect(result.narrative).toContain('グリモワール');
       expect(result.rewardXp).toBe(0);
       expect(result.rewardGold).toBe(0);
       expect(run).not.toHaveBeenCalled();
+    });
+
+    it('returns fallback with character name when context is provided and tasks empty', async () => {
+      const run = vi.fn();
+      const ai = { run };
+      const result = await generateGrimoire(ai, [], undefined, testContext);
+
+      expect(result.narrative).toContain('テスト冒険者');
+      expect(result.rewardXp).toBe(0);
     });
 
     it('uses Llama 3.1 8B and returns parsed result when AI returns valid JSON', async () => {
@@ -382,9 +402,32 @@ describe('AI service', () => {
       const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
       expect(prompt.prompt).toContain('毎日勉強');
       expect(prompt.prompt).toContain('習慣');
+      expect(result.title).toBe('第一章: 知識の塔への挑戦');
       expect(result.narrative).toBe('今日は3つのタスクを達成した。冒険の記録として刻まれる。');
       expect(result.rewardXp).toBe(105);
       expect(result.rewardGold).toBe(61);
+    });
+
+    it('includes character profile and previous narratives in prompt when context is provided', async () => {
+      const run = vi.fn().mockResolvedValue({ response: validGrimoireJson });
+      const ai = { run };
+      const completedTasks = [
+        {
+          id: 't1',
+          title: 'クエスト',
+          type: TaskType.DAILY,
+          difficulty: Difficulty.EASY,
+          completedAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+
+      await generateGrimoire(ai, completedTasks, undefined, testContext);
+
+      const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
+      expect(prompt.prompt).toContain('テスト冒険者');
+      expect(prompt.prompt).toContain('魔導技師');
+      expect(prompt.prompt).toContain('暁の探求者');
+      expect(prompt.prompt).toContain('前回の冒険の記録。');
     });
 
     it('returns fallback with calculated rewards when AI returns invalid JSON', async () => {
@@ -409,6 +452,7 @@ describe('AI service', () => {
 
       const result = await generateGrimoire(ai, completedTasks);
 
+      expect(result.title).toBeTruthy();
       expect(result.narrative).toContain('タスク1');
       expect(result.narrative).toContain('タスク2');
       expect(result.rewardXp).toBe(75); // 15 (EASY) + 60 (HARD)
@@ -430,6 +474,7 @@ describe('AI service', () => {
 
       const result = await generateGrimoire(ai, completedTasks);
 
+      expect(result.title).toBeTruthy();
       expect(result.narrative).toBeTruthy();
       expect(result.rewardXp).toBe(30); // MEDIUM
       expect(result.rewardGold).toBe(18); // MEDIUM
@@ -488,6 +533,30 @@ describe('AI service', () => {
         expect.objectContaining({ prompt: expect.any(String) }),
         { gateway: { id: 'gateway-999' } }
       );
+    });
+
+    it('generates fallback title when AI returns JSON without title', async () => {
+      const noTitleJson = JSON.stringify({
+        narrative: '物語テキスト。',
+        rewardXp: 30,
+        rewardGold: 18,
+      });
+      const run = vi.fn().mockResolvedValue({ response: noTitleJson });
+      const ai = { run };
+      const completedTasks = [
+        {
+          id: 't1',
+          title: 'クエスト',
+          type: TaskType.DAILY,
+          difficulty: Difficulty.MEDIUM,
+          completedAt: Math.floor(Date.now() / 1000),
+        },
+      ];
+
+      const result = await generateGrimoire(ai, completedTasks, undefined, testContext);
+
+      expect(result.title).toBe('テスト冒険者の冒険記');
+      expect(result.narrative).toBe('物語テキスト。');
     });
   });
 

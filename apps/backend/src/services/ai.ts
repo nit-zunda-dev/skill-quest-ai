@@ -76,7 +76,17 @@ export interface CompletedTask {
   completedAt: number;
 }
 
+export interface GrimoireContext {
+  characterName: string;
+  className: string;
+  title: string;
+  level: number;
+  goal: string;
+  previousNarratives: string[];
+}
+
 export interface GrimoireGenerationResult {
+  title: string;
   narrative: string;
   rewardXp: number;
   rewardGold: number;
@@ -88,7 +98,7 @@ export interface AiService {
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
   generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
   generatePartnerMessage(request: PartnerMessageRequest): Promise<string>;
-  generateGrimoire(completedTasks: CompletedTask[]): Promise<GrimoireGenerationResult>;
+  generateGrimoire(completedTasks: CompletedTask[], context?: GrimoireContext): Promise<GrimoireGenerationResult>;
   generateSuggestedQuests(goal: string): Promise<SuggestedQuestItem[]>;
 }
 
@@ -108,6 +118,7 @@ function createStubAiService(env: Bindings): AiService {
     }),
     generatePartnerMessage: async () => 'Stub partner message.',
     generateGrimoire: async () => ({
+      title: 'Stub chapter',
       narrative: 'Stub grimoire.',
       rewardXp: 10,
       rewardGold: 5,
@@ -146,8 +157,8 @@ export function createAiService(env: Bindings): AiService {
     generatePartnerMessage(request: PartnerMessageRequest) {
       return generatePartnerMessage(ai, request, gatewayId);
     },
-    generateGrimoire(completedTasks: CompletedTask[]) {
-      return generateGrimoire(ai, completedTasks, gatewayId);
+    generateGrimoire(completedTasks: CompletedTask[], context?: GrimoireContext) {
+      return generateGrimoire(ai, completedTasks, gatewayId, context);
     },
     generateSuggestedQuests(goal: string) {
       return generateSuggestedQuests(ai, goal, gatewayId);
@@ -473,7 +484,7 @@ export async function generatePartnerMessage(
   return DEFAULT_PARTNER_MESSAGE;
 }
 
-function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
+function buildGrimoirePrompt(completedTasks: CompletedTask[], context?: GrimoireContext): string {
   if (completedTasks.length === 0) {
     return '完了したタスクがありません。';
   }
@@ -482,18 +493,53 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
     const completedDate = new Date(task.completedAt * 1000).toLocaleDateString('ja-JP');
     return `${index + 1}. ${task.title} (種別: ${task.type}, 難易度: ${task.difficulty}, 完了日: ${completedDate})`;
   }).join('\n');
-  
-  return [
-    'あなたはTRPGのゲームマスターです。冒険者のグリモワール（冒険日誌）に記すセッション記録を生成してください。',
-    '完了したクエストをもとに、その日の冒険をノベルゲーの1ページのように描写します。',
-    '【完了したクエスト一覧】',
+
+  const lines: string[] = [
+    'あなたはTRPGのゲームマスターであり、ノベルゲーのシナリオライターです。',
+    '冒険者のグリモワール（冒険日誌）に記すセッション記録を、物語として紡いでください。',
+  ];
+
+  if (context) {
+    lines.push(
+      '',
+      '【冒険者プロフィール】',
+      `名前: ${context.characterName}`,
+      `クラス: ${context.className}`,
+      `称号: ${context.title}`,
+      `レベル: ${context.level}`,
+      `目標: ${context.goal}`,
+    );
+
+    if (context.previousNarratives.length > 0) {
+      lines.push(
+        '',
+        '【前回までのあらすじ】',
+        '以下はこの冒険者のグリモワールに記された直近の記録です。今回の物語はこの続きとして書いてください。',
+      );
+      context.previousNarratives.forEach((narrative, i) => {
+        lines.push(`--- 記録${i + 1} ---`, narrative);
+      });
+    }
+  }
+
+  lines.push(
+    '',
+    '【今回クリアしたクエスト】',
     taskList,
+    '',
     '【出力ルール】',
-    '1. narrative: クエストすべてを統合した物語として、冒険の記録を2〜3文で描写する。読み返したくなるような、情景が浮かぶ文体で。',
-    '2. rewardXp: 完了したクエストの合計経験値（各難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
-    '3. rewardGold: 完了したクエストの合計ゴールド（各難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
-    '必須フィールド: narrative, rewardXp, rewardGold。JSONのみで返してください。',
-  ].join('\n');
+    '1. title: この章の冒険を象徴する章タイトル（例: 「第三章: コードの迷宮と言霊の試練」「暁の探求者、新たな扉を開く」）。',
+    '2. narrative: 冒険者の行動・情景・感情・成長を含むTRPGセッション記録として4〜6文で描写する。',
+    '   - 冒険者の名前やクラスを自然に物語に組み込む。',
+    '   - クエストの内容をTRPGのアクション（探索、戦闘、修練、発見など）として昇華する。',
+    '   - 前回のあらすじがある場合は、その続きの物語として書く。',
+    '   - 情景描写（場所、天候、雰囲気）を含め、読み返したくなる文体で。',
+    '3. rewardXp: 完了したクエストの合計経験値（各難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
+    '4. rewardGold: 完了したクエストの合計ゴールド（各難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
+    '必須フィールド: title, narrative, rewardXp, rewardGold。JSONのみで返してください。',
+  );
+
+  return lines.join('\n');
 }
 
 function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
@@ -508,24 +554,27 @@ function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
 
 /**
  * Llama 3.1 8B でグリモワールエントリを生成する。
- * 完了したタスクすべてを参考に、統合された物語と報酬を生成する。
+ * キャラクタープロフィール・過去のナラティブをコンテキストに含め、
+ * 連続性のある物語と報酬を生成する。
  */
 export async function generateGrimoire(
   ai: AiRunBinding,
   completedTasks: CompletedTask[],
-  gatewayId?: string
+  gatewayId?: string,
+  context?: GrimoireContext
 ): Promise<GrimoireGenerationResult> {
   if (completedTasks.length === 0) {
+    const name = context?.characterName ?? '冒険者';
     return {
-      narrative: 'まだクエストをクリアしていない。グリモワールに記す物語は、これから始まる。',
+      title: '物語の始まりを待つ',
+      narrative: `${name}のグリモワールはまだ白紙のままだ。しかし、その真新しいページは最初のクエストが刻まれる日を静かに待っている。`,
       rewardXp: 0,
       rewardGold: 0,
     };
   }
   
-  const prompt = buildGrimoirePrompt(completedTasks);
+  const prompt = buildGrimoirePrompt(completedTasks, context);
   
-  // フォールバック用の報酬計算
   const totalRewards = completedTasks.reduce(
     (acc, task) => {
       let xp = 0;
@@ -563,16 +612,21 @@ export async function generateGrimoire(
       }
     }
     if (isGrimoireResult(parsed)) {
-      return parsed;
+      const o = parsed as unknown as Record<string, unknown>;
+      const title = typeof o.title === 'string' && o.title.trim().length > 0
+        ? o.title.trim()
+        : `${context?.characterName ?? '冒険者'}の冒険記`;
+      return { ...parsed, title };
     }
   } catch {
     // fall through to fallback
   }
   
-  // フォールバック
+  const name = context?.characterName ?? '冒険者';
   const taskTitles = completedTasks.map(t => t.title).join('、');
   return {
-    narrative: `今日、冒険者は${completedTasks.length}つのクエストをクリアした。${taskTitles}――その一つひとつが、グリモワールに刻まれる物語の1ページとなる。`,
+    title: `${name}の冒険記`,
+    narrative: `${name}は${completedTasks.length}つのクエストに挑み、すべてをクリアした。${taskTitles}――その一つひとつが、グリモワールに刻まれる物語の1ページとなる。`,
     rewardXp: totalRewards.xp,
     rewardGold: totalRewards.gold,
   };
