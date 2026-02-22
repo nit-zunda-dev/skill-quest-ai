@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
 import { GenesisFlowProvider } from '@/contexts/GenesisFlowContext';
 import { PATH_APP } from '@/lib/paths';
-import { getRouteMeta } from '@/lib/route-meta';
+import { getRouteMeta, sanitizePathname } from '@/lib/route-meta';
 
 export function GenesisLayout() {
   const location = useLocation();
@@ -30,7 +30,7 @@ export function GenesisLayout() {
   }
 
   return (
-    <PageMeta {...getRouteMeta(location.pathname)}>
+    <PageMeta {...getRouteMeta(sanitizePathname(location.pathname))}>
       <GenesisFlowProvider>
         <Outlet />
       </GenesisFlowProvider>

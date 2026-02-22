@@ -11,6 +11,7 @@ import AppLayout from '@/layouts/AppLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useGenesisOrProfile } from '@/hooks/useGenesisOrProfile';
 import { normalizeProfileNumbers } from '@/lib/api-client';
+import { PATH_APP } from '@/lib/paths';
 import { getRouteMeta } from '@/lib/route-meta';
 import type { CharacterProfile } from '@skill-quest/shared';
 
@@ -32,7 +33,7 @@ export function DashboardLayout() {
   if (stateProfile != null) {
     const profile = normalizeProfileNumbers(stateProfile);
     return (
-      <PageMeta {...getRouteMeta(location.pathname)}>
+      <PageMeta {...getRouteMeta(PATH_APP)}>
         <ProfileProvider initialProfile={profile}>
           <AppLayout>
             <Outlet />
@@ -56,7 +57,7 @@ export function DashboardLayout() {
 
   const profile = normalizeProfileNumbers(state.profile);
   return (
-    <PageMeta {...getRouteMeta(location.pathname)}>
+    <PageMeta {...getRouteMeta(PATH_APP)}>
       <ProfileProvider initialProfile={profile}>
         <AppLayout>
           <Outlet />
