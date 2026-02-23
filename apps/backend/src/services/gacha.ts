@@ -70,3 +70,32 @@ export async function drawItem(db: D1Database): Promise<{ item: Item | null }> {
   const fallback = rows[Math.floor(Math.random() * rows.length)];
   return { item: rowToItem(fallback) };
 }
+
+/**
+ * クエスト完了時のアイテム付与（冪等）。当該 (userId, questId) で既に付与済みなら何もせず、
+ * 未付与なら抽選して1件を所持履歴に記録する。抽選が null のときは INSERT しない。
+ */
+export async function grantItemOnQuestComplete(
+  db: D1Database,
+  userId: string,
+  questId: string
+): Promise<{ granted: boolean; item: Item | null }> {
+  const checkStmt = db.prepare(
+    'SELECT id FROM user_acquired_items WHERE user_id = ? AND quest_id = ?'
+  );
+  const existing = await checkStmt.bind(userId, questId).first();
+  if (existing != null) {
+    return { granted: false, item: null };
+  }
+  const { item } = await drawItem(db);
+  if (item == null) {
+    return { granted: false, item: null };
+  }
+  const id = crypto.randomUUID();
+  const acquiredAt = Math.floor(Date.now() / 1000);
+  const insertStmt = db.prepare(
+    'INSERT INTO user_acquired_items (id, user_id, item_id, quest_id, acquired_at) VALUES (?, ?, ?, ?, ?)'
+  );
+  await insertStmt.bind(id, userId, item.id, questId, acquiredAt).run();
+  return { granted: true, item };
+}

@@ -1,10 +1,9 @@
 /**
- * ガチャ Task 3.1: drawItem の単体テスト
- * ドロップ有効なアイテムのみ対象、確率順序維持、マスタ空時は null を返し例外を投げない。
+ * ガチャ Task 3.1 / 3.2: drawItem と grantItemOnQuestComplete の単体テスト
  */
 import { describe, it, expect } from 'vitest';
 import type { D1Database } from '@cloudflare/workers-types';
-import { drawItem } from './gacha';
+import { drawItem, grantItemOnQuestComplete } from './gacha';
 import type { Item } from '@skill-quest/shared';
 
 type ItemsRow = {
@@ -86,4 +85,87 @@ describe('gacha service (Task 3.1)', () => {
       expect(weights[3]).toBeGreaterThan(weights[4]);
     });
   });
+
+  describe('grantItemOnQuestComplete (Task 3.2)', () => {
+    it('当該クエストで既に付与済みなら何もせず granted false, item null を返す', async () => {
+      const db = createMockD1ForGrant({ alreadyGranted: true, droppableItems: [itemRow('x')] });
+      const result = await grantItemOnQuestComplete(db, 'user-1', 'quest-1');
+      expect(result.granted).toBe(false);
+      expect(result.item).toBeNull();
+    });
+
+    it('未付与なら抽選して1件記録し granted true と item を返す', async () => {
+      const db = createMockD1ForGrant({ alreadyGranted: false, droppableItems: [itemRow('drink-01')] });
+      const result = await grantItemOnQuestComplete(db, 'user-1', 'quest-1');
+      expect(result.granted).toBe(true);
+      expect(result.item).not.toBeNull();
+      expect((result.item as Item).id).toBe('drink-01');
+    });
+
+    it('抽選結果が null（マスタ空）なら INSERT せず granted false, item null を返す', async () => {
+      const db = createMockD1ForGrant({ alreadyGranted: false, droppableItems: [] });
+      const result = await grantItemOnQuestComplete(db, 'user-1', 'quest-1');
+      expect(result.granted).toBe(false);
+      expect(result.item).toBeNull();
+    });
+
+    it('付与時に user_id, item_id, quest_id, acquired_at を所持履歴に記録する', async () => {
+      const db = createMockD1ForGrant({ alreadyGranted: false, droppableItems: [itemRow('item-1')] });
+      await grantItemOnQuestComplete(db, 'u-1', 'q-1');
+      const insertCalls = (db as { _insertCalls?: unknown[] })._insertCalls ?? [];
+      expect(insertCalls.length).toBe(1);
+      expect(insertCalls[0]).toMatchObject({ user_id: 'u-1', item_id: 'item-1', quest_id: 'q-1' });
+      expect((insertCalls[0] as { acquired_at: number }).acquired_at).toBeDefined();
+    });
+  });
 });
+
+function itemRow(id: string): ItemsRow {
+  return { id, category: 'drink', rarity: 'common', name: 'Test', description: null, enabled_for_drop: 1 };
+}
+
+function createMockD1ForGrant(options: {
+  alreadyGranted: boolean;
+  droppableItems: ItemsRow[];
+}): D1Database {
+  const { alreadyGranted, droppableItems } = options;
+  const insertCalls: { id: string; user_id: string; item_id: string; quest_id: string; acquired_at: number }[] = [];
+  const prepare = (sql: string) => {
+    const bind = (...args: unknown[]) => ({
+      run: async () => {
+        if (sql.includes('INSERT INTO') && sql.includes('user_acquired_items')) {
+          insertCalls.push({
+            id: args[0] as string,
+            user_id: args[1] as string,
+            item_id: args[2] as string,
+            quest_id: args[3] as string,
+            acquired_at: args[4] as number,
+          });
+        }
+        return { success: true, meta: {} };
+      },
+      first: async () => {
+        if (sql.includes('user_acquired_items') && sql.includes('user_id') && sql.includes('quest_id')) {
+          return alreadyGranted ? { id: 'existing' } : null;
+        }
+        return null;
+      },
+      all: async () => {
+        if (sql.includes('items') && sql.includes('enabled_for_drop')) {
+          return { results: droppableItems, success: true, meta: {} };
+        }
+        return { results: [], success: true, meta: {} };
+      },
+    });
+    return {
+      bind: (...args: unknown[]) => bind(...args),
+      run: async () => (sql.includes('INSERT') ? (insertCalls.push({ id: '', user_id: '', item_id: '', quest_id: '', acquired_at: 0 }), { success: true }) : { success: true }),
+      first: async () => (sql.includes('user_acquired_items') && alreadyGranted ? { id: 'existing' } : null),
+      all: async () => (sql.includes('items') && sql.includes('enabled_for_drop') ? { results: droppableItems } : { results: [] }),
+    };
+  };
+  const db = { prepare } as unknown as D1Database & { _insertCalls: typeof insertCalls };
+  (db as { _insertCalls?: typeof insertCalls })._insertCalls = insertCalls;
+  Object.defineProperty(db, '_insertCalls', { value: insertCalls, writable: false });
+  return db;
+}
