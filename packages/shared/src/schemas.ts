@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export { z };
-import { Difficulty, TaskType } from './types';
+import { Difficulty, TaskType, Category, Rarity } from './types';
 
 // クエスト作成リクエストスキーマ
 export const createQuestSchema = z.object({
@@ -84,6 +84,25 @@ export const createQuestBatchSchema = z.object({
   quests: z.array(createQuestSchema).min(1, '1件以上必要です').max(20, '20件以内で入力してください'),
 });
 
+// --- ガチャ・所持一覧 API (Requirements: 5.3) ---
+// 確率値の目安（相対順序 common > rare > super-rare > ultra-rare > legend を保つ）:
+//   common 50%, rare 30%, super-rare 13%, ultra-rare 5%, legend 2%
+// マスタ許容値: category は Category 列挙の閉集合、rarity は Rarity 列挙の閉集合。
+
+/** 所持一覧の1件（AcquiredItemView）の Zod スキーマ。 */
+export const acquiredItemViewSchema = z.object({
+  itemId: z.string().min(1),
+  acquiredAt: z.string().min(1),
+  name: z.string().min(1),
+  category: z.nativeEnum(Category),
+  rarity: z.nativeEnum(Rarity),
+});
+
+/** GET /api/items レスポンス用スキーマ。 */
+export const acquiredItemsResponseSchema = z.object({
+  items: z.array(acquiredItemViewSchema),
+});
+
 // 認証関連スキーマ
 export const signUpRequestSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
@@ -110,3 +129,4 @@ export type SuggestQuestsRequest = z.infer<typeof suggestQuestsRequestSchema>;
 export type SuggestedQuestItem = z.infer<typeof suggestedQuestItemSchema>;
 export type UpdateGoalRequest = z.infer<typeof updateGoalRequestSchema>;
 export type CreateQuestBatchRequest = z.infer<typeof createQuestBatchSchema>;
+export type AcquiredItemsResponse = z.infer<typeof acquiredItemsResponseSchema>;

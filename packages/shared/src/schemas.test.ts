@@ -13,9 +13,16 @@ import {
   suggestQuestsRequestSchema,
   suggestedQuestItemSchema,
   createQuestBatchSchema,
+  acquiredItemViewSchema,
+  acquiredItemsResponseSchema,
 } from './schemas';
-import type { SuggestQuestsRequest, SuggestedQuestItem, CreateQuestBatchRequest } from './schemas';
-import { TaskType, Difficulty } from './types';
+import type {
+  SuggestQuestsRequest,
+  SuggestedQuestItem,
+  CreateQuestBatchRequest,
+  AcquiredItemsResponse,
+} from './schemas';
+import { TaskType, Difficulty, Category, Rarity } from './types';
 
 describe('createQuestSchema', () => {
   describe('parse', () => {
@@ -739,6 +746,118 @@ describe('createQuestBatchSchema', () => {
         const data: CreateQuestBatchRequest = result.data;
         expect(data.quests).toHaveLength(1);
         expect(data.quests[0].title).toBe('バッチクエスト');
+      }
+    });
+  });
+});
+
+describe('acquiredItemViewSchema', () => {
+  describe('parse', () => {
+    it('正常系: itemId, acquiredAt, name, category, rarity でパースできる', () => {
+      const validData = {
+        itemId: 'item-1',
+        acquiredAt: '2025-02-23T12:00:00Z',
+        name: 'ナノバナナ',
+        category: Category.DRINK,
+        rarity: Rarity.COMMON,
+      };
+      const result = acquiredItemViewSchema.parse(validData);
+      expect(result).toEqual(validData);
+    });
+
+    it('異常系: category が不正な場合エラーを投げる', () => {
+      const invalidData = {
+        itemId: 'item-1',
+        acquiredAt: '2025-02-23T12:00:00Z',
+        name: 'ナノバナナ',
+        category: 'invalid-category',
+        rarity: Rarity.COMMON,
+      };
+      expect(() => acquiredItemViewSchema.parse(invalidData)).toThrow();
+    });
+
+    it('異常系: 必須フィールドが欠けている場合エラーを投げる', () => {
+      expect(() =>
+        acquiredItemViewSchema.parse({
+          itemId: 'item-1',
+          name: 'ナノバナナ',
+          category: Category.DRINK,
+          rarity: Rarity.COMMON,
+        })
+      ).toThrow();
+    });
+  });
+
+  describe('safeParse', () => {
+    it('正常系: 有効なデータで成功する', () => {
+      const result = acquiredItemViewSchema.safeParse({
+        itemId: 'item-1',
+        acquiredAt: '2025-02-23T12:00:00Z',
+        name: 'ナノバナナ',
+        category: Category.DRINK,
+        rarity: Rarity.COMMON,
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+});
+
+describe('acquiredItemsResponseSchema', () => {
+  describe('parse', () => {
+    it('正常系: items 配列でパースできる', () => {
+      const validData = {
+        items: [
+          {
+            itemId: 'item-1',
+            acquiredAt: '2025-02-23T12:00:00Z',
+            name: 'ナノバナナ',
+            category: Category.DRINK,
+            rarity: Rarity.COMMON,
+          },
+        ],
+      };
+      const result = acquiredItemsResponseSchema.parse(validData);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].itemId).toBe('item-1');
+      expect(result.items[0].name).toBe('ナノバナナ');
+    });
+
+    it('正常系: items が空配列でもパースできる', () => {
+      const result = acquiredItemsResponseSchema.parse({ items: [] });
+      expect(result.items).toEqual([]);
+    });
+
+    it('異常系: items が欠けている場合エラーを投げる', () => {
+      expect(() => acquiredItemsResponseSchema.parse({})).toThrow();
+    });
+
+    it('異常系: items の要素が不正な場合エラーを投げる', () => {
+      expect(() =>
+        acquiredItemsResponseSchema.parse({
+          items: [{ itemId: 'item-1', name: '名前', category: 'invalid', rarity: Rarity.COMMON }],
+        })
+      ).toThrow();
+    });
+  });
+
+  describe('safeParse', () => {
+    it('正常系: 有効なデータで成功し AcquiredItemsResponse 型として扱える', () => {
+      const result = acquiredItemsResponseSchema.safeParse({
+        items: [
+          {
+            itemId: 'item-1',
+            acquiredAt: '2025-02-23T12:00:00Z',
+            name: 'ナノバナナ',
+            category: Category.DRINK,
+            rarity: Rarity.COMMON,
+          },
+        ],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        const data: AcquiredItemsResponse = result.data;
+        expect(data.items).toHaveLength(1);
+        expect(data.items[0].itemId).toBe('item-1');
       }
     });
   });
