@@ -53,7 +53,7 @@ const PartnerWidget: React.FC = () => {
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-3 mb-3">
             {messages.length === 0 && !isLoading && (
-              <p className="text-sm text-slate-500">メッセージを送信して会話を始めましょう。</p>
+              <p className="text-sm text-slate-500">相棒があなたの話を待っています。何でも聞いてみましょう。</p>
             )}
             {messages
               .filter((msg) => msg.content.trim() !== '')

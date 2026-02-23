@@ -2,73 +2,65 @@
 
 ## Organization Philosophy
 
-モノレポでアプリとパッケージを分離。`apps/` に実行対象、`packages/` に共有コード。機能単位のルート・サービス配置。
+Monorepo の app/package 分離。機能は「バックエンド API」「フロントエンド SPA」「共有型・スキーマ」に分け、`apps/` と `packages/` で明確に役割を分ける。
 
 ## Directory Patterns
 
-### Applications
-
-**Location**: `apps/`  
-**Purpose**: 実行可能なアプリケーション（frontend, backend）  
-**例**: `apps/backend`（Hono + Workers）、`apps/frontend`（React + Vite）
-
-### Shared Package
-
-**Location**: `packages/shared/`  
-**Purpose**: 型定義・Zod スキーマ・共通定数をフロント・バックで共有  
-**例**: `CharacterProfile`, `Task`, `GrimoireEntry`, `GenesisFormData` など
-
-### Backend Layout
-
+### Backend (`apps/backend/`)
 **Location**: `apps/backend/src/`  
-**Purpose**: ルーティング、サービス、ミドルウェア、DB スキーマの分離  
-**パターン**: `routes/`（ルーター）、`services/`（ビジネスロジック）、`middleware/`（認証・レート制限・ロギング）、`db/`（スキーマ・マイグレーション）
+**Purpose**: Hono ルート、ミドルウェア、認証、サービス層、DB スキーマ。  
+**Example**: `routes/quests.ts`, `routes/ai.ts`, `services/ai.ts`, `db/schema.ts`, `middleware/auth.ts`
 
-### Frontend Layout
-
+### Frontend (`apps/frontend/`)
 **Location**: `apps/frontend/src/`  
-**Purpose**: コンポーネント、フック、API クライアントの分離  
-**パターン**: `components/`（UI）、`hooks/`（TanStack Query 等）、`lib/`（api-client, auth-client, query 設定）
+**Purpose**: ページ、レイアウト、UI コンポーネント、フック、コンテキスト、ルーティング・API クライアント。  
+**Example**: `pages/HomePage.tsx`, `components/QuestBoard.tsx`, `hooks/useAuth.tsx`, `contexts/ProfileContext.tsx`, `lib/api-client.ts`
 
-### Documentation
+### Shared (`packages/shared/`)
+**Location**: `packages/shared/src/`  
+**Purpose**: 型定義と Zod スキーマ。API のリクエスト/レスポンスやドメイン型を共有。  
+**Example**: `types.ts`, `schemas.ts`。export は `index.ts` から一括。
 
-**Location**: `docs/`  
-**Purpose**: アーキテクチャ、セットアップ、API（Postman）  
-**例**: `docs/architecture/`, `docs/setup/`
+### Config (`packages/config/`)
+**Location**: `packages/config/`  
+**Purpose**: 共有 ESLint 等の設定。アプリからは `@skill-quest/eslint-config` 等で参照。
 
 ## Naming Conventions
 
-- **ファイル**: PascalCase（コンポーネント）、kebab-case（ルート・ユーティリティ）、camelCase は避ける
-- **コンポーネント**: PascalCase、1ファイル1コンポーネント
-- **フック**: `use` プレフィックス（`useAuth`, `useQuests`, `useGrimoire`）
-- **テスト**: 対象ファイルと同階層に `*.test.ts` / `*.test.tsx`
+- **Components / Pages**: PascalCase（`QuestBoard.tsx`, `HomePage.tsx`）
+- **Hooks, contexts, lib**: camelCase ファイル（`useAuth.tsx`, `api-client.ts`, `route-meta.ts`）
+- **Routes (backend)**: 機能ごとファイル（`quests.ts`, `grimoire.ts`）。ルーターは `*Router` で export
+- **Tests**: 対象と同じベース名 + `.test.ts` / `.test.tsx`
 
 ## Import Organization
 
-```typescript
-// フロントエンド: @/ で src を参照
-import { useAuth } from '@/hooks/useAuth';
-import { generateCharacter } from '@/lib/api-client';
-import AppLayout from '@/layouts/AppLayout';
-import HomePage from '@/pages/HomePage';
-import { CharacterProfile } from '@skill-quest/shared';
+**Frontend**（`@/` = `src/`）:
 
-// バックエンド: 相対インポート
-import { authMiddleware } from './middleware/auth';
+```ts
+import { Task, TaskType } from '@skill-quest/shared';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { PATH_APP } from '@/lib/paths';
+```
+
+**Backend**（相対 + ワークスペース）:
+
+```ts
+import type { Bindings } from '../types';
+import { schema } from '../db/schema';
+import { Difficulty, TaskType } from '@skill-quest/shared';
 import { questsRouter } from './routes/quests';
-import type { Bindings } from './types';
 ```
 
 **Path Aliases**:
-- `@/`: フロントエンドの `src/` にマッピング（tsconfig `paths`）
-- `@skill-quest/shared`: 共有パッケージ（workspace）
+- Frontend: `@/*` → `src/*`
+- 共有型・スキーマ: 必ず `@skill-quest/shared` から import（相対で `../../packages/shared` は使わない）
 
 ## Code Organization Principles
 
-- ルートはドメイン単位で分割（quests, ai, profile, grimoire）
-- 認証が必要なルートには `authMiddleware` を `app.use` で適用
-- サービス層で D1・AI にアクセスし、ルートは薄く保つ
-- フロントエンドの API 呼び出しは `lib/api-client` に集約
+- バックエンド: ルートは「薄く」し、ビジネスロジックは `services/` に集約。D1 は `c.env.DB` で渡し、サービスで利用。
+- フロントエンド: ページはレイアウトとデータ取得の組み合わせ。再利用 UI は `components/`、画面固有は `pages/`。API 呼び出しは `lib/api-client.ts` や TanStack Query のフックに集約。
+- 新規機能は既存の「routes + services」「pages + components + hooks」パターンに従う。同じパターンなら steering の更新は不要。
 
 ---
-_updated_at: 2026-02-13_
+_Document patterns, not file trees. New files following patterns shouldn't require updates_

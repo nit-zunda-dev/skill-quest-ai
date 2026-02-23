@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import type { Bindings, AuthUser } from '../types';
 import { schema } from '../db/schema';
 import { getGrimoireEntries, createGrimoireEntry, getDailyUsage, recordGrimoireGeneration, getTodayUtc, getCharacterProfile, updateCharacterProfile } from '../services/ai-usage';
-import { createAiService } from '../services/ai';
+import { createAiService, type GrimoireContext } from '../services/ai';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 
 type GrimoireVariables = { user: AuthUser };
@@ -81,9 +81,29 @@ grimoireRouter.post('/generate', async (c) => {
   
   const profileRaw = await getCharacterProfile(c.env.DB, user.id);
 
+  // 過去のグリモワールエントリを取得（直近3件の narrative を物語の連続性に使用）
+  const previousEntries = await getGrimoireEntries(c.env.DB, user.id);
+  const previousNarratives = previousEntries
+    .slice(0, 3)
+    .map((e) => e.narrative);
+
+  // キャラクタープロフィールからコンテキストを構築
+  let grimoireContext: GrimoireContext | undefined;
+  if (profileRaw && typeof profileRaw === 'object') {
+    const p = profileRaw as Record<string, unknown>;
+    grimoireContext = {
+      characterName: String(p.name ?? '冒険者'),
+      className: String(p.className ?? '冒険者'),
+      title: String(p.title ?? '見習い'),
+      level: Number(p.level) || 1,
+      goal: String(p.goal ?? ''),
+      previousNarratives,
+    };
+  }
+
   // AIサービスでグリモワールを生成
   const service = createAiService(c.env);
-  const result = await service.generateGrimoire(completedTasks);
+  const result = await service.generateGrimoire(completedTasks, grimoireContext);
   
   // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
   let updatedProfile = profileRaw as Record<string, unknown> | null;
@@ -118,10 +138,10 @@ grimoireRouter.post('/generate', async (c) => {
     };
   }
   
-  // グリモワールエントリを作成
-  const taskTitles = completedTasks.map(t => t.title).join('、');
+  // グリモワールエントリを作成（AI生成の章タイトルを使用）
+  const chapterTitle = result.title;
   const grimoireResult = await createGrimoireEntry(c.env.DB, user.id, {
-    taskTitle: `今日の冒険: ${taskTitles}`,
+    taskTitle: chapterTitle,
     narrative: result.narrative,
     rewardXp: result.rewardXp,
     rewardGold: result.rewardGold,
@@ -133,7 +153,7 @@ grimoireRouter.post('/generate', async (c) => {
   const grimoireEntry = {
     id: grimoireResult.id,
     date: new Date().toLocaleDateString('ja-JP'),
-    taskTitle: `今日の冒険: ${taskTitles}`,
+    taskTitle: chapterTitle,
     narrative: result.narrative,
     rewardXp: result.rewardXp,
     rewardGold: result.rewardGold,

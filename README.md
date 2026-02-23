@@ -82,6 +82,8 @@ CLOUDFLARE_ACCOUNT_ID=your-account-id
 CLOUDFLARE_API_TOKEN=your-api-token
 ```
 
+- **POST /api/ai/suggest-quests が 503 になる場合**: Workers AI が利用できない・応答が空のときです。ローカルで AI を呼ばずに試すには `.dev.vars` に `INTEGRATION_TEST_AI_STUB=1` を追加してください（詳細は `docs/setup/05_ai_gateway_setup.md`）。
+
 詳細なセットアップ手順は [`docs/setup/`](./docs/setup/) を参照してください。
 
 ### データベースのセットアップ

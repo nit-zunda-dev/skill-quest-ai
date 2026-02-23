@@ -63,17 +63,17 @@ test.describe('ルーティング E2E (Task 14.3)', () => {
     await page.getByRole('button', { name: 'ハイファンタジー' }).click();
     await page.getByRole('button', { name: '決定して次へ' }).click();
 
-    await expect(page.getByText('AIが世界を構築しています...')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('あなたの物語の世界を紡いでいます...')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole('button', { name: '世界へ旅立つ' })).toBeVisible({ timeout: 90_000 });
 
     await page.getByRole('button', { name: '世界へ旅立つ' }).click();
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 5_000 });
     await expect(page).toHaveURL(new RegExp(`${baseUrl}/app`));
 
     await page.reload();
     await expect(page).toHaveURL(new RegExp(`${baseUrl}/app`));
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 5_000 });
   });
 });

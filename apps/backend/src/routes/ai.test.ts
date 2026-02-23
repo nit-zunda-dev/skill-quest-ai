@@ -341,7 +341,7 @@ describe('ai router', () => {
       expect(body.suggestions[0].type).toBe(TaskType.DAILY);
     });
 
-    it('returns 500 with message when AI returns no valid suggestions', async () => {
+    it('returns 503 with message when AI returns no valid suggestions', async () => {
       const envWithAi = {
         ...mockEnv,
         AI: { run: async () => ({ response: 'not json' }) },
@@ -352,13 +352,13 @@ describe('ai router', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal: '目標' }),
       }, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(503);
       const body = (await res.json()) as Record<string, unknown>;
       expect(body.error).toBeTruthy();
       expect(body.message).toBeTruthy();
     });
 
-    it('returns 500 with message when AI throws (service returns empty)', async () => {
+    it('returns 502 with message when AI throws', async () => {
       const envWithAi = {
         ...mockEnv,
         AI: { run: async () => { throw new Error('AI timeout'); } },
@@ -369,7 +369,7 @@ describe('ai router', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal: '目標' }),
       }, env);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(502);
       const body = (await res.json()) as Record<string, unknown>;
       expect(body.error).toBeTruthy();
       expect(body.message).toBeTruthy();

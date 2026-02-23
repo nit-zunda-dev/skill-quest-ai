@@ -27,6 +27,7 @@ import {
   CHAT_DAILY_LIMIT,
   createGrimoireEntry,
 } from '../services/ai-usage';
+import { grantItemOnQuestComplete } from '../services/gacha';
 
 type AiVariables = { user: AuthUser };
 
@@ -162,6 +163,7 @@ aiRouter.post(
 
     // クエスト完了マーク
     await completeQuest(c.env.DB, user.id, data.taskId);
+    await grantItemOnQuestComplete(c.env.DB, user.id, data.taskId);
 
     await recordNarrative(c.env.DB, user.id, today);
 
@@ -218,14 +220,15 @@ aiRouter.post(
       const suggestions = await service.generateSuggestedQuests(goal);
       if (suggestions.length === 0) {
         return c.json(
-          { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
-          500
+          { error: 'AI generation failed', message: 'AIが有効な提案を生成できませんでした。しばらく経ってから再試行してください。' },
+          503
         );
       }
       return c.json({ suggestions }, 200);
-    } catch {
+    } catch (err) {
+      console.error('[suggest-quests] AI service error:', err);
       return c.json(
-        { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
+        { error: 'AI service unavailable', message: 'AIサービスに接続できませんでした。しばらく経ってから再試行してください。' },
         502
       );
     }
@@ -295,8 +298,15 @@ aiRouter.post(
     const msgResult = prepareUserPrompt(data.message);
     if (!msgResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: msgResult.reason }, 400);
 
-    const systemMessage =
-      'あなたはキャバクラ嬢です。ユーザーの指示に従い、質問に答えてユーザーと仲良くなってください。';
+    const systemMessage = [
+      'あなたはサイバーパンク都市のバーで働くスタッフ（ウェイトレスまたはウェイター）です。',
+      '冒険者（ユーザー）にとっての「相棒」であり、クエストの相談相手です。',
+      '【性格・トーン】',
+      '- 優しく親しみやすい。砕けた口調（です・ます調は使わない）。',
+      '- 失敗しても責めない。「また挑戦しよう」と前向きに励ます。',
+      '- クエストの相談、学習の悩み、雑談、何でも気軽に応じる。',
+      '- バーの常連を迎えるように、安心感と応援の気持ちを込めて話す。',
+    ].join('\n');
     const messages = [
       { role: 'system' as const, content: systemMessage },
       { role: 'user' as const, content: msgResult.sanitized }
