@@ -182,6 +182,23 @@ describe('POST /api/quests/batch (Task 4.1)', () => {
   });
 });
 
+/**
+ * Task 7.2: ガチャ・所持一覧の統合検証 (Requirements 3.1, 3.3, 4.1, 4.3)
+ * - PATCH 完了後に所持1件増える、ナラティブ完了後も1件増える → 下記 Task 5.1 / 5.2 で検証
+ * - 同じクエストで再度完了しても増えない → 下記 Task 5.1 で検証
+ * - 未認証で GET /api/items が 401 → 下記 it で検証
+ */
+describe('Task 7.2: ガチャ・所持一覧の統合検証', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  });
+
+  it('未認証で GET /api/items は 401 を返す', async () => {
+    const res = await SELF.fetch(`${BASE}/api/items`);
+    expect(res.status).toBe(401);
+  });
+});
+
 describe('PATCH /api/quests/:id/complete と PATCH /api/quests/:id/status 後のガチャ付与 (Task 5.1)', () => {
   let cookie: string;
   let headers: { 'Content-Type': string; Cookie: string };
