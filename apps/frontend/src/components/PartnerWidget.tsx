@@ -10,10 +10,7 @@ import { useChat } from '@/hooks/useChat';
 import { useAiUsage } from '@/hooks/useAiUsage';
 import { usePartnerVariant } from '@/contexts/PartnerVariantContext';
 import { PartnerAvatar } from '@/components/PartnerAvatar';
-import {
-  getExpressionFromContext,
-  type PartnerDisplayContext,
-} from '@/lib/partner-expression-context';
+import { getExpressionForPartner } from '@/lib/partner-expression-context';
 
 const PartnerWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,11 +21,10 @@ const PartnerWidget: React.FC = () => {
   const chatRemaining = usage?.chatRemaining ?? null;
   const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
 
-  const displayContext: PartnerDisplayContext = useMemo(
-    () => (isLoading ? 'loading' : 'idle'),
-    [isLoading]
+  const expression = useMemo(
+    () => getExpressionForPartner({ isLoading, messages }),
+    [isLoading, messages]
   );
-  const expression = getExpressionFromContext(displayContext);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,8 +37,8 @@ const PartnerWidget: React.FC = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {isOpen && (
-        <div className="relative mb-4 w-80 max-h-[70vh] flex flex-col bg-slate-800 border border-indigo-500/30 text-slate-200 p-4 rounded-2xl rounded-tr-none shadow-2xl animate-fade-in-up">
-          <div className="shrink-0 flex items-center gap-3 pb-3 border-b border-slate-700 mb-3">
+        <div className="relative mb-4 w-80 max-h-[70vh] flex flex-col bg-slate-800/90 backdrop-blur-md border border-cyan-500/30 text-slate-200 p-4 rounded-2xl rounded-tr-none shadow-2xl shadow-cyan-500/10 animate-fade-in-up">
+          <div className="shrink-0 flex items-center gap-3 pb-3 border-b border-cyan-500/20 mb-3">
             <PartnerAvatar
               variant={variant}
               expression={expression}
@@ -67,8 +63,8 @@ const PartnerWidget: React.FC = () => {
                   <span
                     className={
                       msg.role === 'user'
-                        ? 'inline-block bg-indigo-600/80 text-white px-3 py-1.5 rounded-lg rounded-tr-none'
-                        : 'inline-block bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg rounded-tl-none'
+                        ? 'inline-block bg-cyan-500/80 text-white px-3 py-1.5 rounded-lg rounded-tr-none border border-cyan-400/30'
+                        : 'inline-block bg-slate-700/90 text-slate-200 px-3 py-1.5 rounded-lg rounded-tl-none border border-cyan-500/20'
                     }
                   >
                     {msg.content}
@@ -77,9 +73,9 @@ const PartnerWidget: React.FC = () => {
               ))}
             {isLoading && (
               <div className="flex space-x-1 justify-start py-2">
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-100" />
-                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce delay-200" />
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-100" />
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-200" />
               </div>
             )}
           </div>
@@ -101,27 +97,27 @@ const PartnerWidget: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="メッセージを入力"
-              className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
               disabled={isLoading || isChatLimitReached}
               aria-label="メッセージ入力"
             />
             <button
               type="submit"
               disabled={isLoading || !inputValue.trim() || isChatLimitReached}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:pointer-events-none rounded-lg text-sm font-medium text-white transition-colors"
+              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 disabled:pointer-events-none rounded-lg text-sm font-medium text-white transition-all active:scale-[0.98] shadow-[0_0_10px_rgba(6,182,212,0.4)]"
               aria-label="送信"
             >
               送信
             </button>
           </form>
-          <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-slate-800 transform rotate-45 border-r border-b border-indigo-500/30 pointer-events-none" />
+          <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-slate-800 transform rotate-45 border-r border-b border-cyan-500/30 pointer-events-none" />
         </div>
       )}
 
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="w-14 h-14 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 shadow-[0_0_20px_rgba(79,70,229,0.5)] flex items-center justify-center text-white hover:scale-105 transition-transform"
+        className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform"
         aria-label={isOpen ? 'チャットを閉じる' : 'チャットを開く'}
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
