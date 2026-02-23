@@ -249,6 +249,65 @@ function extractJsonArray(text: string): unknown[] | null {
   }
 }
 
+/**
+ * 末尾が切れたJSON配列から、完全なオブジェクトだけを抽出する。
+ * AIがトークン制限で途中切れになった応答でも、有効な要素を利用できるようにする。
+ */
+function extractCompleteObjectsFromTruncatedArray(text: string): unknown[] {
+  const trimmed = text.trim();
+  const arrayStart = trimmed.indexOf('[');
+  if (arrayStart === -1) return [];
+  const result: unknown[] = [];
+  let i = arrayStart + 1;
+  while (i < trimmed.length) {
+    const objStart = trimmed.indexOf('{', i);
+    if (objStart === -1) break;
+    let depth = 0;
+    let objEnd = -1;
+    let inString = false;
+    let escape = false;
+    let quoteChar = '';
+    for (let j = objStart; j < trimmed.length; j++) {
+      const c = trimmed[j];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if ((c === '\\') && inString) {
+        escape = true;
+        continue;
+      }
+      if (!inString) {
+        if (c === '{') depth++;
+        else if (c === '}') {
+          depth--;
+          if (depth === 0) {
+            objEnd = j;
+            break;
+          }
+        } else if (c === '"' || c === "'") {
+          inString = true;
+          quoteChar = c;
+        }
+        continue;
+      }
+      if (c === quoteChar) inString = false;
+    }
+    if (objEnd === -1) break;
+    const slice = trimmed.slice(objStart, objEnd + 1);
+    try {
+      const parsed = JSON.parse(slice);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        result.push(parsed);
+      }
+    } catch {
+      // このオブジェクトはパース失敗（不完全など）。スキップ
+    }
+    i = objEnd + 1;
+  }
+  return result;
+}
+
 /** 不正な要素はスキップまたはデフォルトで補正して SuggestedQuestItem[] に正規化する */
 function normalizeSuggestedQuests(raw: unknown[]): SuggestedQuestItem[] {
   const result: SuggestedQuestItem[] = [];
@@ -291,30 +350,75 @@ function buildSuggestedQuestsPrompt(goal: string): string {
 /**
  * 目標を受け取り、3〜7件の実行可能タスクを返す。
  * 出力を既存クエスト形式に正規化し、不正な要素はスキップまたはデフォルトで補正する。
- * 失敗時は空配列を返す。
+ * AI呼び出し自体が失敗した場合はリトライ後に例外を再送出する（ルートハンドラで502として処理）。
+ * AIが応答したがパース不能な場合は空配列を返す（ルートハンドラで503として処理）。
  */
 export async function generateSuggestedQuests(
   ai: AiRunBinding,
   goal: string,
   gatewayId?: string
 ): Promise<SuggestedQuestItem[]> {
-  try {
-    const prompt = buildSuggestedQuestsPrompt(goal);
-    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
-    let arr: unknown[] | null = typeof raw === 'string' ? extractJsonArray(raw) : null;
-    if (arr === null && typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw);
-        arr = Array.isArray(parsed) ? parsed : null;
-      } catch {
-        arr = null;
-      }
+  const prompt = buildSuggestedQuestsPrompt(goal);
+  const MAX_ATTEMPTS = 2;
+  const RETRY_DELAY_MS = 500;
+
+  let lastError: unknown = null;
+  let hadParseableResponse = false;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
     }
-    if (arr === null || arr.length === 0) return [];
-    return normalizeSuggestedQuests(arr);
-  } catch {
-    return [];
+    try {
+      const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
+      hadParseableResponse = true;
+
+      if (typeof raw !== 'string' || raw.trim().length === 0) {
+        console.warn(`[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} empty response`);
+        continue;
+      }
+
+      let arr: unknown[] | null = extractJsonArray(raw);
+      if (arr === null) {
+        try {
+          const parsed = JSON.parse(raw);
+          arr = Array.isArray(parsed) ? parsed : null;
+        } catch {
+          arr = null;
+        }
+      }
+      // 末尾切れの応答から完全なオブジェクトだけを取り出す（トークン制限で途中切れになる場合対策）
+      if (arr === null || arr.length === 0) {
+        const recovered = extractCompleteObjectsFromTruncatedArray(raw);
+        if (recovered.length > 0) {
+          arr = recovered;
+          console.warn(
+            `[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} used ${recovered.length} items from truncated response`
+          );
+        }
+      }
+
+      if (arr === null || arr.length === 0) {
+        console.warn(
+          `[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} unparseable response: ${raw.slice(0, 200)}`
+        );
+        continue;
+      }
+
+      const normalized = normalizeSuggestedQuests(arr);
+      if (normalized.length > 0) return normalized;
+
+      console.warn(`[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} all items invalid after normalization`);
+    } catch (err) {
+      lastError = err;
+      console.error(`[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} error:`, err);
+    }
   }
+
+  if (lastError && !hadParseableResponse) {
+    throw lastError;
+  }
+  return [];
 }
 
 /**

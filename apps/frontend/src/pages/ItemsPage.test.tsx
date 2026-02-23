@@ -13,9 +13,11 @@ import ItemsPage from './ItemsPage';
 import { Category, Rarity } from '@skill-quest/shared';
 
 const mockGetAcquiredItems = vi.fn();
+const mockGetItemMaster = vi.fn();
 
 vi.mock('@/lib/api-client', () => ({
   getAcquiredItems: () => mockGetAcquiredItems(),
+  getItemMaster: () => mockGetItemMaster(),
 }));
 
 function createWrapper() {
@@ -38,14 +40,16 @@ describe('ItemsPage (Task 6.1)', () => {
 
   it('タイトル「獲得アイテム」を表示する', async () => {
     mockGetAcquiredItems.mockResolvedValue([]);
+    mockGetItemMaster.mockResolvedValue([]);
     render(<ItemsPage />, { wrapper: createWrapper() });
     await waitFor(() => {
       expect(screen.getByText('獲得アイテム')).toBeDefined();
     });
   });
 
-  it('所持が空のときメッセージを表示する', async () => {
+  it('マスタが空のときメッセージを表示する', async () => {
     mockGetAcquiredItems.mockResolvedValue([]);
+    mockGetItemMaster.mockResolvedValue([]);
     render(<ItemsPage />, { wrapper: createWrapper() });
     await waitFor(() => {
       expect(screen.getByText(/まだアイテムはありません/)).toBeDefined();
@@ -53,7 +57,12 @@ describe('ItemsPage (Task 6.1)', () => {
     expect(screen.getByText(/タスクをクリアすると/)).toBeDefined();
   });
 
-  it('所持一覧を取得してアイテム名と画像を表示する', async () => {
+  it('所持済みアイテムは名前・画像、未所持は ? で表示する', async () => {
+    const masterList = [
+      { id: 'drink-common-01', name: 'ナノバナナ', category: Category.DRINK, rarity: Rarity.COMMON },
+      { id: 'chip-rare-01', name: 'シークレットチップ', category: Category.CHIP, rarity: Rarity.RARE },
+    ];
+    mockGetItemMaster.mockResolvedValue(masterList);
     mockGetAcquiredItems.mockResolvedValue([
       {
         itemId: 'drink-common-01',
@@ -69,5 +78,8 @@ describe('ItemsPage (Task 6.1)', () => {
     });
     const img = screen.getByRole('img', { name: /ナノバナナ/ });
     expect(img.getAttribute('src')).toBe('/images/items/drink/drink-common-01.png');
+    expect(screen.getByText('？？？')).toBeDefined();
+    expect(screen.getByText('未獲得')).toBeDefined();
+    expect(screen.getByText(/1 \/ 2 コレクト/)).toBeDefined();
   });
 });

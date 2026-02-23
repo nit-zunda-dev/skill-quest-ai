@@ -8,6 +8,7 @@ import {
   type CharacterProfile,
   type CreateQuestBatchRequest,
   type GenesisFormData,
+  type Item,
   type SuggestQuestsRequest,
   type SuggestedQuestItem,
   type Task,
@@ -30,6 +31,7 @@ type HcClient = {
     };
     items: {
       $get: () => Promise<Response>;
+      master: { $get: () => Promise<Response> };
     };
     users: {
       ':userId': { $delete: (opts: { param: { userId: string } }) => Promise<Response> };
@@ -218,5 +220,16 @@ export async function getAcquiredItems(): Promise<AcquiredItemView[]> {
     throw new Error(err?.message ?? err?.error ?? `所持一覧の取得に失敗しました (${res.status})`);
   }
   const data = (await res.json()) as { items: AcquiredItemView[] };
+  return data.items ?? [];
+}
+
+/** アイテムマスタ全件取得（GET /api/items/master）。コレクション図鑑用。 */
+export async function getItemMaster(): Promise<Item[]> {
+  const res = await api.items.master.$get();
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+    throw new Error(err?.message ?? err?.error ?? `アイテム一覧の取得に失敗しました (${res.status})`);
+  }
+  const data = (await res.json()) as { items: Item[] };
   return data.items ?? [];
 }

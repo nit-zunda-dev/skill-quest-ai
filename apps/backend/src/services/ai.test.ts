@@ -614,13 +614,39 @@ describe('AI service', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns empty array when AI throws', async () => {
+    it('throws when AI throws (all retries fail)', async () => {
       const run = vi.fn().mockRejectedValue(new Error('AI error'));
+      const ai = { run };
+
+      await expect(generateSuggestedQuests(ai, '目標')).rejects.toThrow('AI error');
+    });
+
+    it('returns complete objects from truncated JSON array (token limit)', async () => {
+      const truncatedResponse = [
+        '[',
+        '    {',
+        '      "title": "英単語の日々の挑戦",',
+        '      "type": "DAILY",',
+        '      "difficulty": "EASY"',
+        '    },',
+        '    {',
+        '      "title": "TOEICのリスニングスキルを鍛える",',
+        '      "type": "HABIT",',
+        '      "difficulty": "MEDIUM"',
+        '    },',
+        '    {',
+        '      "title": "読解力の向上を',
+      ].join('\n');
+      const run = vi.fn().mockResolvedValue({ response: truncatedResponse });
       const ai = { run };
 
       const result = await generateSuggestedQuests(ai, '目標');
 
-      expect(result).toEqual([]);
+      expect(result.length).toBe(2);
+      expect(result[0].title).toBe('英単語の日々の挑戦');
+      expect(result[0].type).toBe(TaskType.DAILY);
+      expect(result[1].title).toBe('TOEICのリスニングスキルを鍛える');
+      expect(result[1].type).toBe(TaskType.HABIT);
     });
 
     it('skips invalid items and normalizes valid ones (3-7 items)', async () => {

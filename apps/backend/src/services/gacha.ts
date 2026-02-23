@@ -131,3 +131,23 @@ export async function getAcquiredItems(db: D1Database, userId: string): Promise<
     rarity: r.rarity as Rarity,
   }));
 }
+
+type ItemMasterRow = Pick<ItemsRow, 'id' | 'name' | 'category' | 'rarity' | 'description'>;
+
+/**
+ * アイテムマスタ全件を返す（コレクション図鑑用）。レアリティ順・ID順でソート。
+ */
+export async function getItemMasterList(db: D1Database): Promise<Item[]> {
+  const stmt = db.prepare(
+    'SELECT id, category, rarity, name, description FROM items ORDER BY rarity, id'
+  );
+  const { results } = await stmt.all<ItemMasterRow>();
+  const rows = (results ?? []) as ItemMasterRow[];
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    category: r.category as Category,
+    rarity: r.rarity as Rarity,
+    description: r.description ?? undefined,
+  }));
+}

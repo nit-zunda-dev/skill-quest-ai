@@ -220,14 +220,15 @@ aiRouter.post(
       const suggestions = await service.generateSuggestedQuests(goal);
       if (suggestions.length === 0) {
         return c.json(
-          { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
-          500
+          { error: 'AI generation failed', message: 'AIが有効な提案を生成できませんでした。しばらく経ってから再試行してください。' },
+          503
         );
       }
       return c.json({ suggestions }, 200);
-    } catch {
+    } catch (err) {
+      console.error('[suggest-quests] AI service error:', err);
       return c.json(
-        { error: 'AI generation failed', message: 'しばらく経ってから再試行してください。' },
+        { error: 'AI service unavailable', message: 'AIサービスに接続できませんでした。しばらく経ってから再試行してください。' },
         502
       );
     }
