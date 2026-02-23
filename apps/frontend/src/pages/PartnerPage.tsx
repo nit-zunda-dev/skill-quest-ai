@@ -44,20 +44,21 @@ export default function PartnerPage() {
       {/* 可読性のための半透明オーバーレイ */}
       <div className="absolute inset-0 bg-slate-950/50 pointer-events-none" aria-hidden />
 
-      {/* コンテンツ: 下に寄せて背景を上に表示。左に立ち絵サイズのパートナー、右にコンパクトなチャット */}
-      <div className="relative z-10 mt-auto flex flex-col md:flex-row items-end justify-end md:justify-between p-4 md:p-6 gap-4 md:gap-6">
-        {/* パートナー（先ほどの立ち絵サイズ・デスクトップは左下、モバイルはチャット上に配置） */}
-        <div className="shrink-0 flex justify-center md:justify-start items-end">
-          <PartnerAvatar
-            variant={variant}
-            expression={expression}
-            className="w-40 sm:w-48 md:w-56 max-h-[40vh] md:max-h-[50vh] object-contain object-bottom"
-            alt="AIパートナー"
-          />
-        </div>
+      {/* コンテンツ: バーの手前に自然に配置（下寄せ・余白で一体感） */}
+      <div className="relative z-10 mt-auto w-full max-w-6xl mx-auto px-4 md:px-6 pb-6 md:pb-8">
+        <div className="flex flex-col md:flex-row items-end gap-6 md:gap-8">
+          {/* パートナー: バーに立つ相棒（左下・立ち絵サイズ / モバイルは上に表示） */}
+          <div className="shrink-0 flex justify-center md:justify-start items-end order-1">
+            <PartnerAvatar
+              variant={variant}
+              expression={expression}
+              className="w-36 sm:w-44 md:w-52 max-h-[36vh] md:max-h-[44vh] object-contain object-bottom drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+              alt="AIパートナー"
+            />
+          </div>
 
-        {/* 右: チャットパネル（コンパクト・背景が見える高さに制限） */}
-        <div className="flex-1 min-w-0 max-w-2xl max-h-[40vh] md:max-h-[48vh] flex flex-col backdrop-blur-md bg-slate-800/70 border border-cyan-500/40 rounded-xl overflow-hidden shadow-[0_0_24px_rgba(6,182,212,0.15)]">
+          {/* チャット: 相棒との会話エリア（高さ・幅を控えめに） */}
+          <div className="w-full md:min-w-[320px] md:max-w-xl max-h-[38vh] md:max-h-[44vh] flex flex-col rounded-2xl overflow-hidden border border-cyan-500/30 bg-slate-800/80 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.35)] order-2">
           {/* ヘッダー: タイトル + HUD風残り回数（コンパクト） */}
           <div className="shrink-0 px-3 py-2 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
@@ -150,6 +151,7 @@ export default function PartnerPage() {
               送信
             </button>
           </form>
+          </div>
         </div>
       </div>
     </div>
