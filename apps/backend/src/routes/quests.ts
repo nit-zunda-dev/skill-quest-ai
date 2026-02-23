@@ -18,6 +18,7 @@ import {
 } from '@skill-quest/shared';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 import { HTTPException } from 'hono/http-exception';
+import { grantItemOnQuestComplete } from '../services/gacha';
 
 const DIFFICULTY_TO_NUM: Record<Difficulty, number> = {
   [Difficulty.EASY]: 1,
@@ -231,6 +232,7 @@ questsRouter.patch(
     const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
     const row = updatedRows[0];
     if (!row) throw new HTTPException(500, { message: 'Failed to update quest' });
+    await grantItemOnQuestComplete(c.env.DB, user.id, id);
     return c.json(toQuestResponse(row));
   }
 );
@@ -272,6 +274,9 @@ questsRouter.patch(
     const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
     const row = updatedRows[0];
     if (!row) throw new HTTPException(500, { message: 'Failed to update quest status' });
+    if (status === 'done') {
+      await grantItemOnQuestComplete(c.env.DB, user.id, id);
+    }
     return c.json(toQuestResponse(row));
   }
 );

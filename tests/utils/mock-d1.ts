@@ -33,8 +33,13 @@ export function createMockD1ForAiUsage(overrides?: {
     return null;
   };
   const run = async () => ({ success: true, meta: {} });
+  // gacha: items SELECT は .all()、user_acquired_items は .bind().first() / .bind().run()
+  const all = async () => ({ results: [] });
   return {
-    prepare: (sql: string) => ({ bind: (..._args: unknown[]) => ({ run, first: () => first(sql, ..._args) }) }),
+    prepare: (sql: string) => ({
+      all,
+      bind: (..._args: unknown[]) => ({ run, first: () => first(sql, ..._args) }),
+    }),
   } as unknown as D1Database;
 }
 

@@ -27,6 +27,7 @@ import {
   CHAT_DAILY_LIMIT,
   createGrimoireEntry,
 } from '../services/ai-usage';
+import { grantItemOnQuestComplete } from '../services/gacha';
 
 type AiVariables = { user: AuthUser };
 
@@ -162,6 +163,7 @@ aiRouter.post(
 
     // クエスト完了マーク
     await completeQuest(c.env.DB, user.id, data.taskId);
+    await grantItemOnQuestComplete(c.env.DB, user.id, data.taskId);
 
     await recordNarrative(c.env.DB, user.id, today);
 
