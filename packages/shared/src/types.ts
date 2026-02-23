@@ -48,6 +48,46 @@ export const CATEGORIES: readonly Category[] = [
   Category.MYTHICAL,
 ] as const;
 
+/**
+ * アイテムマスタ用の型。
+ * 一意ID・表示名・カテゴリ・レアリティを必須、説明は任意。
+ */
+export interface Item {
+  id: string;
+  name: string;
+  category: Category;
+  rarity: Rarity;
+  /** 説明文（任意） */
+  description?: string;
+}
+
+/**
+ * 所持一覧表示用の型。クライアントが一覧表示に利用。
+ * アイテムID・取得時刻・表示用の名前・カテゴリ・レアリティを含む。
+ */
+export interface AcquiredItemView {
+  itemId: string;
+  acquiredAt: string;
+  name: string;
+  category: Category;
+  rarity: Rarity;
+}
+
+/**
+ * アイテム画像パスの組み立て規則。
+ * クライアントは category と id から /images/items/{category}/{id}.png を組み立てる。
+ * buildItemImagePath(id, category) で同一規則を適用できる。
+ */
+export const ITEM_IMAGE_PATH_PATTERN = '/images/items/{category}/{id}.png';
+
+/**
+ * category と id からアイテム画像パスを組み立てる。
+ * 規則: /images/items/{category}/{id}.png
+ */
+export function buildItemImagePath(id: string, category: Category): string {
+  return `/images/items/${category}/${id}.png`;
+}
+
 export enum AppMode {
   GENESIS = 'GENESIS',
   DASHBOARD = 'DASHBOARD',

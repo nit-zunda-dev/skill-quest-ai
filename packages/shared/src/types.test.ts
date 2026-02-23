@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { Rarity, Category, RARITY_ORDER, CATEGORIES } from './types';
+import {
+  Rarity,
+  Category,
+  RARITY_ORDER,
+  CATEGORIES,
+  type Item,
+  type AcquiredItemView,
+  ITEM_IMAGE_PATH_PATTERN,
+  buildItemImagePath,
+} from './types';
 
 describe('Rarity', () => {
   it('5段階のレアリティを定義している', () => {
@@ -72,5 +81,65 @@ describe('CATEGORIES', () => {
     for (const c of categoryValues) {
       expect(CATEGORIES).toContain(c);
     }
+  });
+});
+
+describe('Item', () => {
+  it('一意ID・表示名・カテゴリ・レアリティを持つ', () => {
+    const item: Item = {
+      id: 'item-1',
+      name: 'ナノバナナ',
+      category: Category.DRINK,
+      rarity: Rarity.COMMON,
+    };
+    expect(item.id).toBe('item-1');
+    expect(item.name).toBe('ナノバナナ');
+    expect(item.category).toBe(Category.DRINK);
+    expect(item.rarity).toBe(Rarity.COMMON);
+  });
+
+  it('説明は任意で持てる', () => {
+    const item: Item = {
+      id: 'item-2',
+      name: 'レアチップ',
+      category: Category.CHIP,
+      rarity: Rarity.RARE,
+      description: '説明文',
+    };
+    expect(item.description).toBe('説明文');
+  });
+});
+
+describe('AcquiredItemView', () => {
+  it('一覧表示に必要な itemId・取得時刻・名前・カテゴリ・レアリティを持つ', () => {
+    const view: AcquiredItemView = {
+      itemId: 'item-1',
+      acquiredAt: '2025-02-23T12:00:00Z',
+      name: 'ナノバナナ',
+      category: Category.DRINK,
+      rarity: Rarity.COMMON,
+    };
+    expect(view.itemId).toBe('item-1');
+    expect(view.acquiredAt).toBe('2025-02-23T12:00:00Z');
+    expect(view.name).toBe('ナノバナナ');
+    expect(view.category).toBe(Category.DRINK);
+    expect(view.rarity).toBe(Rarity.COMMON);
+  });
+});
+
+describe('ITEM_IMAGE_PATH_PATTERN', () => {
+  it('画像パス規則を定数で明示している', () => {
+    expect(ITEM_IMAGE_PATH_PATTERN).toBe('/images/items/{category}/{id}.png');
+  });
+});
+
+describe('buildItemImagePath', () => {
+  it('category と id から画像パスを組み立てる', () => {
+    expect(buildItemImagePath('banana-1', Category.DRINK)).toBe(
+      '/images/items/drink/banana-1.png'
+    );
+    expect(buildItemImagePath('chip-legend', Category.CHIP)).toBe(
+      '/images/items/chip/chip-legend.png'
+    );
   });
 });
