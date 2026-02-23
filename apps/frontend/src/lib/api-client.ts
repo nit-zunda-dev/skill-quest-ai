@@ -4,7 +4,7 @@
  */
 import { client } from './client';
 import {
-  Difficulty,
+  type AcquiredItemView,
   type CharacterProfile,
   type CreateQuestBatchRequest,
   type GenesisFormData,
@@ -12,6 +12,7 @@ import {
   type SuggestedQuestItem,
   type Task,
   type UpdateGoalRequest,
+  Difficulty,
 } from '@skill-quest/shared';
 
 type HcClient = {
@@ -26,6 +27,9 @@ type HcClient = {
     };
     quests: {
       batch: { $post: (opts: { json: CreateQuestBatchRequest }) => Promise<Response> };
+    };
+    items: {
+      $get: () => Promise<Response>;
     };
     users: {
       ':userId': { $delete: (opts: { param: { userId: string } }) => Promise<Response> };
@@ -204,4 +208,15 @@ export async function createQuestsBatch(req: CreateQuestBatchRequest): Promise<T
     throw new Error(err?.message ?? err?.error ?? `クエストの一括作成に失敗しました (${res.status})`);
   }
   return (await res.json()) as Task[];
+}
+
+/** 所持アイテム一覧取得（GET /api/items）。認証ユーザー本人の所持のみ。Task 6.1 */
+export async function getAcquiredItems(): Promise<AcquiredItemView[]> {
+  const res = await api.items.$get();
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+    throw new Error(err?.message ?? err?.error ?? `所持一覧の取得に失敗しました (${res.status})`);
+  }
+  const data = (await res.json()) as { items: AcquiredItemView[] };
+  return data.items ?? [];
 }

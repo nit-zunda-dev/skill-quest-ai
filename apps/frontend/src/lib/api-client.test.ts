@@ -3,15 +3,18 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Difficulty, TaskType } from '@skill-quest/shared';
+import { Category, Rarity } from '@skill-quest/shared';
 import {
   suggestQuests,
   updateGoal,
   createQuestsBatch,
+  getAcquiredItems,
 } from './api-client';
 
 const mockSuggestPost = vi.fn();
 const mockGoalPatch = vi.fn();
 const mockBatchPost = vi.fn();
+const mockItemsGet = vi.fn();
 
 vi.mock('./client', () => ({
   client: {
@@ -22,6 +25,9 @@ vi.mock('./client', () => ({
       },
       quests: {
         batch: { $post: (opts: { json: unknown }) => mockBatchPost(opts) },
+      },
+      items: {
+        $get: () => mockItemsGet(),
       },
     },
   },
@@ -137,5 +143,53 @@ describe('createQuestsBatch', () => {
         quests: [{ title: '', type: TaskType.SKILL, difficulty: Difficulty.EASY }],
       })
     ).rejects.toThrow();
+  });
+});
+
+describe('getAcquiredItems (Task 6.1)', () => {
+  beforeEach(() => {
+    mockItemsGet.mockReset();
+  });
+
+  it('GET /api/items を呼び出し認証ユーザー本人の所持一覧を返す', async () => {
+    const items = [
+      {
+        itemId: 'drink-common-01',
+        acquiredAt: '2025-02-23T12:00:00.000Z',
+        name: 'ナノバナナ',
+        category: Category.DRINK,
+        rarity: Rarity.COMMON,
+      },
+    ];
+    mockItemsGet.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items }),
+    });
+
+    const result = await getAcquiredItems();
+
+    expect(mockItemsGet).toHaveBeenCalled();
+    expect(result).toEqual(items);
+  });
+
+  it('空の場合は空配列を返す', async () => {
+    mockItemsGet.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: [] }),
+    });
+
+    const result = await getAcquiredItems();
+
+    expect(result).toEqual([]);
+  });
+
+  it('401 のときエラーをスローする', async () => {
+    mockItemsGet.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ message: 'Unauthorized' }),
+    });
+
+    await expect(getAcquiredItems()).rejects.toThrow();
   });
 });
