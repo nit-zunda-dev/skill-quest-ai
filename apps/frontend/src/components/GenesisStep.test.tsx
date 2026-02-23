@@ -11,7 +11,7 @@ describe('IntroStep', () => {
     render(<IntroStep onNext={onNext} />);
 
     expect(screen.getByText('Skill Quest AI')).toBeDefined();
-    expect(screen.getByText(/毎日の習慣をRPGに変えよう/)).toBeDefined();
+    expect(screen.getByText(/あなただけの物語が、ここから始まる/)).toBeDefined();
   });
 
   it('「冒険を始める」ボタンを表示する', () => {
@@ -113,13 +113,12 @@ describe('LoadingStep', () => {
   it('ローディングメッセージを表示する', () => {
     render(<LoadingStep />);
 
-    expect(screen.getByText(/AIが世界を構築しています/)).toBeDefined();
+    expect(screen.getByText(/あなたの物語の世界を紡いでいます/)).toBeDefined();
   });
 
   it('ローディングメッセージが表示される', () => {
     render(<LoadingStep />);
-    // 初期メッセージが表示されることを確認
-    expect(screen.getByText(/AIが世界を構築しています/)).toBeDefined();
+    expect(screen.getByText(/あなたの物語の世界を紡いでいます/)).toBeDefined();
   });
 
   it('ローディングアニメーション要素を表示する', () => {

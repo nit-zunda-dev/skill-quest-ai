@@ -12,8 +12,8 @@ export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
       Skill Quest AI
     </h1>
     <p className="text-lg text-slate-400 max-w-md mx-auto leading-relaxed">
-      毎日の習慣をRPGに変えよう。<br/>
-      目標達成の道のりを、あなただけの物語として記録します。
+      あなただけの物語が、ここから始まる。<br/>
+      目標を伝えれば、AIが世界とクエストを紡ぎ出します。
     </p>
     <button
       onClick={onNext}
@@ -108,15 +108,15 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({ name, goal, onChange
 };
 
 export const LoadingStep: React.FC = () => {
-  const [message, setMessage] = useState("AIが世界を構築しています...");
+  const [message, setMessage] = useState("あなたの物語の世界を紡いでいます...");
   
   useEffect(() => {
     const messages = [
-      "AIが世界を構築しています...",
-      "クラス適性を分析中...",
-      "ステータスを配分中...",
-      "物語の導入を作成中...",
-      "まもなく完了します..."
+      "あなたの物語の世界を紡いでいます...",
+      "冒険者の素質を見極めています...",
+      "クラスと称号を授けています...",
+      "プロローグを執筆中...",
+      "まもなく冒険が始まります..."
     ];
     let i = 0;
     const interval = setInterval(() => {

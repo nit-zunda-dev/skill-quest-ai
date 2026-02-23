@@ -140,6 +140,34 @@ export const rateLimitLogs = sqliteTable('rate_limit_logs', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+// ガチャ: アイテムマスタ（Task 2.1）
+/** 一意ID・カテゴリ・レアリティ・表示名・説明・ドロップ有効フラグ。category/rarity は仕様の閉集合。 */
+export const items = sqliteTable('items', {
+  id: text('id').primaryKey(),
+  category: text('category').notNull(),
+  rarity: text('rarity').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  enabledForDrop: integer('enabled_for_drop', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }),
+});
+
+// ガチャ: ユーザー所持履歴（Task 2.1）。同一ユーザー・同一クエストで高々1件。クエスト削除時は quest_id を NULL にする。
+export const userAcquiredItems = sqliteTable(
+  'user_acquired_items',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+    itemId: text('item_id').notNull().references(() => items.id),
+    questId: text('quest_id').references(() => quests.id, { onDelete: 'set null' }),
+    acquiredAt: integer('acquired_at', { mode: 'timestamp' }).notNull(),
+  },
+  (table) => ({
+    uniqueUserQuest: unique().on(table.userId, table.questId),
+  })
+);
+
 // リレーション定義
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -148,6 +176,7 @@ export const userRelations = relations(user, ({ many }) => ({
   progress: many(userProgress),
   quests: many(quests),
   grimoireEntries: many(grimoireEntries),
+  acquiredItems: many(userAcquiredItems),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -178,6 +207,7 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
     references: [skills.id],
   }),
   progress: many(userProgress),
+  acquiredItems: many(userAcquiredItems),
 }));
 
 export const grimoireEntriesRelations = relations(grimoireEntries, ({ one }) => ({
@@ -206,6 +236,25 @@ export const interactionLogsRelations = relations(interactionLogs, ({ one }) => 
   }),
 }));
 
+export const itemsRelations = relations(items, ({ many }) => ({
+  acquiredItems: many(userAcquiredItems),
+}));
+
+export const userAcquiredItemsRelations = relations(userAcquiredItems, ({ one }) => ({
+  user: one(user, {
+    fields: [userAcquiredItems.userId],
+    references: [user.id],
+  }),
+  item: one(items, {
+    fields: [userAcquiredItems.itemId],
+    references: [items.id],
+  }),
+  quest: one(quests, {
+    fields: [userAcquiredItems.questId],
+    references: [quests.id],
+  }),
+}));
+
 // スキーマ全体をエクスポート（Better Authで使用）
 export const schema = {
   user,
@@ -221,4 +270,6 @@ export const schema = {
   userCharacterProfile,
   aiDailyUsage,
   rateLimitLogs,
+  items,
+  userAcquiredItems,
 };

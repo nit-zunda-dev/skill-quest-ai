@@ -87,6 +87,12 @@ Cloudflare AI Gatewayは、AIアプリケーションへの一元化された可
 AI_GATEWAY_ID=your-gateway-id-here
 ```
 
+**ローカルで AI を呼ばずに動作させたい場合**（Workers AI 未利用・エラー時など）は、次を追加するとスタブが使われます（提案クエストは固定の1件が返ります）：
+
+```env
+INTEGRATION_TEST_AI_STUB=1
+```
+
 **Gateway IDの取得方法**:
 1. [Cloudflare Dashboard](https://dash.cloudflare.com/)にログインします
 2. **AI** > **AI Gateway** を選択します

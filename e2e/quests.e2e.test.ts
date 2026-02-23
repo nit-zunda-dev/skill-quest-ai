@@ -1,7 +1,7 @@
 /**
  * Task 6.4: クエスト操作のE2Eテスト
  * クエストの作成、編集（ステータス変更）、完了、削除の操作を検証する。
- * プレビュー環境で実行。認証済みユーザーでダッシュボードにアクセスし、タスクボードで操作する。
+ * プレビュー環境で実行。認証済みユーザーでダッシュボードにアクセスし、クエストボードで操作する。
  */
 import { test, expect } from '@playwright/test';
 import { getE2EBaseUrl, setupTestData, ensureUserHasProfile } from './fixtures/test-data';
@@ -12,7 +12,7 @@ test.describe('クエスト操作 E2E', () => {
     if (baseUrl) await page.goto(baseUrl);
   });
 
-  test('ログイン後にタスクボードが表示される', async ({ page }) => {
+  test('ログイン後にクエストボードが表示される', async ({ page }) => {
     const baseUrl = getE2EBaseUrl();
     test.skip(!baseUrl, 'E2E_BASE_URL 未設定のためスキップ');
     const ctx = await setupTestData(baseUrl);
@@ -25,7 +25,7 @@ test.describe('クエスト操作 E2E', () => {
     await page.getByRole('button', { name: 'ログイン' }).click();
 
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 10_000 });
   });
 
   test('クエストを作成できる', async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe('クエスト操作 E2E', () => {
     await page.getByLabel('パスワード').fill('E2ETestPassword123!');
     await page.getByRole('button', { name: 'ログイン' }).click();
 
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 15_000 });
 
     const taskTitle = `E2E Quest ${Date.now()}`;
     const addButton = page.getByRole('button', { name: 'タスクを追加' });
@@ -65,7 +65,7 @@ test.describe('クエスト操作 E2E', () => {
     await page.getByLabel('パスワード').fill('E2ETestPassword123!');
     await page.getByRole('button', { name: 'ログイン' }).click();
 
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 15_000 });
 
     const taskTitle = `E2E Edit Quest ${Date.now()}`;
     const addButton = page.getByRole('button', { name: 'タスクを追加' });
@@ -98,7 +98,7 @@ test.describe('クエスト操作 E2E', () => {
     await page.getByLabel('パスワード').fill('E2ETestPassword123!');
     await page.getByRole('button', { name: 'ログイン' }).click();
 
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 15_000 });
 
     const taskTitle = `E2E Delete Quest ${Date.now()}`;
     const addButton = page.getByRole('button', { name: 'タスクを追加' });

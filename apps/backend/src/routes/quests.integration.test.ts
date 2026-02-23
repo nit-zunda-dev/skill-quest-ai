@@ -12,6 +12,7 @@ const TEST_PASSWORD = 'QuestTestPassword123!';
 const TEST_NAME = 'Quest Integration User';
 
 const RESET_STATEMENTS = [
+  'DELETE FROM user_acquired_items',
   'DELETE FROM interaction_logs',
   'DELETE FROM user_progress',
   'DELETE FROM grimoire_entries',
@@ -178,5 +179,147 @@ describe('POST /api/quests/batch (Task 4.1)', () => {
       }),
     });
     expect(res.status).toBe(401);
+  });
+});
+
+/**
+ * Task 7.2: ガチャ・所持一覧の統合検証 (Requirements 3.1, 3.3, 4.1, 4.3)
+ * - PATCH 完了後に所持1件増える、ナラティブ完了後も1件増える → 下記 Task 5.1 / 5.2 で検証
+ * - 同じクエストで再度完了しても増えない → 下記 Task 5.1 で検証
+ * - 未認証で GET /api/items が 401 → 下記 it で検証
+ */
+describe('Task 7.2: ガチャ・所持一覧の統合検証', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  });
+
+  it('未認証で GET /api/items は 401 を返す', async () => {
+    const res = await SELF.fetch(`${BASE}/api/items`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('PATCH /api/quests/:id/complete と PATCH /api/quests/:id/status 後のガチャ付与 (Task 5.1)', () => {
+  let cookie: string;
+  let headers: { 'Content-Type': string; Cookie: string };
+
+  beforeAll(async () => {
+    await resetDatabase();
+    cookie = await getAuthCookie();
+    headers = { 'Content-Type': 'application/json', Cookie: cookie };
+  });
+
+  it('PATCH /:id/complete 成功後に GET /api/items で所持が1件増える', async () => {
+    const createRes = await SELF.fetch(`${BASE}/api/quests`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ title: 'Complete Gacha Quest', type: TaskType.DAILY, difficulty: Difficulty.EASY }),
+    });
+    expect(createRes.status).toBe(201);
+    const created = (await createRes.json()) as { id: string };
+
+    const itemsBefore = await SELF.fetch(`${BASE}/api/items`, { headers });
+    const bodyBefore = (await itemsBefore.json()) as { items: unknown[] };
+    const countBefore = bodyBefore.items.length;
+
+    const completeRes = await SELF.fetch(`${BASE}/api/quests/${created.id}/complete`, { method: 'PATCH', headers });
+    expect(completeRes.status).toBe(200);
+
+    const itemsAfter = await SELF.fetch(`${BASE}/api/items`, { headers });
+    expect(itemsAfter.status).toBe(200);
+    const bodyAfter = (await itemsAfter.json()) as { items: unknown[] };
+    expect(bodyAfter.items.length).toBe(countBefore + 1);
+  });
+
+  it('PATCH /:id/status で status done 成功後に GET /api/items で所持が1件増える', async () => {
+    const createRes = await SELF.fetch(`${BASE}/api/quests`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ title: 'Status Done Gacha Quest', type: TaskType.DAILY, difficulty: Difficulty.EASY }),
+    });
+    expect(createRes.status).toBe(201);
+    const created = (await createRes.json()) as { id: string };
+
+    const itemsBefore = await SELF.fetch(`${BASE}/api/items`, { headers });
+    const bodyBefore = (await itemsBefore.json()) as { items: unknown[] };
+    const countBefore = bodyBefore.items.length;
+
+    const statusRes = await SELF.fetch(`${BASE}/api/quests/${created.id}/status`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ status: 'done' }),
+    });
+    expect(statusRes.status).toBe(200);
+
+    const itemsAfter = await SELF.fetch(`${BASE}/api/items`, { headers });
+    expect(itemsAfter.status).toBe(200);
+    const bodyAfter = (await itemsAfter.json()) as { items: unknown[] };
+    expect(bodyAfter.items.length).toBe(countBefore + 1);
+  });
+
+  it('同じクエストで再度完了しても所持は増えない（冪等）', async () => {
+    const createRes = await SELF.fetch(`${BASE}/api/quests`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ title: 'Idempotent Quest', type: TaskType.DAILY, difficulty: Difficulty.EASY }),
+    });
+    expect(createRes.status).toBe(201);
+    const created = (await createRes.json()) as { id: string };
+
+    await SELF.fetch(`${BASE}/api/quests/${created.id}/complete`, { method: 'PATCH', headers });
+    const itemsOnce = await SELF.fetch(`${BASE}/api/items`, { headers });
+    const bodyOnce = (await itemsOnce.json()) as { items: unknown[] };
+    const countAfterFirst = bodyOnce.items.length;
+
+    await SELF.fetch(`${BASE}/api/quests/${created.id}/complete`, { method: 'PATCH', headers });
+    const itemsTwice = await SELF.fetch(`${BASE}/api/items`, { headers });
+    const bodyTwice = (await itemsTwice.json()) as { items: unknown[] };
+    expect(bodyTwice.items.length).toBe(countAfterFirst);
+  });
+});
+
+describe('ナラティブ生成完了後のガチャ付与 (Task 5.2)', () => {
+  let cookie: string;
+  let headers: { 'Content-Type': string; Cookie: string };
+
+  beforeAll(async () => {
+    await resetDatabase();
+    cookie = await getAuthCookie();
+    headers = { 'Content-Type': 'application/json', Cookie: cookie };
+  });
+
+  it('POST /api/ai/generate-narrative 成功後に GET /api/items で所持が1件増える', async () => {
+    const createRes = await SELF.fetch(`${BASE}/api/quests`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        title: 'Narrative Gacha Quest',
+        type: TaskType.DAILY,
+        difficulty: Difficulty.EASY,
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const created = (await createRes.json()) as { id: string; title: string };
+
+    const itemsBefore = await SELF.fetch(`${BASE}/api/items`, { headers });
+    const bodyBefore = (await itemsBefore.json()) as { items: unknown[] };
+    const countBefore = bodyBefore.items.length;
+
+    const narrativeRes = await SELF.fetch(`${BASE}/api/ai/generate-narrative`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        taskId: created.id,
+        taskTitle: created.title,
+        taskType: TaskType.DAILY,
+        difficulty: Difficulty.EASY,
+      }),
+    });
+    expect(narrativeRes.status).toBe(200);
+
+    const itemsAfter = await SELF.fetch(`${BASE}/api/items`, { headers });
+    expect(itemsAfter.status).toBe(200);
+    const bodyAfter = (await itemsAfter.json()) as { items: unknown[] };
+    expect(bodyAfter.items.length).toBe(countBefore + 1);
   });
 });

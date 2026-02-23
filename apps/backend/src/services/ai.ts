@@ -76,7 +76,17 @@ export interface CompletedTask {
   completedAt: number;
 }
 
+export interface GrimoireContext {
+  characterName: string;
+  className: string;
+  title: string;
+  level: number;
+  goal: string;
+  previousNarratives: string[];
+}
+
 export interface GrimoireGenerationResult {
+  title: string;
   narrative: string;
   rewardXp: number;
   rewardGold: number;
@@ -88,7 +98,7 @@ export interface AiService {
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
   generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
   generatePartnerMessage(request: PartnerMessageRequest): Promise<string>;
-  generateGrimoire(completedTasks: CompletedTask[]): Promise<GrimoireGenerationResult>;
+  generateGrimoire(completedTasks: CompletedTask[], context?: GrimoireContext): Promise<GrimoireGenerationResult>;
   generateSuggestedQuests(goal: string): Promise<SuggestedQuestItem[]>;
 }
 
@@ -108,6 +118,7 @@ function createStubAiService(env: Bindings): AiService {
     }),
     generatePartnerMessage: async () => 'Stub partner message.',
     generateGrimoire: async () => ({
+      title: 'Stub chapter',
       narrative: 'Stub grimoire.',
       rewardXp: 10,
       rewardGold: 5,
@@ -146,8 +157,8 @@ export function createAiService(env: Bindings): AiService {
     generatePartnerMessage(request: PartnerMessageRequest) {
       return generatePartnerMessage(ai, request, gatewayId);
     },
-    generateGrimoire(completedTasks: CompletedTask[]) {
-      return generateGrimoire(ai, completedTasks, gatewayId);
+    generateGrimoire(completedTasks: CompletedTask[], context?: GrimoireContext) {
+      return generateGrimoire(ai, completedTasks, gatewayId, context);
     },
     generateSuggestedQuests(goal: string) {
       return generateSuggestedQuests(ai, goal, gatewayId);
@@ -238,6 +249,65 @@ function extractJsonArray(text: string): unknown[] | null {
   }
 }
 
+/**
+ * 末尾が切れたJSON配列から、完全なオブジェクトだけを抽出する。
+ * AIがトークン制限で途中切れになった応答でも、有効な要素を利用できるようにする。
+ */
+function extractCompleteObjectsFromTruncatedArray(text: string): unknown[] {
+  const trimmed = text.trim();
+  const arrayStart = trimmed.indexOf('[');
+  if (arrayStart === -1) return [];
+  const result: unknown[] = [];
+  let i = arrayStart + 1;
+  while (i < trimmed.length) {
+    const objStart = trimmed.indexOf('{', i);
+    if (objStart === -1) break;
+    let depth = 0;
+    let objEnd = -1;
+    let inString = false;
+    let escape = false;
+    let quoteChar = '';
+    for (let j = objStart; j < trimmed.length; j++) {
+      const c = trimmed[j];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if ((c === '\\') && inString) {
+        escape = true;
+        continue;
+      }
+      if (!inString) {
+        if (c === '{') depth++;
+        else if (c === '}') {
+          depth--;
+          if (depth === 0) {
+            objEnd = j;
+            break;
+          }
+        } else if (c === '"' || c === "'") {
+          inString = true;
+          quoteChar = c;
+        }
+        continue;
+      }
+      if (c === quoteChar) inString = false;
+    }
+    if (objEnd === -1) break;
+    const slice = trimmed.slice(objStart, objEnd + 1);
+    try {
+      const parsed = JSON.parse(slice);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        result.push(parsed);
+      }
+    } catch {
+      // このオブジェクトはパース失敗（不完全など）。スキップ
+    }
+    i = objEnd + 1;
+  }
+  return result;
+}
+
 /** 不正な要素はスキップまたはデフォルトで補正して SuggestedQuestItem[] に正規化する */
 function normalizeSuggestedQuests(raw: unknown[]): SuggestedQuestItem[] {
   const result: SuggestedQuestItem[] = [];
@@ -266,44 +336,89 @@ function normalizeSuggestedQuests(raw: unknown[]): SuggestedQuestItem[] {
 
 function buildSuggestedQuestsPrompt(goal: string): string {
   return [
-    'あなたは目標を実行可能なタスクに分解するアシスタントです。',
-    '以下の目標に基づき、3〜7件のタスクをJSON配列のみで返してください。',
-    `目標: ${goal}`,
+    'あなたはTRPGのゲームマスターです。冒険者（ユーザー）の目標を達成するためのクエストを提案してください。',
+    '以下の目標に基づき、3〜7件のクエストをJSON配列のみで返してください。',
+    `冒険者の目標: ${goal}`,
     '【各要素の形式】',
-    'title: タスクのタイトル（1件につき1文で具体的に）',
+    'title: クエスト名（冒険風の名前で、具体的な行動がわかるように。例: 「英単語の迷宮に挑む」「コードの試練・第一章」）',
     'type: DAILY | HABIT | TODO のいずれか',
     'difficulty: EASY | MEDIUM | HARD のいずれか',
-    '【出力】JSON配列のみ。例: [{"title":"毎日30分勉強する","type":"DAILY","difficulty":"MEDIUM"}, ...]',
+    '【出力】JSON配列のみ。例: [{"title":"英単語の迷宮に挑む","type":"DAILY","difficulty":"MEDIUM"}, ...]',
   ].join('\n');
 }
 
 /**
  * 目標を受け取り、3〜7件の実行可能タスクを返す。
  * 出力を既存クエスト形式に正規化し、不正な要素はスキップまたはデフォルトで補正する。
- * 失敗時は空配列を返す。
+ * AI呼び出し自体が失敗した場合はリトライ後に例外を再送出する（ルートハンドラで502として処理）。
+ * AIが応答したがパース不能な場合は空配列を返す（ルートハンドラで503として処理）。
  */
 export async function generateSuggestedQuests(
   ai: AiRunBinding,
   goal: string,
   gatewayId?: string
 ): Promise<SuggestedQuestItem[]> {
-  try {
-    const prompt = buildSuggestedQuestsPrompt(goal);
-    const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
-    let arr: unknown[] | null = typeof raw === 'string' ? extractJsonArray(raw) : null;
-    if (arr === null && typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw);
-        arr = Array.isArray(parsed) ? parsed : null;
-      } catch {
-        arr = null;
-      }
+  const prompt = buildSuggestedQuestsPrompt(goal);
+  const MAX_ATTEMPTS = 2;
+  const RETRY_DELAY_MS = 500;
+
+  let lastError: unknown = null;
+  let hadParseableResponse = false;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
     }
-    if (arr === null || arr.length === 0) return [];
-    return normalizeSuggestedQuests(arr);
-  } catch {
-    return [];
+    try {
+      const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
+      hadParseableResponse = true;
+
+      if (typeof raw !== 'string' || raw.trim().length === 0) {
+        console.warn(`[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} empty response`);
+        continue;
+      }
+
+      let arr: unknown[] | null = extractJsonArray(raw);
+      if (arr === null) {
+        try {
+          const parsed = JSON.parse(raw);
+          arr = Array.isArray(parsed) ? parsed : null;
+        } catch {
+          arr = null;
+        }
+      }
+      // 末尾切れの応答から完全なオブジェクトだけを取り出す（トークン制限で途中切れになる場合対策）
+      if (arr === null || arr.length === 0) {
+        const recovered = extractCompleteObjectsFromTruncatedArray(raw);
+        if (recovered.length > 0) {
+          arr = recovered;
+          console.warn(
+            `[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} used ${recovered.length} items from truncated response`
+          );
+        }
+      }
+
+      if (arr === null || arr.length === 0) {
+        console.warn(
+          `[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} unparseable response: ${raw.slice(0, 200)}`
+        );
+        continue;
+      }
+
+      const normalized = normalizeSuggestedQuests(arr);
+      if (normalized.length > 0) return normalized;
+
+      console.warn(`[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} all items invalid after normalization`);
+    } catch (err) {
+      lastError = err;
+      console.error(`[suggest-quests] attempt=${attempt + 1}/${MAX_ATTEMPTS} error:`, err);
+    }
   }
+
+  if (lastError && !hadParseableResponse) {
+    throw lastError;
+  }
+  return [];
 }
 
 /**
@@ -337,11 +452,18 @@ export async function generateCharacter(
 
 function buildCharacterPrompt(data: GenesisFormData): string {
   return [
-    `以下の条件でゲームのキャラクターを1体生成し、JSONのみで返してください。`,
-    `名前: ${data.name}`,
-    `目標: ${data.goal}`,
-    `必須フィールド: name, className, title, prologue, themeColor(#で始まる6桁色), level, currentXp, nextLevelXp, gold.`,
-    `nameは「${data.name}」にすること。`,
+    'あなたはノベルゲー／TRPGの世界を紡ぐゲームマスターです。',
+    '冒険者（プレイヤー）のプロフィールを生成し、JSONのみで返してください。',
+    `冒険者の名前: ${data.name}`,
+    `冒険者の目標: ${data.goal}`,
+    '【生成ルール】',
+    `- name: 「${data.name}」をそのまま使用。`,
+    '- className: 目標に応じたTRPG的なクラス名（例: 目標が語学なら「言霊使い」、プログラミングなら「魔導技師」、資格なら「賢者見習い」など）。',
+    '- title: 冒険者の二つ名・称号（例: 「暁の探求者」「未踏の挑戦者」）。',
+    '- prologue: この冒険者の物語の始まりを2〜3文で描写する。目標に向かって旅立つ導入シーンを、ノベルゲーの冒頭のように情景豊かに書く。',
+    '- themeColor: キャラクターの雰囲気に合う色（#で始まる6桁のカラーコード）。',
+    '- level: 1, currentXp: 0, nextLevelXp: 100, gold: 0（固定）。',
+    '必須フィールド: name, className, title, prologue, themeColor, level, currentXp, nextLevelXp, gold。',
   ].join('\n');
 }
 
@@ -371,17 +493,18 @@ function isNarrativeResult(obj: unknown): obj is NarrativeResult {
 }
 
 function buildNarrativePrompt(request: NarrativeRequest): string {
-  const comment = request.userComment ? `ユーザーのコメント: ${request.userComment}` : 'ユーザーのコメント: なし';
+  const comment = request.userComment ? `冒険者のコメント: ${request.userComment}` : '';
   return [
-    'あなたはTRPGのゲームマスターです。TRPGのタスク完了イベントを生成し、JSONのみで返してください。',
-    `完了したタスク: ${request.taskTitle} (タスク種別: ${request.taskType}, 難易度: ${request.difficulty})`,
+    'あなたはTRPGのゲームマスターです。冒険者がクエストをクリアした瞬間の物語セグメントを生成してください。',
+    'この物語はグリモワール（冒険日誌）に記録されるストーリーログの1ページとなります。',
+    `クリアしたクエスト: ${request.taskTitle} (種別: ${request.taskType}, 難易度: ${request.difficulty})`,
     comment,
     '【出力ルール】',
-    '1. narrative: タスク完了をTRPGのアクションとして誇張的に描写する（2文程度）。',
+    '1. narrative: クエストクリアの瞬間をノベルゲーの1シーンのように描写する（2〜3文）。冒険者の成長や達成感が伝わるように。',
     '2. rewardXp: 難易度に応じた経験値 (EASY: 10-20, MEDIUM: 25-40, HARD: 50-80)',
-    '3. rewardGold: 難易度に応じた報酬 (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
-    '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
-  ].join('\n');
+    '3. rewardGold: 難易度に応じたゴールド (EASY: 5-10, MEDIUM: 15-25, HARD: 30-50)',
+    '必須フィールド: narrative, rewardXp, rewardGold。JSONのみで返してください。',
+  ].join('\n').trim();
 }
 
 /**
@@ -413,30 +536,34 @@ export async function generateNarrative(
   }
   const rewards = difficultyBasedRewards(request.difficulty);
   return {
-    narrative: `${request.taskTitle}を達成した。心地よい疲労感と共に、力が湧いてくるのを感じる。`,
+    narrative: `冒険者は「${request.taskTitle}」のクエストを見事クリアした。新たな経験が血肉となり、次なる冒険への力が静かに湧き上がる。`,
     rewardXp: rewards.rewardXp,
     rewardGold: rewards.rewardGold,
   };
 }
 
-const DEFAULT_PARTNER_MESSAGE = '一緒に頑張ろう。';
+const DEFAULT_PARTNER_MESSAGE = 'お疲れ様、冒険者。次のクエストの話でもしようか。';
 
 function buildPartnerMessagePrompt(request: PartnerMessageRequest): string {
   const lines = [
-    'あなたはキャバクラ嬢です。ユーザーの指示に従い、質問に答えてユーザーと仲良くなってください。',
+    'あなたはサイバーパンク都市のバーで働くスタッフ（ウェイトレスまたはウェイター）です。',
+    '冒険者（ユーザー）にとっての「相棒」であり、クエストを一緒に見守り、励ます存在です。',
     '【状況】',
   ];
   if (request.timeOfDay) {
     lines.push(`時間帯: ${request.timeOfDay}`);
   }
   if (request.progressSummary) {
-    lines.push(`進捗状況: ${request.progressSummary}`);
+    lines.push(`冒険者の進捗: ${request.progressSummary}`);
   }
   if (request.currentTaskTitle) {
-    lines.push(`現在のタスク: ${request.currentTaskTitle}`);
+    lines.push(`現在のクエスト: ${request.currentTaskTitle}`);
   }
   lines.push(
-    '【性格】優しく親しみやすい。です・ます調ではなく、砕けた口調で。'
+    '【性格・トーン】',
+    '- 優しく親しみやすい。砕けた口調（です・ます調は使わない）。',
+    '- 失敗しても責めない。「また挑戦しよう」と前向きに励ます。',
+    '- バーの常連を迎えるように、安心感と応援の気持ちを込めて話す。',
   );
   return lines.join('\n');
 }
@@ -461,7 +588,7 @@ export async function generatePartnerMessage(
   return DEFAULT_PARTNER_MESSAGE;
 }
 
-function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
+function buildGrimoirePrompt(completedTasks: CompletedTask[], context?: GrimoireContext): string {
   if (completedTasks.length === 0) {
     return '完了したタスクがありません。';
   }
@@ -470,17 +597,53 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[]): string {
     const completedDate = new Date(task.completedAt * 1000).toLocaleDateString('ja-JP');
     return `${index + 1}. ${task.title} (種別: ${task.type}, 難易度: ${task.difficulty}, 完了日: ${completedDate})`;
   }).join('\n');
-  
-  return [
-    '完了したタスクすべてを参考に、その日の出来事を面白おかしく2.3文にしてください、JSONのみで返してください。',
-    '【完了したタスク一覧】',
+
+  const lines: string[] = [
+    'あなたはTRPGのゲームマスターであり、ノベルゲーのシナリオライターです。',
+    '冒険者のグリモワール（冒険日誌）に記すセッション記録を、物語として紡いでください。',
+  ];
+
+  if (context) {
+    lines.push(
+      '',
+      '【冒険者プロフィール】',
+      `名前: ${context.characterName}`,
+      `クラス: ${context.className}`,
+      `称号: ${context.title}`,
+      `レベル: ${context.level}`,
+      `目標: ${context.goal}`,
+    );
+
+    if (context.previousNarratives.length > 0) {
+      lines.push(
+        '',
+        '【前回までのあらすじ】',
+        '以下はこの冒険者のグリモワールに記された直近の記録です。今回の物語はこの続きとして書いてください。',
+      );
+      context.previousNarratives.forEach((narrative, i) => {
+        lines.push(`--- 記録${i + 1} ---`, narrative);
+      });
+    }
+  }
+
+  lines.push(
+    '',
+    '【今回クリアしたクエスト】',
     taskList,
+    '',
     '【出力ルール】',
-    '1. narrative: 完了したタスクすべてを統合した物語として、冒険の記録を2-3文で描写してください。',
-    '2. rewardXp: 完了したタスクの合計経験値（各タスクの難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
-    '3. rewardGold: 完了したタスクの合計報酬（各タスクの難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
-    '必須フィールド: narrative, rewardXp, rewardGold。JSON以外は出力しないこと。',
-  ].join('\n');
+    '1. title: この章の冒険を象徴する章タイトル（例: 「第三章: コードの迷宮と言霊の試練」「暁の探求者、新たな扉を開く」）。',
+    '2. narrative: 冒険者の行動・情景・感情・成長を含むTRPGセッション記録として4〜6文で描写する。',
+    '   - 冒険者の名前やクラスを自然に物語に組み込む。',
+    '   - クエストの内容をTRPGのアクション（探索、戦闘、修練、発見など）として昇華する。',
+    '   - 前回のあらすじがある場合は、その続きの物語として書く。',
+    '   - 情景描写（場所、天候、雰囲気）を含め、読み返したくなる文体で。',
+    '3. rewardXp: 完了したクエストの合計経験値（各難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
+    '4. rewardGold: 完了したクエストの合計ゴールド（各難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
+    '必須フィールド: title, narrative, rewardXp, rewardGold。JSONのみで返してください。',
+  );
+
+  return lines.join('\n');
 }
 
 function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
@@ -495,24 +658,27 @@ function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
 
 /**
  * Llama 3.1 8B でグリモワールエントリを生成する。
- * 完了したタスクすべてを参考に、統合された物語と報酬を生成する。
+ * キャラクタープロフィール・過去のナラティブをコンテキストに含め、
+ * 連続性のある物語と報酬を生成する。
  */
 export async function generateGrimoire(
   ai: AiRunBinding,
   completedTasks: CompletedTask[],
-  gatewayId?: string
+  gatewayId?: string,
+  context?: GrimoireContext
 ): Promise<GrimoireGenerationResult> {
   if (completedTasks.length === 0) {
+    const name = context?.characterName ?? '冒険者';
     return {
-      narrative: 'まだ完了したタスクがありません。冒険を続けましょう。',
+      title: '物語の始まりを待つ',
+      narrative: `${name}のグリモワールはまだ白紙のままだ。しかし、その真新しいページは最初のクエストが刻まれる日を静かに待っている。`,
       rewardXp: 0,
       rewardGold: 0,
     };
   }
   
-  const prompt = buildGrimoirePrompt(completedTasks);
+  const prompt = buildGrimoirePrompt(completedTasks, context);
   
-  // フォールバック用の報酬計算
   const totalRewards = completedTasks.reduce(
     (acc, task) => {
       let xp = 0;
@@ -550,16 +716,21 @@ export async function generateGrimoire(
       }
     }
     if (isGrimoireResult(parsed)) {
-      return parsed;
+      const o = parsed as unknown as Record<string, unknown>;
+      const title = typeof o.title === 'string' && o.title.trim().length > 0
+        ? o.title.trim()
+        : `${context?.characterName ?? '冒険者'}の冒険記`;
+      return { ...parsed, title };
     }
   } catch {
     // fall through to fallback
   }
   
-  // フォールバック
+  const name = context?.characterName ?? '冒険者';
   const taskTitles = completedTasks.map(t => t.title).join('、');
   return {
-    narrative: `今日は${completedTasks.length}つのタスクを達成した。${taskTitles}。これらの成果は、冒険者としての成長の証である。`,
+    title: `${name}の冒険記`,
+    narrative: `${name}は${completedTasks.length}つのクエストに挑み、すべてをクリアした。${taskTitles}――その一つひとつが、グリモワールに刻まれる物語の1ページとなる。`,
     rewardXp: totalRewards.xp,
     rewardGold: totalRewards.gold,
   };

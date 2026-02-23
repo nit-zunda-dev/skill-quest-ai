@@ -61,13 +61,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
             className="w-full min-w-0 space-y-6 sm:space-y-7 text-left flex flex-col justify-center"
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-bold text-white leading-tight font-display">
-              退屈なTODO消化を、
+              退屈なTODOを、
               <span className="block bg-gradient-to-r from-emerald-400 via-green-400 to-violet-400 bg-clip-text text-transparent">
-                ゲーム感覚に。
+                楽しい物語に。
               </span>
             </h1>
             <p className="text-slate-400 text-base md:text-lg xl:text-xl leading-relaxed">
-              「また三日坊主」と自己嫌悪するのはもう終わり。資格勉強もプログラミングも、ゲーム感覚で「今すぐ」レベルアップの快感を手に入れよう。
+              目標を入力すれば、AIがクエストと物語を紡ぎ出す。クリアするたびに届く物語と報酬、AIパートナーとの冒険で、「また三日坊主」はもう終わり。
             </p>
             <Button
               onClick={onStartClick}
@@ -95,36 +95,36 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
                 <div className="flex items-center justify-center size-12 rounded-xl bg-violet-500/20 text-violet-400">
                   <ListTodo className="size-6" aria-hidden />
                 </div>
-                <h3 className="font-semibold text-white text-base">目標を自動でクエスト(タスク)化</h3>
+                <h3 className="font-semibold text-white text-base">目標を自動でクエスト化</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  やることをRPGのクエストに自動で変えて管理。単純なToDoでは続かなかった学びも、ゲーム感覚で続けられます。
+                  目標を入力するだけで、AIがクエストとして一覧化。単なるチェックリストではなく、冒険のシナリオとして進められます。
                 </p>
               </div>
               <div className="flex flex-col gap-3 p-5 rounded-xl bg-slate-800/60 border border-slate-700/60">
                 <div className="flex items-center justify-center size-12 rounded-xl bg-emerald-500/20 text-emerald-400">
                   <Zap className="size-6" aria-hidden />
                 </div>
-                <h3 className="font-semibold text-white text-base">EXPで報酬感</h3>
+                <h3 className="font-semibold text-white text-base">クリアで物語と報酬</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  一日の終わりにEXPを獲得。「今すぐ」レベルアップの快感を味わえます。
+                  クエストをクリアするたびに、AIが紡ぐ物語の1シーンとXP・ゴールドが届く。成長が目に見えるから続けられます。
                 </p>
               </div>
               <div className="flex flex-col gap-3 p-5 rounded-xl bg-slate-800/60 border border-slate-700/60">
                 <div className="flex items-center justify-center size-12 rounded-xl bg-sky-500/20 text-sky-400">
                   <MessageCircle className="size-6" aria-hidden />
                 </div>
-                <h3 className="font-semibold text-white text-base">AIパートナーとの対話</h3>
+                <h3 className="font-semibold text-white text-base">AIパートナーと冒険</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  AIパートナーと対話しながら、学習やタスクを進められます。一人で続けるより、一緒に進める体験を。
+                  一人じゃない。あなたの相棒がバーで待っている。クエストの相談も、ちょっとした雑談も、いつでも気軽に。
                 </p>
               </div>
               <div className="flex flex-col gap-3 p-5 rounded-xl bg-slate-800/60 border border-slate-700/60">
                 <div className="flex items-center justify-center size-12 rounded-xl bg-amber-500/20 text-amber-400">
                   <Gift className="size-6" aria-hidden />
                 </div>
-                <h3 className="font-semibold text-white text-base">ランダムドロップ</h3>
+                <h3 className="font-semibold text-white text-base">グリモワールに残る記録</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  クリアでレアアイテムゲット。飽きさせないガチャ要素で、毎日ちょっとしたワクワクを。
+                  クリアした冒険はグリモワール（冒険日誌）に蓄積。続けた分だけ、自分だけのストーリーログが厚くなります。
                 </p>
               </div>
             </div>

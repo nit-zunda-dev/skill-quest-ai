@@ -38,7 +38,7 @@ test.describe('クエスト自動生成 E2E (Task 9.3)', () => {
     await page.getByRole('button', { name: 'ハイファンタジー' }).click();
     await page.getByRole('button', { name: '決定して次へ' }).click();
 
-    await expect(page.getByText('AIが世界を構築しています...')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('あなたの物語の世界を紡いでいます...')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole('button', { name: '世界へ旅立つ' })).toBeVisible({ timeout: 90_000 });
     await page.getByRole('button', { name: '世界へ旅立つ' }).click();
 
@@ -50,7 +50,7 @@ test.describe('クエスト自動生成 E2E (Task 9.3)', () => {
     await page.getByRole('button', { name: '採用' }).click();
 
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/To Do \(\d+\)/)).toBeVisible({ timeout: 10_000 });
   });
 
@@ -68,7 +68,7 @@ test.describe('クエスト自動生成 E2E (Task 9.3)', () => {
     await page.getByLabel('パスワード').fill('E2ETestPassword123!');
     await page.getByRole('button', { name: 'ログイン' }).click();
 
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('textbox', { name: '目標' }).fill('E2E目標変更で提案採用');
     await page.getByRole('button', { name: '目標を更新' }).click();
@@ -81,7 +81,7 @@ test.describe('クエスト自動生成 E2E (Task 9.3)', () => {
     await page.getByRole('button', { name: '採用' }).click();
 
     await expect(page.getByRole('heading', { name: 'タスク提案' })).not.toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 5_000 });
   });
 
   test('目標を3回変更して3回目に429の案内が表示される', async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe('クエスト自動生成 E2E (Task 9.3)', () => {
     await page.getByLabel('パスワード').fill('E2ETestPassword123!');
     await page.getByRole('button', { name: 'ログイン' }).click();
 
-    await expect(page.getByText('タスクボード')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('クエストボード')).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('textbox', { name: '目標' }).fill('1回目の目標');
     await page.getByRole('button', { name: '目標を更新' }).click();
