@@ -21,9 +21,13 @@ vi.mock('../services/ai-usage', async () => {
   };
 });
 
-vi.mock('../services/ai', () => ({
-  createAiService: vi.fn(),
-}));
+vi.mock('../services/ai', async () => {
+  const actual = await vi.importActual<typeof import('../services/ai')>('../services/ai');
+  return {
+    ...actual,
+    createAiService: vi.fn(),
+  };
+});
 
 function createTestApp(mockEnv: Bindings, user?: AuthUser) {
   const app = new Hono<{ Bindings: Bindings; Variables: { user: AuthUser } }>();
@@ -123,7 +127,7 @@ describe('grimoire router', () => {
       vi.mocked(getCharacterProfile).mockResolvedValue(mockProfile);
 
       const mockGrimoireResult = {
-        narrative: 'Generated narrative',
+        title: "Today's Adventure: Task 1",
         rewardXp: 10,
         rewardGold: 5,
       };
@@ -135,8 +139,8 @@ describe('grimoire router', () => {
       const mockGrimoireEntry = {
         id: 'g1',
         userId: testUser.id,
-        taskTitle: 'Today\'s Adventure: Task 1',
-        narrative: 'Generated narrative',
+        taskTitle: "Today's Adventure: Task 1",
+        narrative: 'Template-built narrative',
         rewardXp: 10,
         rewardGold: 5,
         createdAt: Math.floor(Date.now() / 1000),
@@ -195,8 +199,8 @@ describe('grimoire router', () => {
       expect(body.message).toContain('1日1回まで');
     });
 
-    it('完了したタスクがない場合、400エラーを返す', async () => {
-      const { getDailyUsage } = await import('../services/ai-usage');
+    it('完了したタスクが0件のときは200でエントリを作成する（0件用テンプレート）', async () => {
+      const { getDailyUsage, getCharacterProfile, createGrimoireEntry, recordGrimoireGeneration } = await import('../services/ai-usage');
       vi.mocked(getDailyUsage).mockResolvedValue({
         narrativeCount: 0,
         partnerCount: 0,
@@ -204,9 +208,20 @@ describe('grimoire router', () => {
         grimoireCount: 0,
         goalUpdateCount: 0,
       });
+      vi.mocked(getCharacterProfile).mockResolvedValue({ name: '冒険者' });
+      vi.mocked(createGrimoireEntry).mockResolvedValue({
+        id: 'g1',
+        userId: testUser.id,
+        taskTitle: '物語の始まりを待つ',
+        narrative: '',
+        rewardXp: 0,
+        rewardGold: 0,
+        createdAt: Math.floor(Date.now() / 1000),
+      });
+      vi.mocked(recordGrimoireGeneration).mockResolvedValue(undefined);
 
       mockEnv.DB = createMockD1ForGrimoire({
-        completedQuests: [], // 完了タスクなし
+        completedQuests: [],
       }) as unknown as Bindings['DB'];
 
       const { app, env } = createTestApp(mockEnv);
@@ -215,10 +230,16 @@ describe('grimoire router', () => {
         headers: { 'Content-Type': 'application/json' },
       }, env);
 
-      expect(res.status).toBe(400);
-      const body = await res.json() as { error: string; message: string };
-      expect(body.error).toBe('Bad Request');
-      expect(body.message).toContain('完了したタスクがありません');
+      expect(res.status).toBe(200);
+      const body = await res.json() as {
+        grimoireEntry: { taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
+      };
+      expect(body.grimoireEntry).toBeDefined();
+      expect(body.grimoireEntry.taskTitle).toBe('物語の始まりを待つ');
+      expect(body.grimoireEntry.narrative).toContain('冒険者');
+      expect(body.grimoireEntry.narrative).toContain('グリモワール');
+      expect(body.grimoireEntry.rewardXp).toBe(0);
+      expect(body.grimoireEntry.rewardGold).toBe(0);
     });
 
     it.skip('env.AIが未定義の場合はスキップする', async () => {

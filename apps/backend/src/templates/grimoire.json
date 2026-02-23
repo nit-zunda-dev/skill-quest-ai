@@ -1,0 +1,12 @@
+{
+  "narrative": {
+    "zeroTasks": "{characterName}のグリモワールはまだ白紙のままだ。最初のクエストが刻まれる日を静かに待っている。",
+    "oneTask": "{date}、{characterName}はクエスト『{taskTitle}』（{taskTypeLabel}・{difficultyLabel}）を成し遂げた。+{totalXp} XP と {totalGold} G が、冒険の証として刻まれる。",
+    "multipleTasks": "{date}、{characterName}は{taskCount}つのクエストに挑み、すべてを征した。{taskTitles}。その軌跡に、+{totalXp} XP と {totalGold} G が記される。"
+  },
+  "titleFallback": {
+    "zeroTasks": "物語の始まりを待つ",
+    "oneTask": "{date} — 『{taskTitle}』を征す",
+    "multipleTasks": "{date}の冒険 — {taskCount}クエスト制覇"
+  }
+}
