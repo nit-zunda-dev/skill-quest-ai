@@ -1,9 +1,10 @@
 /**
- * ガチャサービス (Task 3.1)
+ * ガチャサービス (Task 3.1, 4.1)
  * レアリティに基づく1回抽選。マスタの enabled_for_drop なアイテムのみ対象。
+ * 認証ユーザー本人の所持一覧取得。
  */
 import type { D1Database } from '@cloudflare/workers-types';
-import type { Item } from '@skill-quest/shared';
+import type { Item, AcquiredItemView } from '@skill-quest/shared';
 import { Category, Rarity } from '@skill-quest/shared';
 
 /** レアリティ別ドロップ重み。相対順序 common > rare > super-rare > ultra-rare > legend を保つ（設計書 2.2）。 */
@@ -98,4 +99,35 @@ export async function grantItemOnQuestComplete(
   );
   await insertStmt.bind(id, userId, item.id, questId, acquiredAt).run();
   return { granted: true, item };
+}
+
+type AcquiredRow = {
+  item_id: string;
+  acquired_at: number;
+  name: string;
+  category: string;
+  rarity: string;
+};
+
+/**
+ * 指定ユーザーの所持アイテム一覧を取得時刻の降順で返す（Task 4.1）。
+ * 同一アイテムの複数回取得は複数行として返す。
+ */
+export async function getAcquiredItems(db: D1Database, userId: string): Promise<AcquiredItemView[]> {
+  const stmt = db.prepare(
+    `SELECT uai.item_id, uai.acquired_at, i.name, i.category, i.rarity
+     FROM user_acquired_items uai
+     JOIN items i ON uai.item_id = i.id
+     WHERE uai.user_id = ?
+     ORDER BY uai.acquired_at DESC`
+  );
+  const { results } = await stmt.bind(userId).all<AcquiredRow>();
+  const rows = (results ?? []) as AcquiredRow[];
+  return rows.map((r) => ({
+    itemId: r.item_id,
+    acquiredAt: new Date(r.acquired_at * 1000).toISOString(),
+    name: r.name,
+    category: r.category as Category,
+    rarity: r.rarity as Rarity,
+  }));
 }
