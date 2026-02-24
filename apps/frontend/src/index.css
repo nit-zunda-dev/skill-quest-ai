@@ -122,3 +122,88 @@
     @apply bg-background text-foreground;
     }
 }
+
+/* EP-27: アイテム獲得演出用キーフレーム */
+@keyframes item-pop-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes item-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 12px 2px var(--item-glow-color, rgba(148, 163, 184, 0.4));
+  }
+  50% {
+    box-shadow: 0 0 24px 6px var(--item-glow-color, rgba(148, 163, 184, 0.6));
+  }
+}
+
+@keyframes item-shine-sweep {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes item-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes item-get-text-pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-item-pop-in {
+  animation: item-pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-item-glow-pulse {
+  animation: item-glow-pulse 1.5s ease-in-out 0.3s infinite;
+}
+
+.animate-item-shine-sweep {
+  animation: item-shine-sweep 0.8s ease-out 0.4s forwards;
+}
+
+.animate-item-float {
+  animation: item-float 2s ease-in-out 0.8s infinite;
+}
+
+.animate-item-get-text {
+  animation: item-get-text-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

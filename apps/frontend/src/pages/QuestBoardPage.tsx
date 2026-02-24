@@ -169,9 +169,11 @@ export default function QuestBoardPage() {
                 </div>
                 {narrativeResult.grantedItem != null && (
                   <div className="mb-6">
-                    <p className="text-sm text-slate-400 mb-2">アイテムをゲット！</p>
+                    <p className="text-center text-lg font-bold text-transparent bg-clip-text bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 mb-4 animate-item-get-text">
+                      アイテムをゲット！
+                    </p>
                     <div className="flex justify-center">
-                      <ItemAcquisitionCard item={narrativeResult.grantedItem} />
+                      <ItemAcquisitionCard item={narrativeResult.grantedItem} animationDelay="0.15s" />
                     </div>
                   </div>
                 )}
@@ -188,9 +190,11 @@ export default function QuestBoardPage() {
       )}
 
       {directCompleteGrantedItem != null && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-sm w-full p-6 shadow-2xl">
-            <p className="text-center text-white font-bold mb-4">アイテムをゲット！</p>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-800/95 border border-slate-600 rounded-2xl max-w-sm w-full p-6 shadow-2xl shadow-amber-500/10 animate-item-pop-in">
+            <p className="text-center text-xl font-bold text-transparent bg-clip-text bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 mb-5 animate-item-get-text">
+              アイテムをゲット！
+            </p>
             <ItemAcquisitionCard item={directCompleteGrantedItem} onClose={() => setDirectCompleteGrantedItem(null)} />
           </div>
         </div>
