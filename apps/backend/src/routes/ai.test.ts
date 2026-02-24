@@ -168,6 +168,8 @@ describe('ai router', () => {
       expect(body).toHaveProperty('narrative');
       expect(body).toHaveProperty('rewardXp');
       expect(body).toHaveProperty('rewardGold');
+      expect(body).toHaveProperty('grantedItem');
+      expect(body.grantedItem === null || typeof body.grantedItem === 'object').toBe(true);
     });
 
     it('returns 429 when narrative daily limit exceeded', async () => {

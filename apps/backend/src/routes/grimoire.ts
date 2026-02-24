@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import type { Bindings, AuthUser } from '../types';
 import { schema } from '../db/schema';
 import { getGrimoireEntries, createGrimoireEntry, getDailyUsage, recordGrimoireGeneration, getTodayUtc, getCharacterProfile, updateCharacterProfile } from '../services/ai-usage';
-import { createAiService, type GrimoireContext } from '../services/ai';
+import { createAiService, getGrimoireFallbackTitleAndRewards, buildGrimoireNarrativeFromTemplate, type GrimoireContext } from '../services/ai';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 
 type GrimoireVariables = { user: AuthUser };
@@ -48,7 +48,12 @@ grimoireRouter.post('/generate', async (c) => {
   if (usage.grimoireCount >= 1) {
     return c.json({ error: 'Too Many Requests', message: 'グリモワール生成は1日1回までです。' }, 429);
   }
-  
+
+  const profileRaw = await getCharacterProfile(c.env.DB, user.id);
+  const characterName = (profileRaw && typeof profileRaw === 'object' && typeof (profileRaw as Record<string, unknown>).name === 'string')
+    ? String((profileRaw as Record<string, unknown>).name)
+    : '冒険者';
+
   // 完了したタスクをすべて取得
   const db = drizzle(c.env.DB, { schema });
   const completedQuests = await db
@@ -59,17 +64,13 @@ grimoireRouter.post('/generate', async (c) => {
       isNotNull(schema.quests.completedAt)
     ))
     .orderBy(schema.quests.completedAt);
-  
-  if (completedQuests.length === 0) {
-    return c.json({ error: 'Bad Request', message: '完了したタスクがありません。' }, 400);
-  }
-  
-  // 完了タスクをCompletedTask形式に変換
+
+  // 完了タスクをCompletedTask形式に変換（0件でも配列のまま）
   const completedTasks = completedQuests.map((q) => {
     const winCondition = (q.winCondition as Record<string, unknown> | null) ?? {};
     const type = (winCondition.type as TaskType) ?? TaskType.TODO;
     const difficulty = NUM_TO_DIFFICULTY[q.difficulty] ?? Difficulty.MEDIUM;
-    
+
     return {
       id: q.id,
       title: q.title,
@@ -78,38 +79,41 @@ grimoireRouter.post('/generate', async (c) => {
       completedAt: q.completedAt ? Math.floor(new Date(q.completedAt).getTime() / 1000) : 0,
     };
   });
-  
-  const profileRaw = await getCharacterProfile(c.env.DB, user.id);
 
-  // 過去のグリモワールエントリを取得（直近3件の narrative を物語の連続性に使用）
-  const previousEntries = await getGrimoireEntries(c.env.DB, user.id);
-  const previousNarratives = previousEntries
-    .slice(0, 3)
-    .map((e) => e.narrative);
+  let result: { title: string; rewardXp: number; rewardGold: number };
 
-  // キャラクタープロフィールからコンテキストを構築
-  let grimoireContext: GrimoireContext | undefined;
-  if (profileRaw && typeof profileRaw === 'object') {
-    const p = profileRaw as Record<string, unknown>;
-    grimoireContext = {
-      characterName: String(p.name ?? '冒険者'),
-      className: String(p.className ?? '冒険者'),
-      title: String(p.title ?? '見習い'),
-      level: Number(p.level) || 1,
-      goal: String(p.goal ?? ''),
-      previousNarratives,
-    };
+  if (completedTasks.length === 0) {
+    // 0件: AIは呼ばずフォールバックでタイトル・報酬0・0件用ナラティブ
+    result = getGrimoireFallbackTitleAndRewards([], characterName);
+  } else {
+    // 過去のグリモワールエントリを取得（タイトル生成のコンテキスト用）
+    const previousEntries = await getGrimoireEntries(c.env.DB, user.id);
+    const previousNarratives = previousEntries.slice(0, 3).map((e) => e.narrative);
+
+    let grimoireContext: GrimoireContext | undefined;
+    if (profileRaw && typeof profileRaw === 'object') {
+      const p = profileRaw as Record<string, unknown>;
+      grimoireContext = {
+        characterName: String(p.name ?? '冒険者'),
+        className: String(p.className ?? '冒険者'),
+        title: String(p.title ?? '見習い'),
+        level: Number(p.level) || 1,
+        goal: String(p.goal ?? ''),
+        previousNarratives,
+      };
+    }
+
+    const service = createAiService(c.env);
+    result = await service.generateGrimoire(completedTasks, grimoireContext);
   }
 
-  // AIサービスでグリモワールを生成
-  const service = createAiService(c.env);
-  const result = await service.generateGrimoire(completedTasks, grimoireContext);
-  
-  // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
+  const narrative = buildGrimoireNarrativeFromTemplate(completedTasks, characterName, result.rewardXp, result.rewardGold);
+
+  // プロフィール更新（報酬が0の場合はXP/レベルを変えない）
   let updatedProfile = profileRaw as Record<string, unknown> | null;
-  let oldProfile = profileRaw as Record<string, unknown> | null;
-  
-  if (profileRaw && typeof profileRaw === 'object') {
+  const oldProfile = profileRaw as Record<string, unknown> | null;
+
+  if ((result.rewardXp > 0 || result.rewardGold > 0) && profileRaw && typeof profileRaw === 'object') {
     const p = profileRaw as Record<string, unknown>;
     let newXp = (Number(p.currentXp) || 0) + result.rewardXp;
     let newLevel = Number(p.level) || 1;
@@ -128,37 +132,34 @@ grimoireRouter.post('/generate', async (c) => {
       level: newLevel,
       gold: newGold,
     });
-    
-    updatedProfile = { 
-      ...p, 
-      currentXp: newXp, 
-      nextLevelXp: nextXp, 
-      level: newLevel, 
+
+    updatedProfile = {
+      ...p,
+      currentXp: newXp,
+      nextLevelXp: nextXp,
+      level: newLevel,
       gold: newGold,
     };
   }
-  
-  // グリモワールエントリを作成（AI生成の章タイトルを使用）
-  const chapterTitle = result.title;
+
   const grimoireResult = await createGrimoireEntry(c.env.DB, user.id, {
-    taskTitle: chapterTitle,
-    narrative: result.narrative,
+    taskTitle: result.title,
+    narrative,
     rewardXp: result.rewardXp,
     rewardGold: result.rewardGold,
   });
-  
-  // 利用回数を記録
+
   await recordGrimoireGeneration(c.env.DB, user.id, today);
-  
+
   const grimoireEntry = {
     id: grimoireResult.id,
     date: new Date().toLocaleDateString('ja-JP'),
-    taskTitle: chapterTitle,
-    narrative: result.narrative,
+    taskTitle: result.title,
+    narrative,
     rewardXp: result.rewardXp,
     rewardGold: result.rewardGold,
   };
-  
+
   return c.json({
     grimoireEntry,
     profile: updatedProfile ?? undefined,

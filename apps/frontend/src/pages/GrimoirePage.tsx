@@ -58,7 +58,10 @@ export default function GrimoirePage() {
               <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500">
                 <Sparkles className="w-8 h-8 text-indigo-400" />
               </div>
-              <h3 className="text-2xl font-display font-bold text-white mb-2">冒険の記録</h3>
+              <h3 className="text-2xl font-display font-bold text-white mb-1">冒険の記録</h3>
+              <p className="text-indigo-300 font-medium mb-4 text-lg">
+                「{grimoireResult.grimoireEntry.taskTitle}」
+              </p>
               <p className="text-slate-300 italic mb-6 leading-relaxed bg-slate-900/50 p-4 rounded border border-slate-700/50">
                 &quot;{grimoireResult.grimoireEntry.narrative}&quot;
               </p>
