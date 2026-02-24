@@ -224,6 +224,9 @@ describe('PATCH /api/quests/:id/complete と PATCH /api/quests/:id/status 後の
 
     const completeRes = await SELF.fetch(`${BASE}/api/quests/${created.id}/complete`, { method: 'PATCH', headers });
     expect(completeRes.status).toBe(200);
+    const completeBody = (await completeRes.json()) as { grantedItem?: unknown };
+    expect(completeBody).toHaveProperty('grantedItem');
+    expect(completeBody.grantedItem === null || typeof completeBody.grantedItem === 'object').toBe(true);
 
     const itemsAfter = await SELF.fetch(`${BASE}/api/items`, { headers });
     expect(itemsAfter.status).toBe(200);
@@ -250,6 +253,9 @@ describe('PATCH /api/quests/:id/complete と PATCH /api/quests/:id/status 後の
       body: JSON.stringify({ status: 'done' }),
     });
     expect(statusRes.status).toBe(200);
+    const statusBody = (await statusRes.json()) as { grantedItem?: unknown };
+    expect(statusBody).toHaveProperty('grantedItem');
+    expect(statusBody.grantedItem === null || typeof statusBody.grantedItem === 'object').toBe(true);
 
     const itemsAfter = await SELF.fetch(`${BASE}/api/items`, { headers });
     expect(itemsAfter.status).toBe(200);
@@ -316,6 +322,9 @@ describe('ナラティブ生成完了後のガチャ付与 (Task 5.2)', () => {
       }),
     });
     expect(narrativeRes.status).toBe(200);
+    const narrativeBody = (await narrativeRes.json()) as { grantedItem?: unknown };
+    expect(narrativeBody).toHaveProperty('grantedItem');
+    expect(narrativeBody.grantedItem === null || typeof narrativeBody.grantedItem === 'object').toBe(true);
 
     const itemsAfter = await SELF.fetch(`${BASE}/api/items`, { headers });
     expect(itemsAfter.status).toBe(200);

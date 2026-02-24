@@ -2,32 +2,39 @@
  * タスクボードページ。QuestBoard とナラティブ完了モーダル・提案モーダルをこのページで完結。
  */
 import React, { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Task } from '@skill-quest/shared';
+import type { Item } from '@skill-quest/shared';
 import { X, Sparkles } from 'lucide-react';
 import QuestBoard from '@/components/QuestBoard';
+import { ItemAcquisitionCard } from '@/components/ItemAcquisitionCard';
 import SuggestedQuestsModal from '@/components/SuggestedQuestsModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuests } from '@/hooks/useQuests';
 import { useGrimoire } from '@/hooks/useGrimoire';
 import { generateTaskNarrative, normalizeProfileNumbers } from '@/lib/api-client';
+import type { NarrativeResult } from '@/lib/api-client';
 
 export default function QuestBoardPage() {
   const { profile, setProfile } = useProfile();
+  const queryClient = useQueryClient();
   const {
     data: serverTasks = [],
     isLoading: questsLoading,
     isError: questsError,
     addQuest,
     deleteQuest,
-    updateQuestStatus,
+    updateQuestStatusAsync,
     invalidate: invalidateQuests,
   } = useQuests();
   const { invalidate: invalidateGrimoire } = useGrimoire();
   const [completedTask, setCompletedTask] = useState<Task | null>(null);
   const [narrativeComment, setNarrativeComment] = useState('');
   const [isProcessingNarrative, setIsProcessingNarrative] = useState(false);
-  const [narrativeResult, setNarrativeResult] = useState<{ narrative: string; xp: number; gold: number } | null>(null);
+  const [narrativeResult, setNarrativeResult] = useState<NarrativeResult | null>(null);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
+  /** 直接完了（status → done）で獲得したアイテム。表示用モーダル用 */
+  const [directCompleteGrantedItem, setDirectCompleteGrantedItem] = useState<Item | null>(null);
 
   const tasks: Task[] = useMemo(
     () =>
@@ -64,10 +71,18 @@ export default function QuestBoardPage() {
       }
       invalidateQuests();
       invalidateGrimoire();
+      queryClient.invalidateQueries({ queryKey: ['acquired-items'] });
     } catch (e) {
       console.error('Failed to generate narrative', e);
     } finally {
       setIsProcessingNarrative(false);
+    }
+  };
+
+  const handleUpdateStatus = async (taskId: string, status: 'todo' | 'in_progress' | 'done') => {
+    const data = await updateQuestStatusAsync({ id: taskId, status });
+    if (status === 'done' && data.grantedItem != null) {
+      setDirectCompleteGrantedItem(data.grantedItem);
     }
   };
 
@@ -93,7 +108,7 @@ export default function QuestBoardPage() {
             onAddTask={addTask}
             onCompleteTask={initiateCompleteTask}
             onDeleteTask={(id) => deleteQuest(id)}
-            onUpdateStatus={(taskId, status) => updateQuestStatus({ id: taskId, status })}
+            onUpdateStatus={handleUpdateStatus}
             onRequestSuggestFromGoal={() => {
               setShowSuggestModal(true);
             }}
@@ -152,6 +167,14 @@ export default function QuestBoardPage() {
                     <div className="text-2xl font-bold text-yellow-400">+{narrativeResult.gold}</div>
                   </div>
                 </div>
+                {narrativeResult.grantedItem != null && (
+                  <div className="mb-6">
+                    <p className="text-sm text-slate-400 mb-2">アイテムをゲット！</p>
+                    <div className="flex justify-center">
+                      <ItemAcquisitionCard item={narrativeResult.grantedItem} />
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={closeNarrativeModal}
                   className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-8 rounded-lg"
@@ -160,6 +183,15 @@ export default function QuestBoardPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {directCompleteGrantedItem != null && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-sm w-full p-6 shadow-2xl">
+            <p className="text-center text-white font-bold mb-4">アイテムをゲット！</p>
+            <ItemAcquisitionCard item={directCompleteGrantedItem} onClose={() => setDirectCompleteGrantedItem(null)} />
           </div>
         </div>
       )}

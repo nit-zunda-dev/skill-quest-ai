@@ -232,8 +232,8 @@ questsRouter.patch(
     const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
     const row = updatedRows[0];
     if (!row) throw new HTTPException(500, { message: 'Failed to update quest' });
-    await grantItemOnQuestComplete(c.env.DB, user.id, id);
-    return c.json(toQuestResponse(row));
+    const { item: grantedItem } = await grantItemOnQuestComplete(c.env.DB, user.id, id);
+    return c.json({ ...toQuestResponse(row), grantedItem: grantedItem ?? null });
   }
 );
 
@@ -274,10 +274,12 @@ questsRouter.patch(
     const updatedRows = await db.select().from(schema.quests).where(eq(schema.quests.id, id)).limit(1);
     const row = updatedRows[0];
     if (!row) throw new HTTPException(500, { message: 'Failed to update quest status' });
+    let grantedItem: Awaited<ReturnType<typeof grantItemOnQuestComplete>>['item'] = null;
     if (status === 'done') {
-      await grantItemOnQuestComplete(c.env.DB, user.id, id);
+      const grant = await grantItemOnQuestComplete(c.env.DB, user.id, id);
+      grantedItem = grant.item;
     }
-    return c.json(toQuestResponse(row));
+    return c.json({ ...toQuestResponse(row), grantedItem: grantedItem ?? null });
   }
 );
 
