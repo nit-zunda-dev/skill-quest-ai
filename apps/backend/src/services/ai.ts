@@ -3,6 +3,7 @@ import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest, SuggestedQuestItem } from '@skill-quest/shared';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 import { suggestedQuestItemSchema } from '@skill-quest/shared';
+import grimoireTemplates from '../templates/grimoire.json';
 
 /**
  * Workers AI モデルID（design.md / docs/architecture/06_AI設計.md に準拠）
@@ -85,9 +86,9 @@ export interface GrimoireContext {
   previousNarratives: string[];
 }
 
-export interface GrimoireGenerationResult {
+/** AIが返すグリモワールの章タイトルと報酬のみ（narrative はテンプレートで組み立てる） */
+export interface GrimoireTitleAndRewards {
   title: string;
-  narrative: string;
   rewardXp: number;
   rewardGold: number;
 }
@@ -98,7 +99,7 @@ export interface AiService {
   generateCharacter(data: GenesisFormData): Promise<CharacterProfile>;
   generateNarrative(request: NarrativeRequest): Promise<NarrativeResult>;
   generatePartnerMessage(request: PartnerMessageRequest): Promise<string>;
-  generateGrimoire(completedTasks: CompletedTask[], context?: GrimoireContext): Promise<GrimoireGenerationResult>;
+  generateGrimoire(completedTasks: CompletedTask[], context?: GrimoireContext): Promise<GrimoireTitleAndRewards>;
   generateSuggestedQuests(goal: string): Promise<SuggestedQuestItem[]>;
 }
 
@@ -119,7 +120,6 @@ function createStubAiService(env: Bindings): AiService {
     generatePartnerMessage: async () => 'Stub partner message.',
     generateGrimoire: async () => ({
       title: 'Stub chapter',
-      narrative: 'Stub grimoire.',
       rewardXp: 10,
       rewardGold: 5,
     }),
@@ -599,8 +599,8 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[], context?: Grimoire
   }).join('\n');
 
   const lines: string[] = [
-    'あなたはTRPGのゲームマスターであり、ノベルゲーのシナリオライターです。',
-    '冒険者のグリモワール（冒険日誌）に記すセッション記録を、物語として紡いでください。',
+    'あなたはTRPGのゲームマスターです。',
+    '冒険者のグリモワール（冒険日誌）の章タイトルと、今回クリアしたクエストに応じた報酬（経験値・ゴールド）のみを生成してください。',
   ];
 
   if (context) {
@@ -632,79 +632,151 @@ function buildGrimoirePrompt(completedTasks: CompletedTask[], context?: Grimoire
     taskList,
     '',
     '【出力ルール】',
-    '1. title: この章の冒険を象徴する章タイトル（例: 「第三章: コードの迷宮と言霊の試練」「暁の探求者、新たな扉を開く」）。',
-    '2. narrative: 冒険者の行動・情景・感情・成長を含むTRPGセッション記録として4〜6文で描写する。',
-    '   - 冒険者の名前やクラスを自然に物語に組み込む。',
-    '   - クエストの内容をTRPGのアクション（探索、戦闘、修練、発見など）として昇華する。',
-    '   - 前回のあらすじがある場合は、その続きの物語として書く。',
-    '   - 情景描写（場所、天候、雰囲気）を含め、読み返したくなる文体で。',
-    '3. rewardXp: 完了したクエストの合計経験値（各難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）',
-    '4. rewardGold: 完了したクエストの合計ゴールド（各難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）',
-    '必須フィールド: title, narrative, rewardXp, rewardGold。JSONのみで返してください。',
+    'title: この章の冒険を象徴する章タイトル。章番号（第X章）は付けないこと。例: 「コードの迷宮と言霊の試練」「暁の探求者、新たな扉を開く」「今日の収穫」。',
+    'rewardXp: 完了したクエストの合計経験値（各難易度に応じて: EASY: 10-20, MEDIUM: 25-40, HARD: 50-80）。',
+    'rewardGold: 完了したクエストの合計ゴールド（各難易度に応じて: EASY: 5-10, MEDIUM: 15-25, HARD: 30-50）。',
+    '必須フィールド: title, rewardXp, rewardGold。JSONのみで返してください。',
   );
 
   return lines.join('\n');
 }
 
-function isGrimoireResult(obj: unknown): obj is GrimoireGenerationResult {
+function isGrimoireTitleAndRewardsResult(obj: unknown): obj is GrimoireTitleAndRewards {
   if (!obj || typeof obj !== 'object') return false;
   const o = obj as Record<string, unknown>;
   return (
-    typeof o.narrative === 'string' &&
+    typeof o.title === 'string' &&
     typeof o.rewardXp === 'number' &&
     typeof o.rewardGold === 'number'
   );
 }
 
 /**
- * Llama 3.1 8B でグリモワールエントリを生成する。
- * キャラクタープロフィール・過去のナラティブをコンテキストに含め、
- * 連続性のある物語と報酬を生成する。
+ * フォールバック用のタイトル・報酬を算出する（AI失敗時・0件時）。
+ */
+export function getGrimoireFallbackTitleAndRewards(
+  completedTasks: CompletedTask[],
+  characterName: string
+): GrimoireTitleAndRewards {
+  const templates = grimoireTemplates as { titleFallback: { zeroTasks: string; oneTask: string; multipleTasks: string } };
+  const dateStr = completedTasks.length > 0
+    ? new Date(Math.max(...completedTasks.map(t => t.completedAt * 1000))).toLocaleDateString('ja-JP')
+    : new Date().toLocaleDateString('ja-JP');
+
+  if (completedTasks.length === 0) {
+    return {
+      title: templates.titleFallback.zeroTasks,
+      rewardXp: 0,
+      rewardGold: 0,
+    };
+  }
+  if (completedTasks.length === 1) {
+    const taskTitle = truncateTaskTitle(completedTasks[0].title);
+    const title = templates.titleFallback.oneTask
+      .replace('{date}', dateStr)
+      .replace('{taskTitle}', taskTitle);
+    const rewards = difficultyBasedRewards(completedTasks[0].difficulty as Difficulty);
+    return { title, rewardXp: rewards.rewardXp, rewardGold: rewards.rewardGold };
+  }
+  const title = templates.titleFallback.multipleTasks
+    .replace('{date}', dateStr)
+    .replace('{taskCount}', String(completedTasks.length));
+  const total = completedTasks.reduce(
+    (acc, task) => {
+      const r = difficultyBasedRewards(task.difficulty as Difficulty);
+      return { xp: acc.xp + r.rewardXp, gold: acc.gold + r.rewardGold };
+    },
+    { xp: 0, gold: 0 }
+  );
+  return { title, rewardXp: total.xp, rewardGold: total.gold };
+}
+
+const TASK_TITLE_MAX_LEN = 30;
+
+function truncateTaskTitle(title: string): string {
+  if (title.length <= TASK_TITLE_MAX_LEN) return title;
+  return title.slice(0, TASK_TITLE_MAX_LEN) + '…';
+}
+
+const TASK_TYPE_LABELS: Record<string, string> = {
+  [TaskType.DAILY]: '日課',
+  [TaskType.HABIT]: '習慣',
+  [TaskType.TODO]: '討伐',
+};
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  [Difficulty.EASY]: '易',
+  [Difficulty.MEDIUM]: '中',
+  [Difficulty.HARD]: '難',
+};
+
+/**
+ * テンプレートJSONと変数からナラティブ文字列を組み立てる。
+ * 設計: docs/product/grimoire-system-design.md
+ */
+export function buildGrimoireNarrativeFromTemplate(
+  completedTasks: CompletedTask[],
+  characterName: string,
+  rewardXp: number,
+  rewardGold: number
+): string {
+  const t = grimoireTemplates as {
+    narrative: { zeroTasks: string; oneTask: string; multipleTasks: string };
+  };
+  const dateStr = completedTasks.length > 0
+    ? new Date(Math.max(...completedTasks.map(task => task.completedAt * 1000))).toLocaleDateString('ja-JP')
+    : new Date().toLocaleDateString('ja-JP');
+
+  const replace = (s: string, vars: Record<string, string | number>) => {
+    let out = s;
+    for (const [key, value] of Object.entries(vars)) {
+      out = out.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+    }
+    return out;
+  };
+
+  if (completedTasks.length === 0) {
+    return replace(t.narrative.zeroTasks, { characterName });
+  }
+  if (completedTasks.length === 1) {
+    const task = completedTasks[0];
+    return replace(t.narrative.oneTask, {
+      date: dateStr,
+      characterName,
+      taskTitle: truncateTaskTitle(task.title),
+      taskTypeLabel: TASK_TYPE_LABELS[task.type] ?? '討伐',
+      difficultyLabel: DIFFICULTY_LABELS[task.difficulty] ?? '中',
+      totalXp: rewardXp,
+      totalGold: rewardGold,
+    });
+  }
+  const taskTitles = completedTasks.map(task => `『${truncateTaskTitle(task.title)}』`).join('');
+  return replace(t.narrative.multipleTasks, {
+    date: dateStr,
+    characterName,
+    taskCount: completedTasks.length,
+    taskTitles,
+    totalXp: rewardXp,
+    totalGold: rewardGold,
+  });
+}
+
+/**
+ * Llama 3.1 8B でグリモワールの章タイトルと報酬のみを生成する。
+ * ナラティブは buildGrimoireNarrativeFromTemplate でテンプレートから組み立てる。
  */
 export async function generateGrimoire(
   ai: AiRunBinding,
   completedTasks: CompletedTask[],
   gatewayId?: string,
   context?: GrimoireContext
-): Promise<GrimoireGenerationResult> {
+): Promise<GrimoireTitleAndRewards> {
   if (completedTasks.length === 0) {
-    const name = context?.characterName ?? '冒険者';
-    return {
-      title: '物語の始まりを待つ',
-      narrative: `${name}のグリモワールはまだ白紙のままだ。しかし、その真新しいページは最初のクエストが刻まれる日を静かに待っている。`,
-      rewardXp: 0,
-      rewardGold: 0,
-    };
+    return getGrimoireFallbackTitleAndRewards([], context?.characterName ?? '冒険者');
   }
-  
+
   const prompt = buildGrimoirePrompt(completedTasks, context);
-  
-  const totalRewards = completedTasks.reduce(
-    (acc, task) => {
-      let xp = 0;
-      let gold = 0;
-      switch (task.difficulty) {
-        case 'EASY':
-          xp = 15;
-          gold = 8;
-          break;
-        case 'MEDIUM':
-          xp = 30;
-          gold = 18;
-          break;
-        case 'HARD':
-          xp = 60;
-          gold = 35;
-          break;
-        default:
-          xp = 20;
-          gold = 10;
-      }
-      return { xp: acc.xp + xp, gold: acc.gold + gold };
-    },
-    { xp: 0, gold: 0 }
-  );
-  
+
   try {
     const raw = await runWithLlama31_8b(ai, prompt, gatewayId);
     let parsed: unknown = typeof raw === 'string' ? extractJson(raw) : null;
@@ -715,23 +787,14 @@ export async function generateGrimoire(
         parsed = null;
       }
     }
-    if (isGrimoireResult(parsed)) {
-      const o = parsed as unknown as Record<string, unknown>;
-      const title = typeof o.title === 'string' && o.title.trim().length > 0
-        ? o.title.trim()
-        : `${context?.characterName ?? '冒険者'}の冒険記`;
-      return { ...parsed, title };
+    if (isGrimoireTitleAndRewardsResult(parsed)) {
+      const o = parsed as GrimoireTitleAndRewards;
+      const title = o.title.trim().length > 0 ? o.title.trim() : (context?.characterName ?? '冒険者') + 'の冒険記';
+      return { title, rewardXp: o.rewardXp, rewardGold: o.rewardGold };
     }
   } catch {
     // fall through to fallback
   }
-  
-  const name = context?.characterName ?? '冒険者';
-  const taskTitles = completedTasks.map(t => t.title).join('、');
-  return {
-    title: `${name}の冒険記`,
-    narrative: `${name}は${completedTasks.length}つのクエストに挑み、すべてをクリアした。${taskTitles}――その一つひとつが、グリモワールに刻まれる物語の1ページとなる。`,
-    rewardXp: totalRewards.xp,
-    rewardGold: totalRewards.gold,
-  };
+
+  return getGrimoireFallbackTitleAndRewards(completedTasks, context?.characterName ?? '冒険者');
 }

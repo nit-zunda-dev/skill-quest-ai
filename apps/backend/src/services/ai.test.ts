@@ -9,6 +9,8 @@ import {
   generateNarrative,
   generatePartnerMessage,
   generateGrimoire,
+  getGrimoireFallbackTitleAndRewards,
+  buildGrimoireNarrativeFromTemplate,
   generateSuggestedQuests,
   MODEL_LLAMA_31_8B,
   MODEL_LLAMA_33_70B,
@@ -340,8 +342,7 @@ describe('AI service', () => {
 
   describe('generateGrimoire', () => {
     const validGrimoireJson = JSON.stringify({
-      title: '第一章: 知識の塔への挑戦',
-      narrative: '今日は3つのタスクを達成した。冒険の記録として刻まれる。',
+      title: '知識の塔への挑戦',
       rewardXp: 105,
       rewardGold: 61,
     });
@@ -361,7 +362,6 @@ describe('AI service', () => {
       const result = await generateGrimoire(ai, []);
 
       expect(result.title).toBe('物語の始まりを待つ');
-      expect(result.narrative).toContain('グリモワール');
       expect(result.rewardXp).toBe(0);
       expect(result.rewardGold).toBe(0);
       expect(run).not.toHaveBeenCalled();
@@ -372,8 +372,9 @@ describe('AI service', () => {
       const ai = { run };
       const result = await generateGrimoire(ai, [], undefined, testContext);
 
-      expect(result.narrative).toContain('テスト冒険者');
+      expect(result.title).toBe('物語の始まりを待つ');
       expect(result.rewardXp).toBe(0);
+      expect(result.rewardGold).toBe(0);
     });
 
     it('uses Llama 3.1 8B and returns parsed result when AI returns valid JSON', async () => {
@@ -402,8 +403,8 @@ describe('AI service', () => {
       const prompt = (run.mock.calls[0] as unknown[])[1] as { prompt: string };
       expect(prompt.prompt).toContain('毎日勉強');
       expect(prompt.prompt).toContain('習慣');
-      expect(result.title).toBe('第一章: 知識の塔への挑戦');
-      expect(result.narrative).toBe('今日は3つのタスクを達成した。冒険の記録として刻まれる。');
+      expect(prompt.prompt).not.toContain('narrative');
+      expect(result.title).toBe('知識の塔への挑戦');
       expect(result.rewardXp).toBe(105);
       expect(result.rewardGold).toBe(61);
     });
@@ -428,6 +429,9 @@ describe('AI service', () => {
       expect(prompt.prompt).toContain('魔導技師');
       expect(prompt.prompt).toContain('暁の探求者');
       expect(prompt.prompt).toContain('前回の冒険の記録。');
+      expect(prompt.prompt).toContain('title');
+      expect(prompt.prompt).toContain('rewardXp');
+      expect(prompt.prompt).toContain('rewardGold');
     });
 
     it('returns fallback with calculated rewards when AI returns invalid JSON', async () => {
@@ -453,8 +457,6 @@ describe('AI service', () => {
       const result = await generateGrimoire(ai, completedTasks);
 
       expect(result.title).toBeTruthy();
-      expect(result.narrative).toContain('タスク1');
-      expect(result.narrative).toContain('タスク2');
       expect(result.rewardXp).toBe(75); // 15 (EASY) + 60 (HARD)
       expect(result.rewardGold).toBe(43); // 8 (EASY) + 35 (HARD)
     });
@@ -475,7 +477,6 @@ describe('AI service', () => {
       const result = await generateGrimoire(ai, completedTasks);
 
       expect(result.title).toBeTruthy();
-      expect(result.narrative).toBeTruthy();
       expect(result.rewardXp).toBe(30); // MEDIUM
       expect(result.rewardGold).toBe(18); // MEDIUM
     });
@@ -537,7 +538,6 @@ describe('AI service', () => {
 
     it('generates fallback title when AI returns JSON without title', async () => {
       const noTitleJson = JSON.stringify({
-        narrative: '物語テキスト。',
         rewardXp: 30,
         rewardGold: 18,
       });
@@ -555,8 +555,116 @@ describe('AI service', () => {
 
       const result = await generateGrimoire(ai, completedTasks, undefined, testContext);
 
-      expect(result.title).toBe('テスト冒険者の冒険記');
-      expect(result.narrative).toBe('物語テキスト。');
+      expect(result.title).toContain('クエスト');
+      expect(result.title).toMatch(/\d+\/\d+\/\d+/);
+      expect(result.rewardXp).toBe(30);
+      expect(result.rewardGold).toBe(18);
+    });
+  });
+
+  describe('getGrimoireFallbackTitleAndRewards', () => {
+    it('returns zero-task title and 0,0 rewards when completedTasks is empty', () => {
+      const result = getGrimoireFallbackTitleAndRewards([], '冒険者');
+      expect(result.title).toBe('物語の始まりを待つ');
+      expect(result.rewardXp).toBe(0);
+      expect(result.rewardGold).toBe(0);
+    });
+
+    it('returns one-task fallback title and difficulty-based rewards for single task', () => {
+      const completedTasks = [
+        {
+          id: 't1',
+          title: '英単語10語',
+          type: TaskType.DAILY,
+          difficulty: Difficulty.MEDIUM,
+          completedAt: Math.floor(new Date('2025-02-23').getTime() / 1000),
+        },
+      ];
+      const result = getGrimoireFallbackTitleAndRewards(completedTasks, '冒険者');
+      expect(result.title).toContain('2025/2/23');
+      expect(result.title).toContain('英単語10語');
+      expect(result.rewardXp).toBe(30);
+      expect(result.rewardGold).toBe(18);
+    });
+
+    it('returns multiple-tasks fallback title and summed rewards', () => {
+      const completedTasks = [
+        {
+          id: 't1',
+          title: 'A',
+          type: TaskType.TODO,
+          difficulty: Difficulty.EASY,
+          completedAt: Math.floor(new Date('2025-02-23').getTime() / 1000),
+        },
+        {
+          id: 't2',
+          title: 'B',
+          type: TaskType.TODO,
+          difficulty: Difficulty.HARD,
+          completedAt: Math.floor(new Date('2025-02-23').getTime() / 1000),
+        },
+      ];
+      const result = getGrimoireFallbackTitleAndRewards(completedTasks, 'テスト');
+      expect(result.title).toContain('2025/2/23');
+      expect(result.title).toContain('2クエスト制覇');
+      expect(result.rewardXp).toBe(75); // 15 + 60
+      expect(result.rewardGold).toBe(43); // 8 + 35
+    });
+  });
+
+  describe('buildGrimoireNarrativeFromTemplate', () => {
+    it('returns zero-task narrative with character name when completedTasks is empty', () => {
+      const narrative = buildGrimoireNarrativeFromTemplate([], '冒険者', 0, 0);
+      expect(narrative).toContain('冒険者');
+      expect(narrative).toContain('グリモワール');
+      expect(narrative).toContain('白紙');
+    });
+
+    it('returns one-task narrative with date, character, task, labels and rewards', () => {
+      const completedTasks = [
+        {
+          id: 't1',
+          title: '英単語10語',
+          type: TaskType.DAILY,
+          difficulty: Difficulty.MEDIUM,
+          completedAt: Math.floor(new Date('2025-02-23').getTime() / 1000),
+        },
+      ];
+      const narrative = buildGrimoireNarrativeFromTemplate(completedTasks, '冒険者', 30, 18);
+      expect(narrative).toContain('2025/2/23');
+      expect(narrative).toContain('冒険者');
+      expect(narrative).toContain('英単語10語');
+      expect(narrative).toContain('日課');
+      expect(narrative).toContain('中');
+      expect(narrative).toContain('30');
+      expect(narrative).toContain('18');
+    });
+
+    it('returns multiple-tasks narrative with taskCount and taskTitles', () => {
+      const completedTasks = [
+        {
+          id: 't1',
+          title: 'A',
+          type: TaskType.DAILY,
+          difficulty: Difficulty.EASY,
+          completedAt: Math.floor(new Date('2025-02-23').getTime() / 1000),
+        },
+        {
+          id: 't2',
+          title: 'B',
+          type: TaskType.HABIT,
+          difficulty: Difficulty.HARD,
+          completedAt: Math.floor(new Date('2025-02-23').getTime() / 1000),
+        },
+      ];
+      const narrative = buildGrimoireNarrativeFromTemplate(completedTasks, 'テスト', 75, 43);
+      expect(narrative).toContain('2025/2/23');
+      expect(narrative).toContain('テスト');
+      expect(narrative).toContain('2つ');
+      expect(narrative).toContain('A');
+      expect(narrative).toContain('B');
+      expect(narrative).toContain('75');
+      expect(narrative).toContain('43');
     });
   });
 

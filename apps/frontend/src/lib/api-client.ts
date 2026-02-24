@@ -78,6 +78,8 @@ export interface NarrativeResult {
   gold: number;
   profile?: CharacterProfile;
   grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
+  /** クエスト完了時に付与されたアイテム（付与なしは null） */
+  grantedItem?: Item | null;
 }
 
 const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
@@ -131,6 +133,7 @@ export async function generateTaskNarrative(
       rewardGold?: number;
       profile?: CharacterProfile;
       grimoireEntry?: { id: string; date: string; taskTitle: string; narrative: string; rewardXp: number; rewardGold: number };
+      grantedItem?: Item | null;
     };
     const profile = raw.profile ? normalizeProfileNumbers(raw.profile) : undefined;
     return {
@@ -139,6 +142,7 @@ export async function generateTaskNarrative(
       gold: Number(raw.rewardGold) || 0,
       profile,
       grimoireEntry: raw.grimoireEntry,
+      grantedItem: raw.grantedItem ?? null,
     };
   } catch (e) {
     console.error('generateTaskNarrative error:', e);

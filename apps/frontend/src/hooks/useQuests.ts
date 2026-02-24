@@ -7,7 +7,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/client';
 import type { CreateQuestRequest } from '@skill-quest/shared';
-import type { Task } from '@skill-quest/shared';
+import type { Item, Task } from '@skill-quest/shared';
 
 const QUESTS_QUERY_KEY = ['quests'] as const;
 
@@ -80,10 +80,11 @@ export function useQuests() {
     },
   });
 
+  /** PATCH /api/quests/:id/status のレスポンス型（grantedItem 含む） */
+  type QuestStatusResponse = Task & { grantedItem?: Item | null };
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'todo' | 'in_progress' | 'done' }) => {
-      // Hono RPCクライアントでネストされたパスパラメータルートにアクセスする場合、
-      // 直接fetch APIを使用する方が確実
       const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8787';
       const res = await fetch(`${apiUrl}/api/quests/${id}/status`, {
         method: 'PATCH',
@@ -97,10 +98,13 @@ export function useQuests() {
         const err = await res.text();
         throw new Error(err || `Failed to update quest status: ${res.status}`);
       }
-      return res.json();
+      return res.json() as Promise<QuestStatusResponse>;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY });
+      if (data.grantedItem != null) {
+        queryClient.invalidateQueries({ queryKey: ['acquired-items'] });
+      }
     },
   });
 
@@ -109,6 +113,8 @@ export function useQuests() {
     addQuest: addMutation.mutate,
     deleteQuest: deleteMutation.mutate,
     updateQuestStatus: updateStatusMutation.mutate,
+    /** 完了時の grantedItem を取得したい場合はこちらを使用する */
+    updateQuestStatusAsync: updateStatusMutation.mutateAsync,
     invalidate: () => queryClient.invalidateQueries({ queryKey: QUESTS_QUERY_KEY }),
     isAdding: addMutation.isPending,
     isDeleting: deleteMutation.isPending,

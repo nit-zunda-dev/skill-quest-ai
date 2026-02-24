@@ -163,7 +163,7 @@ aiRouter.post(
 
     // クエスト完了マーク
     await completeQuest(c.env.DB, user.id, data.taskId);
-    await grantItemOnQuestComplete(c.env.DB, user.id, data.taskId);
+    const { item: grantedItem } = await grantItemOnQuestComplete(c.env.DB, user.id, data.taskId);
 
     await recordNarrative(c.env.DB, user.id, today);
 
@@ -173,6 +173,7 @@ aiRouter.post(
       rewardGold: result.rewardGold,
       profile: updatedProfile ?? undefined,
       questCompletedAt: Date.now(),
+      grantedItem: grantedItem ?? null,
     });
   }
 );
