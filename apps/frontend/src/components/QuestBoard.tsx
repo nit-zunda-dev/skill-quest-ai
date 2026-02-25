@@ -68,7 +68,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
     if (status === 'todo') {
       handleStatusChange(task.id, 'in_progress');
     } else if (status === 'in_progress') {
-      onCompleteTask(task.id);
+      handleStatusChange(task.id, 'done');
     } else {
       handleStatusChange(task.id, 'todo');
     }
