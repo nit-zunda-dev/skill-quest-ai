@@ -40,6 +40,12 @@ importers:
 
   apps/backend:
     dependencies:
+      '@better-auth/core':
+        specifier: ^1.4.19
+        version: 1.4.19(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.1.8)(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0)
+      '@better-auth/utils':
+        specifier: ^0.3.1
+        version: 0.3.1
       '@hono/zod-validator':
         specifier: ^0.3.0
         version: 0.3.0(hono@4.12.1)(zod@3.25.76)
@@ -630,6 +636,26 @@ packages:
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.21
       '@standard-schema/spec': 1.1.0
+      better-call: 1.1.8(zod@4.3.6)
+      jose: 6.1.3
+      kysely: 0.28.11
+      nanostores: 1.1.0
+      zod: 4.3.6
+    dev: false
+
+  /@better-auth/core@1.4.19(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.1.8)(jose@6.1.3)(kysely@0.28.11)(nanostores@1.1.0):
+    resolution: {integrity: sha512-uADLHG1jc5BnEJi7f6ijUN5DmPPRSj++7m/G19z3UqA3MVCo4Y4t1MMa4IIxLCqGDFv22drdfxescgW+HnIowA==}
+    peerDependencies:
+      '@better-auth/utils': 0.3.0
+      '@better-fetch/fetch': 1.1.21
+      better-call: 1.1.8
+      jose: ^6.1.0
+      kysely: ^0.28.5
+      nanostores: ^1.0.1
+    dependencies:
+      '@better-auth/utils': 0.3.1
+      '@better-fetch/fetch': 1.1.21
+      '@standard-schema/spec': 1.1.0
       better-call: 1.1.8(zod@3.25.76)
       jose: 6.1.3
       kysely: 0.28.11
@@ -649,6 +675,10 @@ packages:
 
   /@better-auth/utils@0.3.0:
     resolution: {integrity: sha512-W+Adw6ZA6mgvnSnhOki270rwJ42t4XzSK6YWGF//BbVXL6SwCLWfyzBc1lN2m/4RM28KubdBKQ4X5VMoLRNPQw==}
+    dev: false
+
+  /@better-auth/utils@0.3.1:
+    resolution: {integrity: sha512-+CGp4UmZSUrHHnpHhLPYu6cV+wSUSvVbZbNykxhUDocpVNTo9uFFxw/NqJlh1iC4wQ9HKKWGCKuZ5wUgS0v6Kg==}
     dev: false
 
   /@better-fetch/fetch@1.1.21:
@@ -3796,7 +3826,7 @@ packages:
       '@better-fetch/fetch': 1.1.21
       '@noble/ciphers': 2.1.1
       '@noble/hashes': 2.0.1
-      better-call: 1.1.8(zod@3.25.76)
+      better-call: 1.1.8(zod@4.3.6)
       defu: 6.1.4
       drizzle-kit: 0.28.1
       drizzle-orm: 0.36.4(@cloudflare/workers-types@4.20260131.0)(kysely@0.28.11)
@@ -3899,6 +3929,21 @@ packages:
       rou3: 0.7.12
       set-cookie-parser: 2.7.2
       zod: 3.25.76
+    dev: false
+
+  /better-call@1.1.8(zod@4.3.6):
+    resolution: {integrity: sha512-XMQ2rs6FNXasGNfMjzbyroSwKwYbZ/T3IxruSS6U2MJRsSYh3wYtG3o6H00ZlKZ/C/UPOAD97tqgQJNsxyeTXw==}
+    peerDependencies:
+      zod: ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+    dependencies:
+      '@better-auth/utils': 0.3.1
+      '@better-fetch/fetch': 1.1.21
+      rou3: 0.7.12
+      set-cookie-parser: 2.7.2
+      zod: 4.3.6
     dev: false
 
   /blake3-wasm@2.1.5:
