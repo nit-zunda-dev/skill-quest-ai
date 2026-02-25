@@ -18,6 +18,9 @@ type QuestsClient = {
       $post: (opts: { json: CreateQuestRequest }) => Promise<Response>;
       ':id': {
         $delete: (opts: { param: { id: string } }) => Promise<Response>;
+        status: {
+          $patch: (opts: { param: { id: string }; json: { status: string } }) => Promise<Response>;
+        };
       };
     };
   };
@@ -80,19 +83,13 @@ export function useQuests() {
     },
   });
 
-  /** PATCH /api/quests/:id/status のレスポンス型（grantedItem 含む） */
   type QuestStatusResponse = Task & { grantedItem?: Item | null };
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'todo' | 'in_progress' | 'done' }) => {
-      const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8787';
-      const res = await fetch(`${apiUrl}/api/quests/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status }),
+      const res = await (client as QuestsClient).api.quests[':id'].status.$patch({
+        param: { id },
+        json: { status },
       });
       if (!res.ok) {
         const err = await res.text();

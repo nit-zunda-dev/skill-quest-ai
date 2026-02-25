@@ -80,9 +80,14 @@ export default function QuestBoardPage() {
   };
 
   const handleUpdateStatus = async (taskId: string, status: 'todo' | 'in_progress' | 'done') => {
-    const data = await updateQuestStatusAsync({ id: taskId, status });
-    if (status === 'done' && data.grantedItem != null) {
-      setDirectCompleteGrantedItem(data.grantedItem);
+    try {
+      const data = await updateQuestStatusAsync({ id: taskId, status });
+      console.log('[QuestBoard] status update response:', { taskId, status, grantedItem: data.grantedItem });
+      if (status === 'done' && data.grantedItem != null) {
+        setDirectCompleteGrantedItem(data.grantedItem);
+      }
+    } catch (e) {
+      console.error('[QuestBoard] status update failed:', e);
     }
   };
 
