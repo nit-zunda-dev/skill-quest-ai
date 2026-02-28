@@ -28,6 +28,10 @@ import {
   createGrimoireEntry,
 } from '../services/ai-usage';
 import { grantItemOnQuestComplete } from '../services/gacha';
+import {
+  getFavorabilityDeltaFromMessage,
+  addFavorability,
+} from '../services/partner-favorability';
 
 type AiVariables = { user: AuthUser };
 
@@ -314,6 +318,11 @@ aiRouter.post(
     ];
 
     await recordChat(c.env.DB, user.id, today);
+
+    const favorabilityDelta = getFavorabilityDeltaFromMessage(msgResult.sanitized);
+    if (favorabilityDelta > 0) {
+      await addFavorability(c.env.DB, user.id, favorabilityDelta);
+    }
 
     return streamText(c, async (stream) => {
       try {

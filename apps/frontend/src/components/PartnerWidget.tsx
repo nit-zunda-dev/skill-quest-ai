@@ -11,19 +11,27 @@ import { useAiUsage } from '@/hooks/useAiUsage';
 import { usePartnerVariant } from '@/contexts/PartnerVariantContext';
 import { PartnerAvatar } from '@/components/PartnerAvatar';
 import { getExpressionForPartner } from '@/lib/partner-expression-context';
+import { usePartnerFavorability } from '@/hooks/usePartnerBar';
 
 const PartnerWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const { variant } = usePartnerVariant();
+  const { data: favorability } = usePartnerFavorability({ enabled: isOpen });
   const { messages, isLoading, sendMessage, error } = useChat();
   const { data: usage } = useAiUsage();
   const chatRemaining = usage?.chatRemaining ?? null;
   const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
 
   const expression = useMemo(
-    () => getExpressionForPartner({ isLoading, messages }),
-    [isLoading, messages]
+    () =>
+      getExpressionForPartner({
+        isLoading,
+        messages,
+        favorability: favorability ?? 0,
+        itemJustGivenToPartner: false,
+      }),
+    [isLoading, messages, favorability]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,7 +53,7 @@ const PartnerWidget: React.FC = () => {
               className="w-14 h-14 object-contain shrink-0"
               alt="AIパートナー"
             />
-            <p className="text-sm font-medium text-white">AIパートナー</p>
+            <p className="text-sm font-medium text-white">バー</p>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-3 mb-3">
             {messages.length === 0 && !isLoading && (
