@@ -18,10 +18,14 @@ const CONTEXT_TO_EXPRESSION: Record<PartnerDisplayContext, PartnerExpression> = 
 /** チャットメッセージ（role + content） */
 export type ChatMessage = { role: string; content: string };
 
-/** 表情判定の入力（ローディング中か＋直近のAI発言） */
+/** 表情判定の入力（ローディング中・直近のAI発言・好感度・アイテム付与直後） */
 export type PartnerExpressionInput = {
   isLoading: boolean;
   messages: ChatMessage[];
+  /** パートナー好感度（0〜1000）。高いほど happy/smile が出やすい */
+  favorability?: number;
+  /** 直近でアイテムをパートナーに渡した直後なら true。一定時間 happy 表示 */
+  itemJustGivenToPartner?: boolean;
 };
 
 /** 応援・励まし系キーワード → cheer */
@@ -68,14 +72,20 @@ export function getExpressionFromLastAssistantContent(
   return null;
 }
 
+const FAVORABILITY_HIGH = 500;
+const FAVORABILITY_LOW = 100;
+
 /**
- * 会話状態に応じた表示用表情を返す。
+ * 会話状態・好感度・アイテム付与直後に応じた表示用表情を返す。
  * - ローディング中: cheer（応援中）
- * - メッセージなし: default
- * - 直近のAI発言あり: 内容から cheer / worried / happy / smile を推定し、チャット終了後もその表情を維持（default に戻さない）
+ * - アイテムを渡した直後: happy
+ * - 直近のAI発言あり: 内容から cheer / worried / happy / smile を推定
+ * - 推定なし時: 好感度が高ければ smile、低ければ default、それ以外は smile（メッセージあり） or default
  */
 export function getExpressionForPartner(input: PartnerExpressionInput): PartnerExpression {
   if (input.isLoading) return 'cheer';
+
+  if (input.itemJustGivenToPartner) return 'happy';
 
   const messages = input.messages.filter((m) => m.content.trim() !== '');
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
@@ -84,7 +94,15 @@ export function getExpressionForPartner(input: PartnerExpressionInput): PartnerE
   const inferred = getExpressionFromLastAssistantContent(lastContent);
   if (inferred) return inferred;
 
-  return messages.length === 0 ? 'default' : 'smile';
+  const fav = input.favorability ?? 0;
+  if (messages.length === 0) {
+    return fav >= FAVORABILITY_HIGH ? 'smile' : 'default';
+  }
+  // メッセージあり・キーワードマッチなし → 会話中として smile をデフォルト表示（Task 2.1）
+  if (messages.length > 0) return 'smile';
+  if (fav >= FAVORABILITY_HIGH) return 'smile';
+  if (fav < FAVORABILITY_LOW) return 'default';
+  return 'smile';
 }
 
 /**

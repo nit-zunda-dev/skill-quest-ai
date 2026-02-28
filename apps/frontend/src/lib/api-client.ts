@@ -237,3 +237,39 @@ export async function getItemMaster(): Promise<Item[]> {
   const data = (await res.json()) as { items: Item[] };
   return data.items ?? [];
 }
+
+const getApiBase = () => import.meta.env?.VITE_API_URL || 'http://localhost:8787';
+
+/** パートナー好感度取得（GET /api/partner/favorability） */
+export async function getPartnerFavorability(): Promise<number> {
+  const res = await fetch(`${getApiBase()}/api/partner/favorability`, { credentials: 'include' });
+  if (!res.ok) throw new Error('好感度の取得に失敗しました');
+  const data = (await res.json()) as { favorability: number };
+  return data.favorability;
+}
+
+/** ペットに最後に渡したアイテムのレアリティ（GET /api/partner/last-pet-rarity） */
+export async function getLastPetRarity(): Promise<string | null> {
+  const res = await fetch(`${getApiBase()}/api/partner/last-pet-rarity`, { credentials: 'include' });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { lastPetRarity: string | null };
+  return data.lastPetRarity ?? null;
+}
+
+/** アイテムをパートナーまたはペットに渡す（POST /api/partner/give-item）。記録のみで所持は消費しない。 */
+export async function giveItemToPartnerOrPet(
+  itemId: string,
+  target: 'partner' | 'pet'
+): Promise<{ favorability: number; lastPetRarity: string | null }> {
+  const res = await fetch(`${getApiBase()}/api/partner/give-item`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ itemId, target }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err?.error ?? 'アイテムを渡せませんでした');
+  }
+  return res.json() as Promise<{ favorability: number; lastPetRarity: string | null }>;
+}

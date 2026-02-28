@@ -27,6 +27,12 @@ vi.mock('@/hooks/useAiUsage', () => ({
   useAiUsage: vi.fn(),
 }));
 
+vi.mock('@/hooks/usePartnerBar', () => ({
+  useLastPetRarity: vi.fn(() => ({ data: null })),
+  usePartnerFavorability: vi.fn(() => ({ data: 0 })),
+  useInvalidatePartnerBar: vi.fn(() => vi.fn()),
+}));
+
 function renderPartnerPage() {
   return render(
     <QueryClientProvider client={queryClient}>
@@ -79,6 +85,13 @@ describe('PartnerPage with PartnerAvatar (Task 5.1)', () => {
     const img = screen.getByRole('img', { name: /AIパートナー/i });
     expect((img as HTMLImageElement).src).toContain('/images/partner/male/');
     localStorage.removeItem(PARTNER_VARIANT_STORAGE_KEY);
+  });
+
+  it('displays favorability in the chat header', () => {
+    renderPartnerPage();
+    expect(screen.getByLabelText(/パートナー好感度/i)).toBeTruthy();
+    expect(screen.getByText(/好感度/)).toBeTruthy();
+    expect(screen.getByText(/0\/1000/)).toBeTruthy();
   });
 });
 
