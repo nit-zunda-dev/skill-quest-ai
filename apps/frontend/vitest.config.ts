@@ -25,11 +25,6 @@ export default defineConfig({
       },
     },
   ],
-  server: {
-    deps: {
-      inline: ['better-auth'],
-    },
-  },
   ssr: {
     noExternal: ['better-auth'],
   },
@@ -38,6 +33,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    server: {
+      deps: {
+        inline: ['better-auth'],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
