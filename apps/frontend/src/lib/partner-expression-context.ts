@@ -98,6 +98,8 @@ export function getExpressionForPartner(input: PartnerExpressionInput): PartnerE
   if (messages.length === 0) {
     return fav >= FAVORABILITY_HIGH ? 'smile' : 'default';
   }
+  // メッセージあり・キーワードマッチなし → 会話中として smile をデフォルト表示（Task 2.1）
+  if (messages.length > 0) return 'smile';
   if (fav >= FAVORABILITY_HIGH) return 'smile';
   if (fav < FAVORABILITY_LOW) return 'default';
   return 'smile';

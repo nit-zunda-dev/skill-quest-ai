@@ -18,6 +18,11 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
+        // better-auth 1.4.18 の core に dist/utils が無い場合のフォールバック（dev/build）
+        '@better-auth/core/utils': path.resolve(
+          __dirname,
+          'src/__tests__/shims/better-auth-core-utils.ts'
+        ),
       },
     },
   };

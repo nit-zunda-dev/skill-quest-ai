@@ -10,6 +10,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   PartnerVariantProvider,
   PARTNER_VARIANT_STORAGE_KEY,
@@ -26,11 +27,21 @@ vi.mock('@/hooks/useAiUsage', () => ({
   useAiUsage: vi.fn(),
 }));
 
+vi.mock('@/hooks/usePartnerBar', () => ({
+  usePartnerFavorability: vi.fn(),
+}));
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
+
 function renderPartnerWidget() {
   return render(
-    <PartnerVariantProvider>
-      <PartnerWidget />
-    </PartnerVariantProvider>
+    <QueryClientProvider client={queryClient}>
+      <PartnerVariantProvider>
+        <PartnerWidget />
+      </PartnerVariantProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -47,6 +58,10 @@ describe('PartnerWidget', () => {
     const { useAiUsage } = await import('@/hooks/useAiUsage');
     (useAiUsage as ReturnType<typeof vi.fn>).mockReturnValue({
       data: { chatRemaining: 10, limits: { chat: 10 } },
+    });
+    const { usePartnerFavorability } = await import('@/hooks/usePartnerBar');
+    (usePartnerFavorability as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: 500,
     });
   });
 
@@ -124,6 +139,10 @@ describe('PartnerWidget with PartnerAvatar (Task 6.1)', () => {
     const { useAiUsage } = await import('@/hooks/useAiUsage');
     (useAiUsage as ReturnType<typeof vi.fn>).mockReturnValue({
       data: { chatRemaining: 10, limits: { chat: 10 } },
+    });
+    const { usePartnerFavorability } = await import('@/hooks/usePartnerBar');
+    (usePartnerFavorability as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: 0,
     });
   });
 
