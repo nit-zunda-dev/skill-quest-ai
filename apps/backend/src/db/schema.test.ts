@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { getTableColumns } from 'drizzle-orm';
-import { items, userAcquiredItems, schema } from './schema';
+import { items, userAcquiredItems, partnerFavorability, schema } from './schema';
 
 function columnNames(table: ReturnType<typeof getTableColumns>): string[] {
   return Object.values(table).map((col) => col.name);
@@ -38,6 +38,19 @@ describe('gacha schema (Task 2.1)', () => {
       expect(cols).toContain('quest_id');
       expect(cols).toContain('acquired_at');
       expect(cols).toContain('id');
+    });
+  });
+
+  describe('partner_favorability', () => {
+    it('テーブルがスキーマに含まれる', () => {
+      expect(schema).toHaveProperty('partnerFavorability', partnerFavorability);
+    });
+
+    it('user_id, favorability, updated_at を持つ', () => {
+      const cols = columnNames(getTableColumns(partnerFavorability));
+      expect(cols).toContain('user_id');
+      expect(cols).toContain('favorability');
+      expect(cols).toContain('updated_at');
     });
   });
 });

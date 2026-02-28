@@ -12,6 +12,7 @@ import { aiRouter } from './routes/ai';
 import { profileRouter } from './routes/profile';
 import { grimoireRouter } from './routes/grimoire';
 import { itemsRouter } from './routes/items';
+import { partnerRouter } from './routes/partner';
 import { deleteAccountByUserId } from './services/account-delete';
 
 const userIdParamSchema = z.object({
@@ -107,6 +108,10 @@ app.route('/api/grimoire', grimoireRouter);
 // 所持アイテム一覧ルート（認証必須）
 app.use('/api/items/*', authMiddleware);
 app.route('/api/items', itemsRouter);
+
+// パートナー・バー関連（認証必須）
+app.use('/api/partner/*', authMiddleware);
+app.route('/api/partner', partnerRouter);
 
 // 認証が必要なエンドポイントのテスト用ルート
 // 認証ミドルウェアの動作確認用

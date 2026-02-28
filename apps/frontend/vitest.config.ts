@@ -1,18 +1,43 @@
 import path from 'path';
 import { defineConfig } from 'vitest/config';
 
+const betterAuthCoreUtilsShim = path.resolve(
+  __dirname,
+  'src/__tests__/shims/better-auth-core-utils.ts'
+);
+
 export default defineConfig({
   resolve: {
-    alias: { 
+    alias: {
       '@': path.resolve(__dirname, 'src'),
       '@skill-quest/shared': path.resolve(__dirname, '../../packages/shared/src'),
+      '@better-auth/core/utils': betterAuthCoreUtilsShim,
     },
+  },
+  plugins: [
+    {
+      name: 'resolve-better-auth-core-utils',
+      enforce: 'pre',
+      resolveId(id: string) {
+        if (id === '@better-auth/core/utils' || id.startsWith('@better-auth/core/utils?')) {
+          return betterAuthCoreUtilsShim;
+        }
+      },
+    },
+  ],
+  ssr: {
+    noExternal: ['better-auth'],
   },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    server: {
+      deps: {
+        inline: ['better-auth'],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -24,6 +49,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/main.tsx',
         'src/vite-env.d.ts',
+        'src/__tests__/shims/**',
         '**/node_modules/**',
         '**/dist/**',
       ],

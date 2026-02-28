@@ -34,11 +34,18 @@ export function createMockD1ForAiUsage(overrides?: {
   };
   const run = async () => ({ success: true, meta: {} });
   // gacha: items SELECT は .all()、user_acquired_items は .bind().first() / .bind().run()
+  // Drizzle D1 ドライバは .bind().raw() を呼ぶため .raw を用意する
   const all = async () => ({ results: [] });
+  const raw = async () => [] as unknown[];
   return {
     prepare: (sql: string) => ({
       all,
-      bind: (..._args: unknown[]) => ({ run, first: () => first(sql, ..._args) }),
+      bind: (..._args: unknown[]) => ({
+        run,
+        first: () => first(sql, ..._args),
+        all: async () => ({ results: [] }),
+        raw,
+      }),
     }),
   } as unknown as D1Database;
 }

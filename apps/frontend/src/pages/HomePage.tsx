@@ -10,7 +10,7 @@ import { useQuests } from '@/hooks/useQuests';
 const links = [
   { to: '/quests', label: 'タスクボード', icon: ListTodo, description: 'クエストの追加・完了・管理' },
   { to: '/grimoire', label: 'グリモワール', icon: Scroll, description: '冒険の記録を生成・閲覧' },
-  { to: '/partner', label: 'AIパートナー', icon: MessageCircle, description: 'パートナーと会話' },
+  { to: '/partner', label: 'バー', icon: MessageCircle, description: 'バーでパートナーやペットと過ごす' },
   { to: '/items', label: '獲得アイテム', icon: Package, description: '獲得したアイテム一覧' },
 ];
 

@@ -168,15 +168,33 @@ export const userAcquiredItems = sqliteTable(
   })
 );
 
+/** AIパートナー好感度（1ユーザー1値。0〜上限でクリップ） */
+export const partnerFavorability = sqliteTable('partner_favorability', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  favorability: integer('favorability').notNull().default(0),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+/** パートナー／ペットに渡したアイテム履歴（記録のみ。所持は消費しない） */
+export const partnerItemGrants = sqliteTable('partner_item_grants', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  itemId: text('item_id').notNull().references(() => items.id),
+  target: text('target').notNull(), // 'partner' | 'pet'
+  grantedAt: integer('granted_at', { mode: 'timestamp' }).notNull(),
+});
+
 // リレーション定義
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   sessions: many(session),
   accounts: many(account),
   progress: many(userProgress),
   quests: many(quests),
   grimoireEntries: many(grimoireEntries),
   acquiredItems: many(userAcquiredItems),
+  partnerFavorability: one(partnerFavorability),
+  partnerItemGrants: many(partnerItemGrants),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -238,6 +256,7 @@ export const interactionLogsRelations = relations(interactionLogs, ({ one }) => 
 
 export const itemsRelations = relations(items, ({ many }) => ({
   acquiredItems: many(userAcquiredItems),
+  partnerItemGrants: many(partnerItemGrants),
 }));
 
 export const userAcquiredItemsRelations = relations(userAcquiredItems, ({ one }) => ({
@@ -252,6 +271,24 @@ export const userAcquiredItemsRelations = relations(userAcquiredItems, ({ one })
   quest: one(quests, {
     fields: [userAcquiredItems.questId],
     references: [quests.id],
+  }),
+}));
+
+export const partnerFavorabilityRelations = relations(partnerFavorability, ({ one }) => ({
+  user: one(user, {
+    fields: [partnerFavorability.userId],
+    references: [user.id],
+  }),
+}));
+
+export const partnerItemGrantsRelations = relations(partnerItemGrants, ({ one }) => ({
+  user: one(user, {
+    fields: [partnerItemGrants.userId],
+    references: [user.id],
+  }),
+  item: one(items, {
+    fields: [partnerItemGrants.itemId],
+    references: [items.id],
   }),
 }));
 
@@ -272,4 +309,6 @@ export const schema = {
   rateLimitLogs,
   items,
   userAcquiredItems,
+  partnerFavorability,
+  partnerItemGrants,
 };
