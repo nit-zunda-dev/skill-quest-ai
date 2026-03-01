@@ -32,17 +32,18 @@ describe('AI service', () => {
       const run = vi.fn().mockResolvedValue({ response: 'ok' });
       const env = { AI: { run } } as unknown as Bindings;
 
-      const service = await createAiService(env);
+      const { service, isFallbackStub } = await createAiService(env);
       await service.runWithLlama31_8b('test prompt');
 
       expect(run).toHaveBeenCalledWith(MODEL_LLAMA_31_8B, expect.objectContaining({ prompt: 'test prompt' }), undefined);
+      expect(isFallbackStub).toBe(false);
     });
 
     it('passes AI Gateway ID when env.AI_GATEWAY_ID is set', async () => {
       const run = vi.fn().mockResolvedValue({ response: 'ok' });
       const env = { AI: { run }, AI_GATEWAY_ID: 'gateway-123' } as unknown as Bindings;
 
-      const service = await createAiService(env);
+      const { service } = await createAiService(env);
       await service.runWithLlama31_8b('test prompt');
 
       expect(run).toHaveBeenCalledWith(
@@ -63,12 +64,13 @@ describe('AI service', () => {
       const db = {} as D1Database;
       vi.mocked(getGlobalNeuronsEstimateForDate).mockResolvedValue(99999);
 
-      const service = await createAiService(env, { db, getTodayUtc });
+      const { service, isFallbackStub } = await createAiService(env, { db, getTodayUtc });
       const result = await service.runWithLlama31_8b('any');
 
       expect(getGlobalNeuronsEstimateForDate).not.toHaveBeenCalled();
       expect(run).not.toHaveBeenCalled();
       expect(result).toBe('');
+      expect(isFallbackStub).toBe(true);
     });
 
     it('returns stub when options provided, threshold set, and today neurons >= threshold', async () => {
@@ -81,12 +83,36 @@ describe('AI service', () => {
       const db = {} as D1Database;
       vi.mocked(getGlobalNeuronsEstimateForDate).mockResolvedValue(50000);
 
-      const service = await createAiService(env, { db, getTodayUtc });
+      const { service, isFallbackStub } = await createAiService(env, { db, getTodayUtc });
       const result = await service.runWithLlama31_8b('any');
 
       expect(getGlobalNeuronsEstimateForDate).toHaveBeenCalledWith(db, '2026-03-01');
       expect(run).not.toHaveBeenCalled();
-      expect(result).toBe('');
+      expect(result).toBe('AI 利用一時制限中');
+      expect(isFallbackStub).toBe(true);
+    });
+
+    it('when threshold stub, narrative and partner message contain AI limit message (Task 2.3)', async () => {
+      const run = vi.fn().mockResolvedValue({ response: 'real' });
+      const env = {
+        AI: { run },
+        AI_NEURONS_FALLBACK_THRESHOLD: '50000',
+      } as unknown as Bindings;
+      const getTodayUtc = () => '2026-03-01';
+      const db = {} as D1Database;
+      vi.mocked(getGlobalNeuronsEstimateForDate).mockResolvedValue(50000);
+
+      const { service } = await createAiService(env, { db, getTodayUtc });
+      const narrativeResult = await service.generateNarrative({
+        taskId: 't1',
+        taskTitle: 'タスク',
+        taskType: TaskType.DAILY,
+        difficulty: Difficulty.MEDIUM,
+      });
+      const partnerMessage = await service.generatePartnerMessage({});
+
+      expect(narrativeResult.narrative).toContain('AI 利用一時制限中');
+      expect(partnerMessage).toContain('AI 利用一時制限中');
     });
 
     it('returns real AI when options provided, threshold set, and today neurons < threshold', async () => {
@@ -99,23 +125,25 @@ describe('AI service', () => {
       const db = {} as D1Database;
       vi.mocked(getGlobalNeuronsEstimateForDate).mockResolvedValue(49999);
 
-      const service = await createAiService(env, { db, getTodayUtc });
+      const { service, isFallbackStub } = await createAiService(env, { db, getTodayUtc });
       const result = await service.runWithLlama31_8b('test');
 
       expect(getGlobalNeuronsEstimateForDate).toHaveBeenCalledWith(db, '2026-03-01');
       expect(run).toHaveBeenCalled();
       expect(result).toBe('real response');
+      expect(isFallbackStub).toBe(false);
     });
 
     it('returns real AI when options not provided (no threshold check)', async () => {
       const run = vi.fn().mockResolvedValue({ response: 'ok' });
       const env = { AI: { run }, AI_NEURONS_FALLBACK_THRESHOLD: '100' } as unknown as Bindings;
 
-      const service = await createAiService(env);
+      const { service, isFallbackStub } = await createAiService(env);
       await service.runWithLlama31_8b('test');
 
       expect(getGlobalNeuronsEstimateForDate).not.toHaveBeenCalled();
       expect(run).toHaveBeenCalled();
+      expect(isFallbackStub).toBe(false);
     });
 
     it('returns real AI when options provided but threshold not set in env', async () => {
@@ -125,11 +153,12 @@ describe('AI service', () => {
       const db = {} as D1Database;
       vi.mocked(getGlobalNeuronsEstimateForDate).mockResolvedValue(99999);
 
-      const service = await createAiService(env, { db, getTodayUtc });
+      const { service, isFallbackStub } = await createAiService(env, { db, getTodayUtc });
       await service.runWithLlama31_8b('test');
 
       expect(getGlobalNeuronsEstimateForDate).not.toHaveBeenCalled();
       expect(run).toHaveBeenCalled();
+      expect(isFallbackStub).toBe(false);
     });
 
     it('returns stub when getGlobalNeuronsEstimateForDate throws (safe side)', async () => {
@@ -142,11 +171,12 @@ describe('AI service', () => {
       const db = {} as D1Database;
       vi.mocked(getGlobalNeuronsEstimateForDate).mockRejectedValue(new Error('DB error'));
 
-      const service = await createAiService(env, { db, getTodayUtc });
+      const { service, isFallbackStub } = await createAiService(env, { db, getTodayUtc });
       const result = await service.runWithLlama31_8b('any');
 
       expect(run).not.toHaveBeenCalled();
-      expect(result).toBe('');
+      expect(result).toBe('AI 利用一時制限中');
+      expect(isFallbackStub).toBe(true);
     });
   });
 
