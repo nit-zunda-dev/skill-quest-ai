@@ -14,6 +14,10 @@ export type Bindings = {
   AI_GATEWAY_ID?: string;
   /** 統合テスト用: '1' のとき AI をスタブし本番を呼ばない */
   INTEGRATION_TEST_AI_STUB?: string;
+  /** 無料枠フォールバック: この値（Neurons 概算）以上でスタブに切り替える。未設定時はフォールバック判定を行わない */
+  AI_NEURONS_FALLBACK_THRESHOLD?: string;
+  /** 無料枠: 日次上限（Neurons 概算）のオプション。未設定時は閾値のみで判定 */
+  AI_NEURONS_DAILY_LIMIT?: string;
 };
 
 /**
