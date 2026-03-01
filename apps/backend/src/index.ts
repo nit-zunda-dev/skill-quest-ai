@@ -13,6 +13,7 @@ import { profileRouter } from './routes/profile';
 import { grimoireRouter } from './routes/grimoire';
 import { itemsRouter } from './routes/items';
 import { partnerRouter } from './routes/partner';
+import { healthRouter } from './routes/health';
 import { deleteAccountByUserId } from './services/account-delete';
 
 const userIdParamSchema = z.object({
@@ -26,10 +27,13 @@ const app = new Hono<{ Bindings: Bindings }>();
 // 共通ミドルウェアを適用（CORS、ロギング、エラーハンドリング）
 setupMiddleware(app);
 
-// 基本的なルート（ヘルスチェック）
+// 基本的なルート
 app.get('/', (c) => {
   return c.json({ message: 'Skill Quest AI Backend API' });
 });
+
+// ヘルスチェック（認証なし・外形監視用）Task 3.1
+app.route('/api/health', healthRouter);
 
 // バインディングの型安全性を確認するテストルート
 app.get('/test-bindings', (c) => {
