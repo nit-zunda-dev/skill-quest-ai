@@ -10,7 +10,7 @@ import {
   suggestQuestsRequestSchema,
   updateGoalRequestSchema,
 } from '@skill-quest/shared';
-import { createAiService, MODEL_LLAMA_31_8B } from '../services/ai';
+import { createAiService, MODEL_LLAMA_31_8B, STUB_FALLBACK_MESSAGE } from '../services/ai';
 import { prepareUserPrompt } from '../services/prompt-safety';
 import {
   hasCharacterGenerated,
@@ -222,7 +222,7 @@ aiRouter.post(
     const goal = goalResult.sanitized;
 
     try {
-      const { service } = await createAiService(c.env);
+      const { service } = await createAiService(c.env, { db: c.env.DB, getTodayUtc });
       const suggestions = await service.generateSuggestedQuests(goal);
       if (suggestions.length === 0) {
         return c.json(
@@ -313,6 +313,14 @@ aiRouter.post(
       { role: 'system' as const, content: systemMessage },
       { role: 'user' as const, content: msgResult.sanitized }
     ];
+
+    const { isFallbackStub } = await createAiService(c.env, { db: c.env.DB, getTodayUtc });
+    if (isFallbackStub) {
+      return streamText(c, async (stream) => {
+        await stream.write(STUB_FALLBACK_MESSAGE);
+        await stream.close();
+      });
+    }
 
     await recordChat(c.env.DB, user.id, today);
 

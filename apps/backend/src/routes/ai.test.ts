@@ -4,6 +4,26 @@ import type { Bindings, AuthUser } from '../types';
 import { aiRouter } from './ai';
 import { Difficulty, TaskType } from '@skill-quest/shared';
 import { createMockD1ForAiUsage, createMockAuthUser } from '../../../../tests/utils';
+import * as aiService from '../services/ai';
+import * as aiUsage from '../services/ai-usage';
+
+vi.mock('../services/ai', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../services/ai')>();
+  return {
+    ...mod,
+    createAiService: vi.fn((env: Bindings, opts?: { db: Bindings['DB']; getTodayUtc: () => string }) =>
+      mod.createAiService(env, opts)),
+  };
+});
+
+vi.mock('../services/ai-usage', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../services/ai-usage')>();
+  return {
+    ...mod,
+    recordChat: vi.fn((db: unknown, userId: string, dateUtc: string) =>
+      mod.recordChat(db as Bindings['DB'], userId, dateUtc)),
+  };
+});
 
 const testUser = createMockAuthUser();
 
@@ -568,6 +588,49 @@ describe('ai router', () => {
       expect(body.grimoireRemaining).toBe(1);
       expect(body.limits.chat).toBe(10);
       expect(body.limits.grimoire).toBe(1);
+    });
+  });
+
+  describe('Task 7.2: AI 呼び出しで DB と getTodayUtc を渡し、スタブ時は record* を呼ばない', () => {
+    it('POST /suggest-quests で createAiService に db と getTodayUtc を渡す', async () => {
+      const suggestionsJson = JSON.stringify([
+        { title: '毎日30分勉強する', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM },
+      ]);
+      const envWithAi = {
+        ...mockEnv,
+        AI: { run: async () => ({ response: suggestionsJson }) },
+      } as unknown as Bindings;
+      const { app, env } = createTestApp(envWithAi);
+      await app.request('/suggest-quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: '英語力を上げる' }),
+      }, env);
+      expect(aiService.createAiService).toHaveBeenLastCalledWith(
+        env,
+        expect.objectContaining({
+          db: env.DB,
+          getTodayUtc: expect.any(Function),
+        })
+      );
+    });
+
+    it('POST /chat で isFallbackStub が true のとき recordChat を呼ばずスタブメッセージを返す', async () => {
+      vi.mocked(aiUsage.recordChat).mockClear();
+      vi.mocked(aiService.createAiService).mockResolvedValueOnce({
+        service: {} as import('../services/ai').AiService,
+        isFallbackStub: true,
+      });
+      const { app, env } = createTestApp(mockEnv);
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'こんにちは' }),
+      }, env);
+      expect(res.status).toBe(200);
+      expect(aiUsage.recordChat).not.toHaveBeenCalled();
+      const text = await res.text();
+      expect(text).toContain('AI 利用一時制限中');
     });
   });
 });
