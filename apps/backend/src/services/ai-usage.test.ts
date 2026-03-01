@@ -4,6 +4,7 @@ import {
   hasCharacterGenerated,
   recordCharacterGenerated,
   getDailyUsage,
+  getGlobalNeuronsEstimateForDate,
   recordNarrative,
   recordPartner,
   recordChat,
@@ -178,6 +179,42 @@ describe('ai-usage', () => {
       await recordGrimoireGeneration(db, 'user-1', today);
       const usage = await getDailyUsage(db, 'user-1', today);
       expect(usage.neuronsEstimate).toBe(NEURONS_NARRATIVE + NEURONS_CHAT + NEURONS_GRIMOIRE);
+    });
+  });
+
+  describe('getGlobalNeuronsEstimateForDate (Task 1.3)', () => {
+    it('returns 0 when no usage for the date', async () => {
+      const db = createMockD1ForAiUsageService();
+      const total = await getGlobalNeuronsEstimateForDate(db, '2026-01-15');
+      expect(total).toBe(0);
+    });
+
+    it('returns sum of neurons_estimate for the given date (single user)', async () => {
+      const db = createMockD1ForAiUsageService();
+      const dateUtc = '2026-01-15';
+      await recordNarrative(db, 'user-1', dateUtc);
+      await recordChat(db, 'user-1', dateUtc);
+      const total = await getGlobalNeuronsEstimateForDate(db, dateUtc);
+      expect(total).toBe(NEURONS_NARRATIVE + NEURONS_CHAT);
+    });
+
+    it('returns sum across multiple users for the same date', async () => {
+      const db = createMockD1ForAiUsageService();
+      const dateUtc = '2026-01-15';
+      await recordNarrative(db, 'user-1', dateUtc);
+      await recordPartner(db, 'user-2', dateUtc);
+      const total = await getGlobalNeuronsEstimateForDate(db, dateUtc);
+      expect(total).toBe(NEURONS_NARRATIVE + NEURONS_PARTNER);
+    });
+
+    it('does not include other dates', async () => {
+      const db = createMockD1ForAiUsageService();
+      await recordNarrative(db, 'user-1', '2026-01-15');
+      await recordPartner(db, 'user-1', '2026-01-16');
+      const total15 = await getGlobalNeuronsEstimateForDate(db, '2026-01-15');
+      const total16 = await getGlobalNeuronsEstimateForDate(db, '2026-01-16');
+      expect(total15).toBe(NEURONS_NARRATIVE);
+      expect(total16).toBe(NEURONS_PARTNER);
     });
   });
 

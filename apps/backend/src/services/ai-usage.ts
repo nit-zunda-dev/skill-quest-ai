@@ -98,6 +98,24 @@ export async function getCharacterProfile(
   }
 }
 
+/**
+ * 指定日（UTC 日付）のグローバル Neurons 概算合計を取得する。閾値判定で利用する。
+ * @param db D1
+ * @param dateUtc YYYY-MM-DD
+ * @returns その日の全ユーザー合計 neurons_estimate（レコードがなければ 0）
+ */
+export async function getGlobalNeuronsEstimateForDate(
+  db: D1Database,
+  dateUtc: string
+): Promise<number> {
+  const row = await db
+    .prepare('SELECT SUM(neurons_estimate) AS total FROM ai_daily_usage WHERE date_utc = ?')
+    .bind(dateUtc)
+    .first<{ total: number | null }>();
+  const total = row?.total;
+  return typeof total === 'number' ? total : 0;
+}
+
 /** 指定日の利用回数と Neurons 概算を取得（レコードがなければ 0） */
 export async function getDailyUsage(
   db: D1Database,

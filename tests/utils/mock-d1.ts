@@ -134,6 +134,14 @@ export function createMockD1ForAiUsageService(): D1Database {
       const uid = params[0] as string;
       return characterRows.some((r) => r.user_id === uid) ? { user_id: uid } : null;
     }
+    if (sql.includes('SUM(neurons_estimate)') && sql.includes('date_utc')) {
+      const dateUtc = params[0] as string;
+      let total = 0;
+      for (const [key, row] of usageRows) {
+        if (key.endsWith('-' + dateUtc)) total += row.neurons;
+      }
+      return { total };
+    }
     if (sql.includes('SELECT narrative_count') && sql.includes('ai_daily_usage')) {
       const key = (params[0] as string) + '-' + (params[1] as string);
       const row = usageRows.get(key);
