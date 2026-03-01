@@ -94,7 +94,7 @@ aiRouter.post(
     const goalResult = prepareUserPrompt(data.goal);
     if (!goalResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: goalResult.reason }, 400);
     const sanitized = { ...data, name: nameResult.sanitized, goal: goalResult.sanitized };
-    const service = createAiService(c.env);
+    const service = await createAiService(c.env);
     const profile = await service.generateCharacter(sanitized);
     const profileWithGoal = { ...profile, goal: sanitized.goal };
     await recordCharacterGenerated(c.env.DB, user.id);
@@ -133,7 +133,7 @@ aiRouter.post(
       sanitized.userComment = commentResult.sanitized;
     }
     const profileRaw = await getCharacterProfile(c.env.DB, user.id);
-    const service = createAiService(c.env);
+    const service = await createAiService(c.env);
     const result = await service.generateNarrative(sanitized);
 
     // プロフィール取得・XP/ゴールド加算・レベルアップ・永続化
@@ -202,7 +202,7 @@ aiRouter.post(
         sanitized[key] = result.sanitized;
       }
     }
-    const service = createAiService(c.env);
+    const service = await createAiService(c.env);
     const message = await service.generatePartnerMessage(sanitized);
     await recordPartner(c.env.DB, user.id, today);
     return c.json({ message });
@@ -222,7 +222,7 @@ aiRouter.post(
     const goal = goalResult.sanitized;
 
     try {
-      const service = createAiService(c.env);
+      const service = await createAiService(c.env);
       const suggestions = await service.generateSuggestedQuests(goal);
       if (suggestions.length === 0) {
         return c.json(

@@ -1,4 +1,7 @@
+import type { D1Database } from '@cloudflare/workers-types';
 import type { Bindings } from '../types';
+import { getAiNeuronsFallbackConfig } from '../lib/ai-fallback-config';
+import { getGlobalNeuronsEstimateForDate } from './ai-usage';
 import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest, SuggestedQuestItem } from '@skill-quest/shared';
 import { Difficulty, TaskType } from '@skill-quest/shared';
@@ -129,15 +132,38 @@ function createStubAiService(env: Bindings): AiService {
   };
 }
 
+export interface CreateAiServiceOptions {
+  db: D1Database;
+  getTodayUtc: () => string;
+}
+
 /**
  * env から AI バインディングを取得し、AI サービスを生成する。
  * env.AI は Cloudflare Workers の Ai バインディング（AiRunBinding と互換）。
  * AI Gateway IDが設定されている場合は、すべてのAI呼び出しをAI Gateway経由で実行する。
- * INTEGRATION_TEST_AI_STUB が '1' のときはスタブを返し本番AIを呼ばない。
+ * INTEGRATION_TEST_AI_STUB が '1' のときはスタブを返し本番AIを呼ばない（最優先）。
+ * options を渡し AI_NEURONS_FALLBACK_THRESHOLD が設定されている場合、今日の Neurons 概算合計が閾値以上ならスタブを返す。閾値取得失敗時は安全側でスタブを返す。
  */
-export function createAiService(env: Bindings): AiService {
+export async function createAiService(
+  env: Bindings,
+  options?: CreateAiServiceOptions
+): Promise<AiService> {
   if (env.INTEGRATION_TEST_AI_STUB === '1') {
     return createStubAiService(env);
+  }
+  if (options?.db != null && options?.getTodayUtc != null) {
+    const config = getAiNeuronsFallbackConfig(env);
+    if (config.threshold != null) {
+      try {
+        const today = options.getTodayUtc();
+        const total = await getGlobalNeuronsEstimateForDate(options.db, today);
+        if (total >= config.threshold) {
+          return createStubAiService(env);
+        }
+      } catch {
+        return createStubAiService(env);
+      }
+    }
   }
   const ai = env.AI as AiRunBinding;
   const gatewayId = env.AI_GATEWAY_ID;

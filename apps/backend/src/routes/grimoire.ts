@@ -103,7 +103,7 @@ grimoireRouter.post('/generate', async (c) => {
       };
     }
 
-    const service = createAiService(c.env);
+    const service = await createAiService(c.env);
     result = await service.generateGrimoire(completedTasks, grimoireContext);
   }
 
