@@ -45,13 +45,21 @@ export default function PartnerPage() {
   const itemJustGivenToPartner = Date.now() < itemJustGivenToPartnerUntil;
   const itemJustGivenToPet = Date.now() < itemJustGivenToPetUntil;
 
-  const handleGiveSuccess = useCallback((target: 'partner' | 'pet', grantedRarity?: string | null) => {
-    if (target === 'partner') setItemJustGivenToPartnerUntil(Date.now() + ITEM_JUST_GIVEN_DURATION_MS);
-    if (target === 'pet') {
-      setItemJustGivenToPetUntil(Date.now() + ITEM_JUST_GIVEN_DURATION_MS);
-      setItemJustGivenToPetRarity(grantedRarity ?? null);
-    }
-  }, []);
+  const handleGiveSuccess = useCallback(
+    (target: 'partner' | 'pet', grantedRarity?: string | null, itemName?: string) => {
+      if (target === 'partner') {
+        setItemJustGivenToPartnerUntil(Date.now() + ITEM_JUST_GIVEN_DURATION_MS);
+        if (itemName && !isChatLimitReached && !isLoading) {
+          sendMessage(`${itemName}を渡したよ`);
+        }
+      }
+      if (target === 'pet') {
+        setItemJustGivenToPetUntil(Date.now() + ITEM_JUST_GIVEN_DURATION_MS);
+        setItemJustGivenToPetRarity(grantedRarity ?? null);
+      }
+    },
+    [isChatLimitReached, isLoading, sendMessage]
+  );
 
   useEffect(() => {
     if (itemJustGivenToPartnerUntil <= 0) return;
