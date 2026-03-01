@@ -115,4 +115,42 @@ describe('ops router (Task 5.2)', () => {
       expect(body).toHaveProperty('totalNeuronsEstimate');
     });
   });
+
+  describe('Task 5.3: ai-usage の from/to 検証（90日超過時は 400）', () => {
+    const envWithKey: Bindings = {
+      DB: createMockD1(),
+      AI: {} as Bindings['AI'],
+      BETTER_AUTH_SECRET: 'test',
+      OPS_API_KEY: validKey,
+    };
+
+    it('from と to の範囲が 90 日を超えると 400 を返す', async () => {
+      const { app } = createTestApp(envWithKey);
+      const res = await app.request('/api/ops/ai-usage?from=2026-01-01&to=2026-04-02', {
+        method: 'GET',
+        headers: { 'X-Ops-API-Key': validKey },
+      }, envWithKey);
+      expect(res.status).toBe(400);
+      const text = await res.text();
+      expect(text).toContain('90');
+    });
+
+    it('from が to より後の場合は 400 を返す', async () => {
+      const { app } = createTestApp(envWithKey);
+      const res = await app.request('/api/ops/ai-usage?from=2026-01-31&to=2026-01-01', {
+        method: 'GET',
+        headers: { 'X-Ops-API-Key': validKey },
+      }, envWithKey);
+      expect(res.status).toBe(400);
+    });
+
+    it('from または to が YYYY-MM-DD でない場合は 400 を返す', async () => {
+      const { app } = createTestApp(envWithKey);
+      const res = await app.request('/api/ops/ai-usage?from=2026/01/01&to=2026-01-31', {
+        method: 'GET',
+        headers: { 'X-Ops-API-Key': validKey },
+      }, envWithKey);
+      expect(res.status).toBe(400);
+    });
+  });
 });
