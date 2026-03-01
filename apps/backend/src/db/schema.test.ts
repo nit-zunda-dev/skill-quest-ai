@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { getTableColumns } from 'drizzle-orm';
-import { items, userAcquiredItems, partnerFavorability, schema } from './schema';
+import { items, userAcquiredItems, partnerFavorability, aiDailyUsage, schema } from './schema';
 
 function columnNames(table: ReturnType<typeof getTableColumns>): string[] {
   return Object.values(table).map((col) => col.name);
@@ -52,5 +52,17 @@ describe('gacha schema (Task 2.1)', () => {
       expect(cols).toContain('favorability');
       expect(cols).toContain('updated_at');
     });
+  });
+});
+
+describe('ai_daily_usage (infra-stability-cost Task 1.1)', () => {
+  it('neurons_estimate カラムを持つ（integer, default 0）', () => {
+    const cols = getTableColumns(aiDailyUsage);
+    expect(cols).toHaveProperty('neuronsEstimate');
+    expect(cols.neuronsEstimate).toBeDefined();
+    expect(String(cols.neuronsEstimate.columnType)).toContain('Integer');
+    const def = cols.neuronsEstimate.default;
+    expect(def).toBeDefined();
+    expect(String(def)).toMatch(/0/);
   });
 });

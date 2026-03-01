@@ -81,6 +81,7 @@ grimoireRouter.post('/generate', async (c) => {
   });
 
   let result: { title: string; rewardXp: number; rewardGold: number };
+  let isFallbackStub = false;
 
   if (completedTasks.length === 0) {
     // 0件: AIは呼ばずフォールバックでタイトル・報酬0・0件用ナラティブ
@@ -103,8 +104,9 @@ grimoireRouter.post('/generate', async (c) => {
       };
     }
 
-    const service = createAiService(c.env);
-    result = await service.generateGrimoire(completedTasks, grimoireContext);
+    const createResult = await createAiService(c.env, { db: c.env.DB, getTodayUtc });
+    isFallbackStub = createResult.isFallbackStub;
+    result = await createResult.service.generateGrimoire(completedTasks, grimoireContext);
   }
 
   const narrative = buildGrimoireNarrativeFromTemplate(completedTasks, characterName, result.rewardXp, result.rewardGold);
@@ -149,7 +151,7 @@ grimoireRouter.post('/generate', async (c) => {
     rewardGold: result.rewardGold,
   });
 
-  await recordGrimoireGeneration(c.env.DB, user.id, today);
+  if (!isFallbackStub) await recordGrimoireGeneration(c.env.DB, user.id, today);
 
   const grimoireEntry = {
     id: grimoireResult.id,

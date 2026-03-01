@@ -1,4 +1,7 @@
+import type { D1Database } from '@cloudflare/workers-types';
 import type { Bindings } from '../types';
+import { getAiNeuronsFallbackConfig } from '../lib/ai-fallback-config';
+import { getGlobalNeuronsEstimateForDate } from './ai-usage';
 import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest, SuggestedQuestItem } from '@skill-quest/shared';
 import { Difficulty, TaskType } from '@skill-quest/shared';
@@ -103,45 +106,92 @@ export interface AiService {
   generateSuggestedQuests(goal: string): Promise<SuggestedQuestItem[]>;
 }
 
+/** 閾値超過でスタブに切り替えたときに返すメッセージ（Task 2.3） */
+export const STUB_FALLBACK_MESSAGE = 'AI 利用一時制限中';
+
+export interface CreateAiServiceResult {
+  service: AiService;
+  isFallbackStub: boolean;
+}
+
 /**
- * 統合テスト用スタブ: env.AI を呼ばず固定値を返す AiService
+ * 統合テスト用スタブ: env.AI を呼ばず固定値を返す AiService。
+ * fallbackMessage を渡すと閾値超過時などスタブであることが分かるメッセージを返す（Task 2.3）。
  */
-function createStubAiService(env: Bindings): AiService {
+function createStubAiService(env: Bindings, opts?: { fallbackMessage?: string }): AiService {
+  const msg = opts?.fallbackMessage ?? '';
+  const narrativeText = msg || 'Stub narrative.';
+  const partnerText = msg || 'Stub partner message.';
+  const grimoireTitle = msg || 'Stub chapter';
   return {
-    runWithLlama31_8b: async () => '',
-    runWithLlama33_70b: async () => '',
-    generateCharacter: async (data: GenesisFormData) =>
-      defaultCharacterProfile(data.name, data.goal),
+    runWithLlama31_8b: async () => msg,
+    runWithLlama33_70b: async () => msg,
+    generateCharacter: async (data: GenesisFormData) => {
+      const p = defaultCharacterProfile(data.name, data.goal);
+      if (msg) return { ...p, prologue: msg };
+      return p;
+    },
     generateNarrative: async () => ({
-      narrative: 'Stub narrative.',
+      narrative: narrativeText,
       rewardXp: 10,
       rewardGold: 5,
     }),
-    generatePartnerMessage: async () => 'Stub partner message.',
+    generatePartnerMessage: async () => partnerText,
     generateGrimoire: async () => ({
-      title: 'Stub chapter',
+      title: grimoireTitle,
       rewardXp: 10,
       rewardGold: 5,
     }),
-    generateSuggestedQuests: async () => [
-      { title: 'スタブ提案タスク', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM },
-    ],
+    generateSuggestedQuests: async () =>
+      msg
+        ? [{ title: msg, type: TaskType.DAILY, difficulty: Difficulty.MEDIUM }]
+        : [{ title: 'スタブ提案タスク', type: TaskType.DAILY, difficulty: Difficulty.MEDIUM }],
   };
+}
+
+export interface CreateAiServiceOptions {
+  db: D1Database;
+  getTodayUtc: () => string;
 }
 
 /**
  * env から AI バインディングを取得し、AI サービスを生成する。
  * env.AI は Cloudflare Workers の Ai バインディング（AiRunBinding と互換）。
  * AI Gateway IDが設定されている場合は、すべてのAI呼び出しをAI Gateway経由で実行する。
- * INTEGRATION_TEST_AI_STUB が '1' のときはスタブを返し本番AIを呼ばない。
+ * INTEGRATION_TEST_AI_STUB が '1' のときはスタブを返し本番AIを呼ばない（最優先）。
+ * options を渡し AI_NEURONS_FALLBACK_THRESHOLD が設定されている場合、今日の Neurons 概算合計が閾値以上ならスタブを返す。閾値取得失敗時は安全側でスタブを返す。
+ * 戻り値の isFallbackStub が true のときはルートで record* を呼ばない（Task 2.3）。
  */
-export function createAiService(env: Bindings): AiService {
+export async function createAiService(
+  env: Bindings,
+  options?: CreateAiServiceOptions
+): Promise<CreateAiServiceResult> {
   if (env.INTEGRATION_TEST_AI_STUB === '1') {
-    return createStubAiService(env);
+    return { service: createStubAiService(env), isFallbackStub: true };
+  }
+  if (options?.db != null && options?.getTodayUtc != null) {
+    const config = getAiNeuronsFallbackConfig(env);
+    if (config.threshold != null) {
+      try {
+        const today = options.getTodayUtc();
+        const total = await getGlobalNeuronsEstimateForDate(options.db, today);
+        if (total >= config.threshold) {
+          return {
+            service: createStubAiService(env, { fallbackMessage: STUB_FALLBACK_MESSAGE }),
+            isFallbackStub: true,
+          };
+        }
+      } catch {
+        return {
+          service: createStubAiService(env, { fallbackMessage: STUB_FALLBACK_MESSAGE }),
+          isFallbackStub: true,
+        };
+      }
+    }
   }
   const ai = env.AI as AiRunBinding;
   const gatewayId = env.AI_GATEWAY_ID;
-  return {
+  const service: AiService = {
     runWithLlama31_8b(prompt: string) {
       return runWithLlama31_8b(ai, prompt, gatewayId);
     },
@@ -164,6 +214,7 @@ export function createAiService(env: Bindings): AiService {
       return generateSuggestedQuests(ai, goal, gatewayId);
     },
   };
+  return { service, isFallbackStub: false };
 }
 
 /** フォールバック用のデフォルトプロフィール */

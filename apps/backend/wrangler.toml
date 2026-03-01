@@ -22,6 +22,7 @@ remote = true
 FRONTEND_URL = "http://localhost:3000"
 # AI_GATEWAY_ID は .dev.vars ファイルで設定（Git管理外）
 # プレビュー/本番環境では Cloudflare ダッシュボードの環境変数で設定
+# 無料枠フォールバック（オプション）: AI_NEURONS_FALLBACK_THRESHOLD, AI_NEURONS_DAILY_LIMIT は .dev.vars またはダッシュボードで設定。未設定時はフォールバック判定なし
 
 # プレビュー環境設定（Cloudflare Pages と Workers の統合: docs/setup/04_production_environment_setup.md セクション6参照）
 [env.preview]
@@ -46,3 +47,9 @@ remote = true
 binding = "DB"
 database_name = "skill-quest-db-production"
 database_id = "4301512e-0c40-44a9-8476-c5e6da0cc728"
+
+# Task 4.3: Observability は必要なタイミングで有効化する。有効化方法は docs/setup/10_observability.md を参照。
+# 例（本番のみ有効にする場合）: 以下をアンコメントして再デプロイ
+# [env.production.observability]
+# enabled = true
+# head_sampling_rate = 1
