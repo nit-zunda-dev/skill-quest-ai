@@ -80,9 +80,98 @@
 						"description": "エラーハンドリングが正しく動作するか確認するエンドポイント"
 					},
 					"response": []
+				},
+				{
+					"name": "Health (API)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "稼働状態とD1健全性。認証不要。外形監視・運用確認用。200 + { status: \"ok\", checks?: { db: \"ok\" | \"unhealthy\" } }"
+					},
+					"response": []
 				}
 			],
-			"description": "APIの基本的な動作確認用エンドポイント"
+			"description": "APIの基本的な動作確認用エンドポイント。GET /api/health は外形監視・運用確認用。"
+		},
+		{
+			"name": "運用者向け API (Ops)",
+			"item": [
+				{
+					"name": "Get Stats (ユーザー数)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Ops-API-Key",
+								"value": "{{ops_api_key}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ops/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ops",
+								"stats"
+							]
+						},
+						"description": "登録ユーザー数・アクティブユーザー数（直近30日セッションあり）を取得。必須: ヘッダ X-Ops-API-Key に環境の OPS_API_KEY と同じ値を設定。キー未設定環境では 404。"
+					},
+					"response": []
+				},
+				{
+					"name": "Get AI Usage (利用量集計)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Ops-API-Key",
+								"value": "{{ops_api_key}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/ops/ai-usage?from=2026-01-01&to=2026-01-31",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ops",
+								"ai-usage"
+							],
+							"query": [
+								{
+									"key": "from",
+									"value": "2026-01-01",
+									"description": "開始日 YYYY-MM-DD"
+								},
+								{
+									"key": "to",
+									"value": "2026-01-31",
+									"description": "終了日 YYYY-MM-DD（from から最大90日）"
+								}
+							]
+						},
+						"description": "AI利用量（Neurons概算）の日次集計。クエリ from/to は YYYY-MM-DD、範囲は最大90日。超過時は 400。必須: ヘッダ X-Ops-API-Key。"
+					},
+					"response": []
+				}
+			],
+			"description": "運用者向けAPI。AI利用量・ユーザー数の確認用。すべてのリクエストにヘッダ X-Ops-API-Key が必要。環境変数 ops_api_key を設定してください。OPS_API_KEY が未設定の環境では 404 が返ります。"
 		},
 		{
 			"name": "Auth",
@@ -578,9 +667,108 @@
 					},
 					"description": "指定IDのクエストを削除。認証必須。",
 					"response": []
+				},
+				{
+					"name": "Create Quest Batch",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 201\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"const jsonData = pm.response.json();",
+									"if (jsonData && Array.isArray(jsonData) && jsonData.length > 0 && jsonData[0].id) {",
+									"    pm.collectionVariables.set(\"quest_id\", jsonData[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"quests\": [\n    { \"title\": \"バッチ1\", \"type\": \"DAILY\", \"difficulty\": \"EASY\" },\n    { \"title\": \"バッチ2\", \"type\": \"TODO\", \"difficulty\": \"MEDIUM\" }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/quests/batch",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests", "batch"]
+						}
+					},
+					"description": "クエストを一括作成（1〜20件）。認証必須。quests 配列の各要素は title, type (DAILY|HABIT|TODO), difficulty (EASY|MEDIUM|HARD) 必須。",
+					"response": []
+				},
+				{
+					"name": "Complete Quest",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has grantedItem\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('grantedItem');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/quests/{{quest_id}}/complete",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests", "{{quest_id}}", "complete"]
+						}
+					},
+					"description": "指定IDのクエストを完了にする。報酬アイテム（grantedItem）が返る場合あり。認証必須。quest_id は Get Quests または Create Quest で設定。",
+					"response": []
+				},
+				{
+					"name": "Update Quest Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"done\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/quests/{{quest_id}}/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "quests", "{{quest_id}}", "status"]
+						}
+					},
+					"description": "指定IDのクエストのステータスを更新。必須: status (todo | in_progress | done)。done にすると完了扱いで報酬付与。認証必須。",
+					"response": []
 				}
 			],
-			"description": "クエスト管理API。すべて認証必須。GET: 一覧、POST: 作成、PUT: 更新、DELETE: 削除。quest_id は Get/Create のレスポンスから自動でコレクション変数に保存されます。"
+			"description": "クエスト管理API。すべて認証必須。GET: 一覧、POST: 作成、POST /batch: 一括作成、PUT: 更新、PATCH /:id/complete: 完了、PATCH /:id/status: ステータス更新、DELETE: 削除。quest_id は Get/Create のレスポンスから自動でコレクション変数に保存されます。"
 		},
 		{
 			"name": "Grimoire",
@@ -653,6 +841,92 @@
 			"description": "グリモワールAPI。GET: 一覧、POST /generate: 1日1回。認証必須。"
 		},
 		{
+			"name": "Items",
+			"item": [
+				{
+					"name": "Get Items",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "items"]
+						},
+						"description": "認証済みユーザーの所持アイテム一覧を取得時刻の降順で返す。認証必須。"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Item Master",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/items/master",
+							"host": ["{{base_url}}"],
+							"path": ["api", "items", "master"]
+						},
+						"description": "アイテムマスタ全件（コレクション図鑑用）。認証不要で呼べるが、ルートは /api/items 配下のため認証ミドルウェアがかかる。認証必須。"
+					},
+					"response": []
+				}
+			],
+			"description": "所持アイテム・アイテムマスタAPI。GET /api/items: 所持一覧、GET /api/items/master: マスタ一覧。いずれも認証必須。"
+		},
+		{
+			"name": "Partner",
+			"item": [
+				{
+					"name": "Get Favorability",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/partner/favorability",
+							"host": ["{{base_url}}"],
+							"path": ["api", "partner", "favorability"]
+						},
+						"description": "パートナー（バー）への好感度を取得。認証必須。"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Last Pet Rarity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/partner/last-pet-rarity",
+							"host": ["{{base_url}}"],
+							"path": ["api", "partner", "last-pet-rarity"]
+						},
+						"description": "ペットに最後に渡したアイテムのレアリティを取得。認証必須。"
+					},
+					"response": []
+				},
+				{
+					"name": "Give Item",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"itemId\": \"取得したitemIdを指定\",\n  \"target\": \"partner\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/partner/give-item",
+							"host": ["{{base_url}}"],
+							"path": ["api", "partner", "give-item"]
+						},
+						"description": "アイテムをパートナーまたはペットに渡す（記録のみ、所持は消費しない）。必須: itemId, target (partner | pet)。所持していないアイテムは 400。認証必須。"
+					},
+					"response": []
+				}
+			],
+			"description": "パートナー（バー）関連API。好感度取得・ペットに渡したレアリティ・アイテムを渡す。すべて認証必須。"
+		},
+		{
 			"name": "AI",
 			"item": [
 				{
@@ -669,6 +943,7 @@
 									"    const jsonData = pm.response.json();",
 									"    pm.expect(jsonData).to.have.property('characterGenerated');",
 									"    pm.expect(jsonData).to.have.property('narrativeRemaining');",
+									"    pm.expect(jsonData).to.have.property('partnerRemaining');",
 									"    pm.expect(jsonData).to.have.property('chatRemaining');",
 									"    pm.expect(jsonData).to.have.property('grimoireRemaining');",
 									"});"
@@ -686,7 +961,7 @@
 							"path": ["api", "ai", "usage"]
 						}
 					},
-					"description": "AI利用残り回数・制限情報を取得。認証必須。",
+					"description": "AI利用残り回数・制限情報を取得。認証必須。レスポンス: characterGenerated, narrativeRemaining, partnerRemaining, chatRemaining, grimoireRemaining, limits。",
 					"response": []
 				},
 				{
@@ -750,7 +1025,7 @@
 						"header": [{"key": "Content-Type", "value": "application/json"}],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"冒険者\",\n  \"goal\": \"世界を救う\",\n  \"genre\": \"FANTASY\"\n}"
+							"raw": "{\n  \"name\": \"冒険者\",\n  \"goal\": \"世界を救う\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/ai/generate-character",
@@ -758,7 +1033,7 @@
 							"path": ["api", "ai", "generate-character"]
 						}
 					},
-					"description": "キャラクター（CharacterProfile）を生成します。必須: name, goal, genre (FANTASY|CYBERPUNK|MODERN|HORROR|SCI_FI)。",
+					"description": "キャラクター（CharacterProfile）を生成します。必須: name (1〜50文字), goal (1〜500文字)。1アカウント1回限り。2回目以降は 429。",
 					"response": []
 				},
 				{
@@ -835,6 +1110,81 @@
 					"response": []
 				},
 				{
+					"name": "Suggest Quests",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 502 or 503\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 502, 503]);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has suggestions array\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('suggestions');",
+									"        pm.expect(jsonData.suggestions).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"goal\": \"毎日運動して健康になる\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/suggest-quests",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "suggest-quests"]
+						}
+					},
+					"description": "目標（goal）に基づいてAIがクエスト案を提案。必須: goal (1〜500文字)。レスポンス: suggestions (title, type, difficulty の配列)。認証必須。",
+					"response": []
+				},
+				{
+					"name": "Update Goal",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404 or 429\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404, 429]);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has ok\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('ok');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"goal\": \"新しい目標\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ai/goal",
+							"host": ["{{base_url}}"],
+							"path": ["api", "ai", "goal"]
+						}
+					},
+					"description": "キャラクターの目標（goal）を更新。必須: goal (1〜500文字)。1日2回まで。更新時にクエストは全削除される。キャラ未生成時は 404。認証必須。",
+					"response": []
+				},
+				{
 					"name": "Chat (Streaming)",
 					"event": [
 						{
@@ -873,7 +1223,7 @@
 					"response": []
 				}
 			],
-			"description": "AI生成API。generate-character: キャラプロフィール、generate-narrative: ナラティブと報酬、generate-partner-message: パートナーのセリフ、chat: ストリーミングチャット（Workers AI Llama 3.1 8B）。"
+			"description": "AI生成API。usage: 利用状況、character: 取得、generate-character: キャラ生成（1回限り）、generate-narrative: ナラティブと報酬、generate-partner-message: パートナーのセリフ、suggest-quests: クエスト提案、goal: 目標更新（1日2回）、chat: ストリーミングチャット（Workers AI Llama 3.1 8B）。"
 		}
 	],
 	"event": [
@@ -909,6 +1259,11 @@
 		},
 		{
 			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ops_api_key",
 			"value": "",
 			"type": "string"
 		}
