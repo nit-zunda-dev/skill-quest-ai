@@ -47,3 +47,9 @@ remote = true
 binding = "DB"
 database_name = "skill-quest-db-production"
 database_id = "4301512e-0c40-44a9-8476-c5e6da0cc728"
+
+# Task 4.3: Observability は必要なタイミングで有効化する。有効化方法は docs/setup/10_observability.md を参照。
+# 例（本番のみ有効にする場合）: 以下をアンコメントして再デプロイ
+# [env.production.observability]
+# enabled = true
+# head_sampling_rate = 1

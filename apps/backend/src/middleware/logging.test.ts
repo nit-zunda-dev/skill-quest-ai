@@ -155,4 +155,29 @@ describe('loggingMiddleware', () => {
     const body = await res.json() as { message: string };
     expect(body.message).toBe('success');
   });
+
+  it('outputs structured log with path, method, status, durationMs (Task 4.2)', async () => {
+    const { app, env } = createTestApp(mockEnv);
+    await app.request('/test', { method: 'GET' }, env);
+
+    const jsonCalls = consoleLogSpy.mock.calls
+      .map((c) => c[0])
+      .filter((arg): arg is string => typeof arg === 'string')
+      .filter((s) => {
+        try {
+          const p = JSON.parse(s) as Record<string, unknown>;
+          return typeof p.path === 'string' && typeof p.durationMs === 'number';
+        } catch {
+          return false;
+        }
+      });
+    expect(jsonCalls.length).toBeGreaterThanOrEqual(1);
+    const parsed = JSON.parse(jsonCalls[0]) as Record<string, unknown>;
+    expect(parsed.path).toBe('/test');
+    expect(parsed.method).toBe('GET');
+    expect(parsed.status).toBe(200);
+    expect(parsed.durationMs).toBeGreaterThanOrEqual(0);
+    expect(parsed.timestamp).toBeDefined();
+    expect(parsed.msg).toBeDefined();
+  });
 });

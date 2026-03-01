@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { Bindings } from '../types';
@@ -33,6 +33,7 @@ function createTestApp(mockEnv: Bindings) {
 
 describe('errorHandler', () => {
   let mockEnv: Bindings;
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     mockEnv = {
@@ -40,6 +41,11 @@ describe('errorHandler', () => {
       AI: {} as Bindings['AI'],
       BETTER_AUTH_SECRET: 'test-secret',
     };
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('handles HTTPException 400 correctly', async () => {
@@ -255,5 +261,30 @@ describe('errorHandler', () => {
     const body = await res.json() as { error: { code: string; message: string; timestamp: string } };
     expect(body.error.code).toBe('SERVICE_UNAVAILABLE');
     expect(body.error.message).toBe('Service Unavailable');
+  });
+
+  it('outputs structured error log with level, path, method, status, msg (Task 4.2)', async () => {
+    const { app, env } = createTestApp(mockEnv);
+    await app.request('/http-exception-404', { method: 'GET' }, env);
+
+    const jsonCalls = consoleLogSpy.mock.calls
+      .map((c) => c[0])
+      .filter((arg): arg is string => typeof arg === 'string')
+      .filter((s) => {
+        try {
+          const p = JSON.parse(s) as Record<string, unknown>;
+          return p.level === 'error' && typeof p.path === 'string';
+        } catch {
+          return false;
+        }
+      });
+    expect(jsonCalls.length).toBeGreaterThanOrEqual(1);
+    const parsed = JSON.parse(jsonCalls[0]) as Record<string, unknown>;
+    expect(parsed.level).toBe('error');
+    expect(parsed.path).toBe('/http-exception-404');
+    expect(parsed.method).toBe('GET');
+    expect(parsed.status).toBe(404);
+    expect(parsed.msg).toBeDefined();
+    expect(parsed.timestamp).toBeDefined();
   });
 });

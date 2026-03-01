@@ -1,30 +1,52 @@
 import type { Context } from 'hono';
 import type { Bindings } from '../types';
 import { HTTPException } from 'hono/http-exception';
+import { logStructured } from '../lib/structured-log';
 
 /**
  * エラーハンドリングミドルウェア
- * 統一的なエラーレスポンスを返す
+ * 統一的なエラーレスポンスを返し、構造化ログでエラーを記録する（Task 4.2）
  */
 export function errorHandler(
   err: Error,
   c: Context<{ Bindings: Bindings }>
 ) {
+  const path = c.req.path;
+  const method = c.req.method;
+
   // HTTPExceptionの場合は、そのまま返す
   if (err instanceof HTTPException) {
+    const status = err.status;
+    const msg = err.message || getDefaultErrorMessage(status);
+    logStructured({
+      level: 'error',
+      msg,
+      path,
+      method,
+      status,
+    });
     return c.json(
       {
         error: {
-          code: getErrorCode(err.status),
-          message: err.message || getDefaultErrorMessage(err.status),
+          code: getErrorCode(status),
+          message: msg,
           timestamp: new Date().toISOString(),
         },
       },
-      err.status
+      status
     );
   }
 
   // 予期しないエラーの場合は、500を返す
+  const status = 500;
+  const msg = err.message ?? 'An unexpected error occurred';
+  logStructured({
+    level: 'error',
+    msg,
+    path,
+    method,
+    status,
+  });
   console.error('Unhandled error:', err);
 
   return c.json(
@@ -35,7 +57,7 @@ export function errorHandler(
         timestamp: new Date().toISOString(),
       },
     },
-    500
+    status
   );
 }
 
