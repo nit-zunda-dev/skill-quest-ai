@@ -29,7 +29,7 @@ export function createMockD1ForAiUsage(overrides?: {
     if (sql.includes('user_character_profile') && sql.includes('profile'))
       return storedProfile != null ? { profile: JSON.stringify(storedProfile) } : null;
     if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
-      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount, grimoire_count: grimoireCount, goal_update_count: goalUpdateCount };
+      return { narrative_count: narrativeCount, partner_count: partnerCount, chat_count: chatCount, grimoire_count: grimoireCount, goal_update_count: goalUpdateCount, neurons_estimate: 0 };
     return null;
   };
   const run = async () => ({ success: true, meta: {} });
@@ -55,7 +55,10 @@ export function createMockD1ForAiUsage(overrides?: {
  */
 export function createMockD1ForAiUsageService(): D1Database {
   const characterRows: { user_id: string }[] = [];
-  const usageRows: Map<string, { narrative: number; partner: number; chat: number; grimoire: number; goalUpdate: number }> = new Map();
+  const usageRows: Map<
+    string,
+    { narrative: number; partner: number; chat: number; grimoire: number; goalUpdate: number; neurons: number }
+  > = new Map();
 
   const run = async (sql: string, ...params: unknown[]) => {
     const key = (params[0] as string) + '-' + (params[1] as string);
@@ -64,38 +67,63 @@ export function createMockD1ForAiUsageService(): D1Database {
       return { success: true, meta: {} };
     }
     if (sql.includes('INSERT INTO ai_daily_usage')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
-      if (sql.includes('1, 0, 0, 0, 0)') && sql.includes('narrative_count')) cur.narrative = 1;
-      else if (sql.includes('0, 1, 0, 0, 0)') && sql.includes('partner_count')) cur.partner = 1;
-      else if (sql.includes('0, 0, 1, 0, 0)') && sql.includes('chat_count')) cur.chat = (cur.chat || 0) + 1;
-      else if (sql.includes('0, 0, 0, 1, 0)') && sql.includes('grimoire_count')) cur.grimoire = 1;
-      else if (sql.includes('0, 0, 0, 0, 1)') && sql.includes('goal_update_count')) cur.goalUpdate = (cur.goalUpdate || 0) + 1;
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const neuronsAdd = (params[params.length - 1] as number) ?? 0;
+      if (sql.includes('1, 0, 0, 0, 0,') && sql.includes('narrative_count')) {
+        cur.narrative = 1;
+        cur.neurons += neuronsAdd;
+      } else if (sql.includes('0, 1, 0, 0, 0,') && sql.includes('partner_count')) {
+        cur.partner = 1;
+        cur.neurons += neuronsAdd;
+      } else if (sql.includes('0, 0, 1, 0, 0,') && sql.includes('chat_count')) {
+        cur.chat = (cur.chat || 0) + 1;
+        cur.neurons += neuronsAdd;
+      } else if (sql.includes('0, 0, 0, 1, 0,') && sql.includes('grimoire_count')) {
+        cur.grimoire = 1;
+        cur.neurons += neuronsAdd;
+      } else if (sql.includes('0, 0, 0, 0, 1,') && sql.includes('goal_update_count')) {
+        cur.goalUpdate = (cur.goalUpdate || 0) + 1;
+        cur.neurons += neuronsAdd;
+      } else if (sql.includes('0, 0, 0, 0, 0,') && sql.includes('neurons_estimate')) {
+        cur.neurons += (params[3] as number) ?? 0;
+      }
       usageRows.set(key, cur);
       return { success: true, meta: {} };
     }
-    if (sql.includes('DO UPDATE SET narrative_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
-      usageRows.set(key, { ...cur, narrative: 1 });
+    if (sql.includes('DO UPDATE SET narrative_count') || sql.includes('narrative_count = 1, neurons_estimate')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const add = (params[params.length - 1] as number) ?? 0;
+      usageRows.set(key, { ...cur, narrative: 1, neurons: cur.neurons + add });
       return { success: true, meta: {} };
     }
-    if (sql.includes('DO UPDATE SET partner_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
-      usageRows.set(key, { ...cur, partner: 1 });
+    if (sql.includes('DO UPDATE SET partner_count') || sql.includes('partner_count = 1, neurons_estimate')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const add = (params[params.length - 1] as number) ?? 0;
+      usageRows.set(key, { ...cur, partner: 1, neurons: cur.neurons + add });
       return { success: true, meta: {} };
     }
-    if (sql.includes('DO UPDATE SET chat_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
-      usageRows.set(key, { ...cur, chat: cur.chat + 1 });
+    if (sql.includes('DO UPDATE SET chat_count') || sql.includes('chat_count = chat_count + 1, neurons_estimate')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const add = (params[params.length - 1] as number) ?? 0;
+      usageRows.set(key, { ...cur, chat: cur.chat + 1, neurons: cur.neurons + add });
       return { success: true, meta: {} };
     }
-    if (sql.includes('DO UPDATE SET grimoire_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
-      usageRows.set(key, { ...cur, grimoire: 1 });
+    if (sql.includes('DO UPDATE SET grimoire_count') || sql.includes('grimoire_count = 1, neurons_estimate')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const add = (params[params.length - 1] as number) ?? 0;
+      usageRows.set(key, { ...cur, grimoire: 1, neurons: cur.neurons + add });
       return { success: true, meta: {} };
     }
-    if (sql.includes('DO UPDATE SET goal_update_count')) {
-      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0 };
-      usageRows.set(key, { ...cur, goalUpdate: (cur.goalUpdate || 0) + 1 });
+    if (sql.includes('DO UPDATE SET goal_update_count') || sql.includes('goal_update_count = goal_update_count + 1, neurons_estimate')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const add = (params[params.length - 1] as number) ?? 0;
+      usageRows.set(key, { ...cur, goalUpdate: (cur.goalUpdate || 0) + 1, neurons: cur.neurons + add });
+      return { success: true, meta: {} };
+    }
+    if (sql.includes('neurons_estimate = neurons_estimate + ?') && !sql.includes('narrative_count') && !sql.includes('partner_count') && !sql.includes('chat_count') && !sql.includes('grimoire_count') && !sql.includes('goal_update_count')) {
+      const cur = usageRows.get(key) ?? { narrative: 0, partner: 0, chat: 0, grimoire: 0, goalUpdate: 0, neurons: 0 };
+      const add = (params[params.length - 1] as number) ?? 0;
+      usageRows.set(key, { ...cur, neurons: cur.neurons + add });
       return { success: true, meta: {} };
     }
     return { success: true, meta: {} };
@@ -105,6 +133,14 @@ export function createMockD1ForAiUsageService(): D1Database {
     if (sql.includes('user_character_generated')) {
       const uid = params[0] as string;
       return characterRows.some((r) => r.user_id === uid) ? { user_id: uid } : null;
+    }
+    if (sql.includes('SUM(neurons_estimate)') && sql.includes('date_utc')) {
+      const dateUtc = params[0] as string;
+      let total = 0;
+      for (const [key, row] of usageRows) {
+        if (key.endsWith('-' + dateUtc)) total += row.neurons;
+      }
+      return { total };
     }
     if (sql.includes('SELECT narrative_count') && sql.includes('ai_daily_usage')) {
       const key = (params[0] as string) + '-' + (params[1] as string);
@@ -116,6 +152,7 @@ export function createMockD1ForAiUsageService(): D1Database {
             chat_count: row.chat,
             grimoire_count: row.grimoire,
             goal_update_count: row.goalUpdate,
+            neurons_estimate: row.neurons,
           }
         : null;
     }

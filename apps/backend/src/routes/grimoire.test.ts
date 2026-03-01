@@ -134,7 +134,7 @@ describe('grimoire router', () => {
       const mockAiService = {
         generateGrimoire: vi.fn().mockResolvedValue(mockGrimoireResult),
       };
-      vi.mocked(createAiService).mockReturnValue(mockAiService as any);
+      vi.mocked(createAiService).mockResolvedValue({ service: mockAiService as any, isFallbackStub: false });
 
       const mockGrimoireEntry = {
         id: 'g1',

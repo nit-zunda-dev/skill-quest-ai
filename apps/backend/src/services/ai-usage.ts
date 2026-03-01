@@ -3,6 +3,20 @@ import type { D1Database } from '@cloudflare/workers-types';
 /** 1日あたりチャット利用上限（06_AI設計.md） */
 export const CHAT_DAILY_LIMIT = 10;
 
+/**
+ * Workers AI 課金単位（Neurons）の概算係数（操作種別ごと）。
+ * Cloudflare の課金単位 Neurons に合わせた概算値。実測はダッシュボードで確認し、係数は docs に記載のとおり調整可能。
+ * 実 AI 実行時のみ記録し、スタブ応答時は加算しない。
+ * @see docs/architecture/06_AI設計.md, docs/architecture/09_運用とコスト.md
+ * @see .kiro/specs/infra-stability-cost/design.md (Task 1.4)
+ */
+export const NEURONS_CHARACTER = 19;
+export const NEURONS_NARRATIVE = 20;
+export const NEURONS_PARTNER = 20;
+export const NEURONS_CHAT = 20;
+export const NEURONS_GRIMOIRE = 20;
+export const NEURONS_GOAL_UPDATE = 20;
+
 /** 今日の日付を UTC で YYYY-MM-DD にする */
 export function getTodayUtc(): string {
   const now = new Date();
@@ -21,12 +35,21 @@ export async function hasCharacterGenerated(db: D1Database, userId: string): Pro
   return row != null;
 }
 
-/** キャラ生成済みを記録 */
+/** キャラ生成済みを記録し、当該日の Neurons 概算を加算する（実 AI 実行時のみ呼ぶ） */
 export async function recordCharacterGenerated(db: D1Database, userId: string): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
   await db
     .prepare('INSERT INTO user_character_generated (user_id, created_at) VALUES (?, ?)')
     .bind(userId, now)
+    .run();
+  const today = getTodayUtc();
+  await db
+    .prepare(
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate)
+       VALUES (?, ?, 0, 0, 0, 0, 0, ?)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET neurons_estimate = neurons_estimate + ?`
+    )
+    .bind(userId, today, NEURONS_CHARACTER, NEURONS_CHARACTER)
     .run();
 }
 
@@ -77,7 +100,25 @@ export async function getCharacterProfile(
   }
 }
 
-/** 指定日の利用回数を取得（レコードがなければ 0） */
+/**
+ * 指定日（UTC 日付）のグローバル Neurons 概算合計を取得する。閾値判定で利用する。
+ * @param db D1
+ * @param dateUtc YYYY-MM-DD
+ * @returns その日の全ユーザー合計 neurons_estimate（レコードがなければ 0）
+ */
+export async function getGlobalNeuronsEstimateForDate(
+  db: D1Database,
+  dateUtc: string
+): Promise<number> {
+  const row = await db
+    .prepare('SELECT SUM(neurons_estimate) AS total FROM ai_daily_usage WHERE date_utc = ?')
+    .bind(dateUtc)
+    .first<{ total: number | null }>();
+  const total = row?.total;
+  return typeof total === 'number' ? total : 0;
+}
+
+/** 指定日の利用回数と Neurons 概算を取得（レコードがなければ 0） */
 export async function getDailyUsage(
   db: D1Database,
   userId: string,
@@ -88,10 +129,11 @@ export async function getDailyUsage(
   chatCount: number;
   grimoireCount: number;
   goalUpdateCount: number;
+  neuronsEstimate: number;
 }> {
   const row = await db
     .prepare(
-      'SELECT narrative_count, partner_count, chat_count, grimoire_count, goal_update_count FROM ai_daily_usage WHERE user_id = ? AND date_utc = ?'
+      'SELECT narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate FROM ai_daily_usage WHERE user_id = ? AND date_utc = ?'
     )
     .bind(userId, dateUtc)
     .first<{
@@ -100,9 +142,10 @@ export async function getDailyUsage(
       chat_count: number;
       grimoire_count: number;
       goal_update_count: number;
+      neurons_estimate: number;
     }>();
   if (!row) {
-    return { narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0, goalUpdateCount: 0 };
+    return { narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0, goalUpdateCount: 0, neuronsEstimate: 0 };
   }
   return {
     narrativeCount: row.narrative_count ?? 0,
@@ -110,66 +153,67 @@ export async function getDailyUsage(
     chatCount: row.chat_count ?? 0,
     grimoireCount: row.grimoire_count ?? 0,
     goalUpdateCount: row.goal_update_count ?? 0,
+    neuronsEstimate: row.neurons_estimate ?? 0,
   };
 }
 
-/** ナラティブ利用を1回記録（日次1回のため 1 にセット） */
+/** ナラティブ利用を1回記録（日次1回のため 1 にセット）。Neurons 概算を加算する。 */
 export async function recordNarrative(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
-       VALUES (?, ?, 1, 0, 0, 0, 0)
-       ON CONFLICT(user_id, date_utc) DO UPDATE SET narrative_count = 1`
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate)
+       VALUES (?, ?, 1, 0, 0, 0, 0, ?)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET narrative_count = 1, neurons_estimate = neurons_estimate + ?`
     )
-    .bind(userId, dateUtc)
+    .bind(userId, dateUtc, NEURONS_NARRATIVE, NEURONS_NARRATIVE)
     .run();
 }
 
-/** パートナーメッセージ利用を1回記録 */
+/** パートナーメッセージ利用を1回記録。Neurons 概算を加算する。 */
 export async function recordPartner(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
-       VALUES (?, ?, 0, 1, 0, 0, 0)
-       ON CONFLICT(user_id, date_utc) DO UPDATE SET partner_count = 1`
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate)
+       VALUES (?, ?, 0, 1, 0, 0, 0, ?)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET partner_count = 1, neurons_estimate = neurons_estimate + ?`
     )
-    .bind(userId, dateUtc)
+    .bind(userId, dateUtc, NEURONS_PARTNER, NEURONS_PARTNER)
     .run();
 }
 
-/** チャット利用を1回加算 */
+/** チャット利用を1回加算。Neurons 概算を加算する。 */
 export async function recordChat(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
-       VALUES (?, ?, 0, 0, 1, 0, 0)
-       ON CONFLICT(user_id, date_utc) DO UPDATE SET chat_count = chat_count + 1`
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate)
+       VALUES (?, ?, 0, 0, 1, 0, 0, ?)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET chat_count = chat_count + 1, neurons_estimate = neurons_estimate + ?`
     )
-    .bind(userId, dateUtc)
+    .bind(userId, dateUtc, NEURONS_CHAT, NEURONS_CHAT)
     .run();
 }
 
-/** グリモワール生成利用を1回記録（日次1回のため 1 にセット） */
+/** グリモワール生成利用を1回記録（日次1回のため 1 にセット）。Neurons 概算を加算する。 */
 export async function recordGrimoireGeneration(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
-       VALUES (?, ?, 0, 0, 0, 1, 0)
-       ON CONFLICT(user_id, date_utc) DO UPDATE SET grimoire_count = 1`
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate)
+       VALUES (?, ?, 0, 0, 0, 1, 0, ?)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET grimoire_count = 1, neurons_estimate = neurons_estimate + ?`
     )
-    .bind(userId, dateUtc)
+    .bind(userId, dateUtc, NEURONS_GRIMOIRE, NEURONS_GRIMOIRE)
     .run();
 }
 
-/** 目標更新を1回記録（その日の回数をインクリメント。1日2回制限用） */
+/** 目標更新を1回記録（その日の回数をインクリメント。1日2回制限用）。Neurons 概算を加算する。 */
 export async function recordGoalUpdate(db: D1Database, userId: string, dateUtc: string): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
-       VALUES (?, ?, 0, 0, 0, 0, 1)
-       ON CONFLICT(user_id, date_utc) DO UPDATE SET goal_update_count = goal_update_count + 1`
+      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count, neurons_estimate)
+       VALUES (?, ?, 0, 0, 0, 0, 1, ?)
+       ON CONFLICT(user_id, date_utc) DO UPDATE SET goal_update_count = goal_update_count + 1, neurons_estimate = neurons_estimate + ?`
     )
-    .bind(userId, dateUtc)
+    .bind(userId, dateUtc, NEURONS_GOAL_UPDATE, NEURONS_GOAL_UPDATE)
     .run();
 }
 

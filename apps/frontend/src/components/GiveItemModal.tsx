@@ -24,8 +24,8 @@ const RARITY_LABEL: Record<string, string> = {
 export interface GiveItemModalProps {
   open: boolean;
   onClose: () => void;
-  /** target が 'pet' のとき、第2引数に渡したアイテムのレアリティを渡す */
-  onGiveSuccess?: (target: 'partner' | 'pet', grantedRarity?: string | null) => void;
+  /** target が 'pet' のとき第2引数にレアリティ、'partner' のとき第3引数にアイテム名を渡す */
+  onGiveSuccess?: (target: 'partner' | 'pet', grantedRarity?: string | null, itemName?: string) => void;
 }
 
 /** 所持一覧を itemId でユニーク化（先頭の1件を代表として表示） */
@@ -51,13 +51,13 @@ export function GiveItemModal({ open, onClose, onGiveSuccess }: GiveItemModalPro
 
   const uniqueItems = React.useMemo(() => uniqueByItemId(acquiredList), [acquiredList]);
 
-  const handleGive = async (itemId: string, target: 'partner' | 'pet') => {
+  const handleGive = async (itemId: string, target: 'partner' | 'pet', itemName?: string) => {
     setError(null);
     setGiving({ itemId, target });
     try {
       const result = await giveItemToPartnerOrPet(itemId, target);
       invalidate();
-      onGiveSuccess?.(target, target === 'pet' ? result.lastPetRarity : undefined);
+      onGiveSuccess?.(target, target === 'pet' ? result.lastPetRarity : undefined, itemName);
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : '渡せませんでした');
@@ -119,7 +119,7 @@ export function GiveItemModal({ open, onClose, onGiveSuccess }: GiveItemModalPro
                   <div className="flex gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleGive(item.itemId, 'partner')}
+                      onClick={() => handleGive(item.itemId, 'partner', item.name)}
                       disabled={giving !== null}
                       className="px-3 py-1.5 rounded-lg bg-cyan-500/80 hover:bg-cyan-500 disabled:opacity-50 text-white text-sm font-medium"
                     >

@@ -1,9 +1,10 @@
 import type { Context, Next } from 'hono';
 import type { Bindings } from '../types';
+import { logStructured } from '../lib/structured-log';
 
 /**
  * ロギングミドルウェア
- * リクエスト情報（メソッド、パス、ステータスコード、レスポンス時間）を記録する
+ * リクエスト情報（メソッド、パス、ステータスコード、レスポンス時間）を構造化ログで記録する（Task 4.2）
  */
 export async function loggingMiddleware(
   c: Context<{ Bindings: Bindings }>,
@@ -19,10 +20,14 @@ export async function loggingMiddleware(
 
   await next();
 
-  // レスポンス情報をログに記録
-  const duration = Date.now() - start;
+  const durationMs = Date.now() - start;
   const status = c.res.status;
-  console.log(
-    `[${new Date().toISOString()}] ${method} ${path} - ${status} - ${duration}ms`
-  );
+  logStructured({
+    level: 'info',
+    msg: 'request',
+    path,
+    method,
+    status,
+    durationMs,
+  });
 }

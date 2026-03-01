@@ -71,3 +71,13 @@ describe('wrangler.toml environment separation (Task 13.1)', () => {
     expect(content).toMatch(/\[\[env\.production\.d1_databases\]\][\s\S]*?binding\s*=\s*"DB"/);
   });
 });
+
+describe('observability enable-when-needed (Task 4.3)', () => {
+  it('documents how to enable observability when needed', () => {
+    const docsPath = join(__dirname, '..', '..', '..', 'docs', 'setup', '10_observability.md');
+    const doc = readFileSync(docsPath, 'utf-8');
+    expect(doc).toContain('[observability]');
+    expect(doc).toMatch(/enabled\s*=\s*true/);
+    expect(doc).toMatch(/env\.production|env\.preview/);
+  });
+});

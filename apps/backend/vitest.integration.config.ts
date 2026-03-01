@@ -17,6 +17,7 @@ export default defineWorkersConfig(async () => {
               TEST_MIGRATIONS: migrations,
               BETTER_AUTH_SECRET: 'test-secret-at-least-32-chars-for-integration-tests',
               INTEGRATION_TEST_AI_STUB: '1',
+              OPS_API_KEY: 'ops-test-key-integration',
             },
           },
         },
