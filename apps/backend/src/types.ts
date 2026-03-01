@@ -18,6 +18,8 @@ export type Bindings = {
   AI_NEURONS_FALLBACK_THRESHOLD?: string;
   /** 無料枠: 日次上限（Neurons 概算）のオプション。未設定時は閾値のみで判定 */
   AI_NEURONS_DAILY_LIMIT?: string;
+  /** 運用者 API 認可用。X-Ops-API-Key と照合。未設定時は /api/ops は 404 */
+  OPS_API_KEY?: string;
 };
 
 /**
