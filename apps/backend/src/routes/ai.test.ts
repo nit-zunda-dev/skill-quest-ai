@@ -419,7 +419,7 @@ describe('ai router', () => {
     });
 
     it('returns 200 and calls batch when under limit and profile exists', async () => {
-      const batchMock = vi.fn().mockResolvedValue([{ meta: {} }, { meta: {} }, { meta: {} }]);
+      const batchMock = vi.fn().mockResolvedValue([{ meta: {} }, { meta: {} }]);
       const baseMock = createMockD1ForAiUsage({
         goalUpdateCount: 0,
         storedProfile: { name: 'Test', goal: 'old' },
@@ -438,14 +438,14 @@ describe('ai router', () => {
       const body = (await res.json()) as Record<string, unknown>;
       expect(body.ok).toBe(true);
       expect(batchMock).toHaveBeenCalledTimes(1);
-      expect(batchMock.mock.calls[0][0]).toHaveLength(3);
+      expect(batchMock.mock.calls[0][0]).toHaveLength(2);
     });
 
     it('executes DELETE FROM quests in batch when goal update succeeds (1-day-2-times and quest reset)', async () => {
       const executedSql: string[] = [];
       const firstFor = (sql: string) => {
         if (sql.includes('ai_daily_usage') && sql.includes('narrative_count'))
-          return { narrative_count: 0, partner_count: 0, chat_count: 0, grimoire_count: 0, goal_update_count: 0 };
+          return { narrative_count: 0, partner_count: 0, chat_count: 0, grimoire_count: 0, goal_update_count: 0, neurons_estimate: 0 };
         if (sql.includes('user_character_profile') && sql.includes('profile'))
           return { profile: JSON.stringify({ name: 'Test', goal: 'old' }) };
         return null;

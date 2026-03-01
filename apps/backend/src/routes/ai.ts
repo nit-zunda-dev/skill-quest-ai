@@ -22,6 +22,7 @@ import {
   recordNarrative,
   recordPartner,
   recordChat,
+  recordGoalUpdate,
   completeQuest,
   getTodayUtc,
   CHAT_DAILY_LIMIT,
@@ -272,14 +273,10 @@ aiRouter.patch(
       'UPDATE user_character_profile SET profile = ? WHERE user_id = ?'
     ).bind(JSON.stringify(merged), user.id);
     const deleteStmt = c.env.DB.prepare('DELETE FROM quests WHERE user_id = ?').bind(user.id);
-    const recordStmt = c.env.DB.prepare(
-      `INSERT INTO ai_daily_usage (user_id, date_utc, narrative_count, partner_count, chat_count, grimoire_count, goal_update_count)
-       VALUES (?, ?, 0, 0, 0, 0, 1)
-       ON CONFLICT(user_id, date_utc) DO UPDATE SET goal_update_count = goal_update_count + 1`
-    ).bind(user.id, today);
 
     try {
-      await c.env.DB.batch([updateStmt, deleteStmt, recordStmt]);
+      await c.env.DB.batch([updateStmt, deleteStmt]);
+      await recordGoalUpdate(c.env.DB, user.id, today);
       return c.json({ ok: true }, 200);
     } catch {
       return c.json(

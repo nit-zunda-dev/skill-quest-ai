@@ -17,6 +17,12 @@ import {
   completeQuest,
   CHAT_DAILY_LIMIT,
   getTodayUtc,
+  NEURONS_NARRATIVE,
+  NEURONS_PARTNER,
+  NEURONS_CHAT,
+  NEURONS_GRIMOIRE,
+  NEURONS_GOAL_UPDATE,
+  NEURONS_CHARACTER,
 } from './ai-usage';
 import { createMockD1ForAiUsageService } from '../../../../tests/utils';
 
@@ -48,7 +54,7 @@ describe('ai-usage', () => {
       const db = createMockD1ForAiUsageService();
       const today = getTodayUtc();
       const usage = await getDailyUsage(db, 'user-1', today);
-      expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0, goalUpdateCount: 0 });
+      expect(usage).toEqual({ narrativeCount: 0, partnerCount: 0, chatCount: 0, grimoireCount: 0, goalUpdateCount: 0, neuronsEstimate: 0 });
     });
 
     it('returns updated counts after recordNarrative, recordPartner, recordChat', async () => {
@@ -110,6 +116,68 @@ describe('ai-usage', () => {
       await recordGrimoireGeneration(db, 'user-1', today);
       const usage = await getDailyUsage(db, 'user-1', today);
       expect(usage.grimoireCount).toBe(1);
+    });
+  });
+
+  describe('neurons_estimate (Task 1.2)', () => {
+    it('recordNarrative adds neurons_estimate by NEURONS_NARRATIVE', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordNarrative(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_NARRATIVE);
+    });
+
+    it('recordPartner adds neurons_estimate by NEURONS_PARTNER', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordPartner(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_PARTNER);
+    });
+
+    it('recordChat adds neurons_estimate by NEURONS_CHAT per call', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordChat(db, 'user-1', today);
+      await recordChat(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_CHAT * 2);
+    });
+
+    it('recordGrimoireGeneration adds neurons_estimate by NEURONS_GRIMOIRE', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordGrimoireGeneration(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_GRIMOIRE);
+    });
+
+    it('recordGoalUpdate adds neurons_estimate by NEURONS_GOAL_UPDATE per call', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordGoalUpdate(db, 'user-1', today);
+      await recordGoalUpdate(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_GOAL_UPDATE * 2);
+    });
+
+    it('recordCharacterGenerated adds neurons_estimate by NEURONS_CHARACTER to ai_daily_usage', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordCharacterGenerated(db, 'user-1');
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_CHARACTER);
+    });
+
+    it('multiple operation types accumulate neurons_estimate', async () => {
+      const db = createMockD1ForAiUsageService();
+      const today = getTodayUtc();
+      await recordNarrative(db, 'user-1', today);
+      await recordChat(db, 'user-1', today);
+      await recordGrimoireGeneration(db, 'user-1', today);
+      const usage = await getDailyUsage(db, 'user-1', today);
+      expect(usage.neuronsEstimate).toBe(NEURONS_NARRATIVE + NEURONS_CHAT + NEURONS_GRIMOIRE);
     });
   });
 
