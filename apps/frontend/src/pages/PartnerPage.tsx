@@ -1,6 +1,6 @@
 /**
  * バーページ。パートナーとペットを同画面に配置し、チャット・アイテム付与を行う。
- * サイバーパンク酒場風UI: 全面背景・ペット（左）・パートナー＋チャット（右）。
+ * サイバーパンク酒場風UI: 全面背景・ペット（左上）・パートナー＋チャット（下部中央）。
  */
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { MessageCircle, Gift, Heart } from 'lucide-react';
@@ -105,9 +105,9 @@ export default function PartnerPage() {
       />
       <div className="absolute inset-0 bg-slate-950/50 pointer-events-none" aria-hidden />
 
-      {/* ペット: 余白（レターボックス部分）に配置。背景が contain で左右に出る暗い領域に表示 */}
+      {/* ペット: 左上に固定配置（全画面で視認しやすい） */}
       <div
-        className="absolute z-10 left-4 md:left-6 bottom-6 md:bottom-8 flex flex-col items-start justify-end gap-0 pointer-events-none"
+        className="absolute z-10 top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 flex flex-col items-start justify-start gap-0 pointer-events-none"
         aria-hidden
       >
         {itemJustGivenToPet && petBubbleMessage && (
@@ -122,7 +122,7 @@ export default function PartnerPage() {
         )}
         <PetAvatar
           lastGrantedRarity={lastPetRarity ?? null}
-          className="w-28 sm:w-32 md:w-40 max-h-[26vh] md:max-h-[32vh] object-contain object-bottom drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)] [background:transparent]"
+          className="w-24 sm:w-28 md:w-32 lg:w-40 max-h-[20vh] sm:max-h-[24vh] lg:max-h-[28vh] object-contain object-bottom drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)] [background:transparent]"
           alt="ペット"
         />
       </div>
