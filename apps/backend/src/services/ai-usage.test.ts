@@ -218,6 +218,33 @@ describe('ai-usage', () => {
     });
   });
 
+  describe('Neurons estimate coefficients (Task 1.4)', () => {
+    it('exposes coefficients aligned with Cloudflare billing units (Neurons)', () => {
+      // 設計・docs/architecture と一致。Cloudflare 課金単位 Neurons の概算係数。
+      expect(NEURONS_CHARACTER).toBe(19);
+      expect(NEURONS_NARRATIVE).toBe(20);
+      expect(NEURONS_PARTNER).toBe(20);
+      expect(NEURONS_CHAT).toBe(20);
+      expect(NEURONS_GRIMOIRE).toBe(20);
+      expect(NEURONS_GOAL_UPDATE).toBe(20);
+    });
+
+    it('all coefficients are positive integers', () => {
+      const coefficients = [
+        NEURONS_CHARACTER,
+        NEURONS_NARRATIVE,
+        NEURONS_PARTNER,
+        NEURONS_CHAT,
+        NEURONS_GRIMOIRE,
+        NEURONS_GOAL_UPDATE,
+      ];
+      coefficients.forEach((c) => {
+        expect(Number.isInteger(c)).toBe(true);
+        expect(c).toBeGreaterThan(0);
+      });
+    });
+  });
+
   describe('saveCharacterProfile', () => {
     it('saves character profile for user', async () => {
       const profileRows: Map<string, string> = new Map();

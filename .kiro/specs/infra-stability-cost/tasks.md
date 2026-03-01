@@ -16,7 +16,7 @@
   - _Requirements: 1.1, 1.2_
 - [x] 1.3 指定日（UTC 日付）のグローバル Neurons 概算合計を取得する機能を追加し、閾値判定から利用できるようにする
   - _Requirements: 1.2, 2.4_
-- [ ] 1.4 係数値を定数として定義し、Cloudflare 課金単位（Neurons）との対応をドキュメントに記載する
+- [x] 1.4 係数値を定数として定義し、Cloudflare 課金単位（Neurons）との対応をドキュメントに記載する
   - _Requirements: 1.4_
 
 ---

@@ -5,8 +5,10 @@ export const CHAT_DAILY_LIMIT = 10;
 
 /**
  * Workers AI 課金単位（Neurons）の概算係数（操作種別ごと）。
+ * Cloudflare の課金単位 Neurons に合わせた概算値。実測はダッシュボードで確認し、係数は docs に記載のとおり調整可能。
  * 実 AI 実行時のみ記録し、スタブ応答時は加算しない。
- * @see design.md (Task 1.2, 1.4)
+ * @see docs/architecture/06_AI設計.md, docs/architecture/09_運用とコスト.md
+ * @see .kiro/specs/infra-stability-cost/design.md (Task 1.4)
  */
 export const NEURONS_CHARACTER = 19;
 export const NEURONS_NARRATIVE = 20;
