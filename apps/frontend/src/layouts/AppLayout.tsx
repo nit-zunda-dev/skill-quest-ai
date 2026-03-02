@@ -3,14 +3,22 @@
  */
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { X, LogOut, Trash2, Home, ListTodo, Scroll, MessageCircle, Package } from 'lucide-react';
+import { X, LogOut, Trash2, Home, ListTodo, Scroll, MessageCircle, Package, PawPrint } from 'lucide-react';
 import StatusPanel from '@/components/StatusPanel';
 import GoalUpdateUI from '@/components/GoalUpdateUI';
 import SuggestedQuestsModal from '@/components/SuggestedQuestsModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteAccount } from '@/lib/api-client';
-import { PATH_APP, PATH_APP_QUESTS, PATH_APP_GRIMOIRE, PATH_APP_PARTNER, PATH_APP_ITEMS, PATH_LOGIN } from '@/lib/paths';
+import {
+  PATH_APP,
+  PATH_APP_QUESTS,
+  PATH_APP_GRIMOIRE,
+  PATH_APP_PARTNER,
+  PATH_APP_PET,
+  PATH_APP_ITEMS,
+  PATH_LOGIN,
+} from '@/lib/paths';
 
 const CONFIRM_DELETE_TEXT = '削除する';
 
@@ -18,7 +26,8 @@ const navItems = [
   { to: PATH_APP, label: 'ホーム', icon: Home },
   { to: PATH_APP_QUESTS, label: 'クエストボード', icon: ListTodo },
   { to: PATH_APP_GRIMOIRE, label: 'グリモワール', icon: Scroll },
-  { to: PATH_APP_PARTNER, label: 'バー', icon: MessageCircle },
+  { to: PATH_APP_PARTNER, label: 'バー（パートナー）', icon: MessageCircle },
+  { to: PATH_APP_PET, label: 'ペット', icon: PawPrint },
   { to: PATH_APP_ITEMS, label: '獲得アイテム', icon: Package },
 ];
 

@@ -26,6 +26,8 @@ export interface GiveItemModalProps {
   onClose: () => void;
   /** target が 'pet' のとき第2引数にレアリティ、'partner' のとき第3引数にアイテム名を渡す */
   onGiveSuccess?: (target: 'partner' | 'pet', grantedRarity?: string | null, itemName?: string) => void;
+  /** 表示・選択を許可するターゲット（未指定時は両方） */
+  allowedTargets?: Array<'partner' | 'pet'>;
 }
 
 /** 所持一覧を itemId でユニーク化（先頭の1件を代表として表示） */
@@ -38,7 +40,7 @@ function uniqueByItemId(items: AcquiredItemView[]): AcquiredItemView[] {
   });
 }
 
-export function GiveItemModal({ open, onClose, onGiveSuccess }: GiveItemModalProps) {
+export function GiveItemModal({ open, onClose, onGiveSuccess, allowedTargets }: GiveItemModalProps) {
   const [giving, setGiving] = useState<{ itemId: string; target: 'partner' | 'pet' } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const invalidate = useInvalidatePartnerBar();
@@ -50,6 +52,9 @@ export function GiveItemModal({ open, onClose, onGiveSuccess }: GiveItemModalPro
   });
 
   const uniqueItems = React.useMemo(() => uniqueByItemId(acquiredList), [acquiredList]);
+
+  const canGiveToPartner = !allowedTargets || allowedTargets.includes('partner');
+  const canGiveToPet = !allowedTargets || allowedTargets.includes('pet');
 
   const handleGive = async (itemId: string, target: 'partner' | 'pet', itemName?: string) => {
     setError(null);
@@ -117,22 +122,26 @@ export function GiveItemModal({ open, onClose, onGiveSuccess }: GiveItemModalPro
                     <p className="text-xs text-slate-400">{RARITY_LABEL[item.rarity] ?? item.rarity}</p>
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleGive(item.itemId, 'partner', item.name)}
-                      disabled={giving !== null}
-                      className="px-3 py-1.5 rounded-lg bg-cyan-500/80 hover:bg-cyan-500 disabled:opacity-50 text-white text-sm font-medium"
-                    >
-                      {giving?.itemId === item.itemId && giving?.target === 'partner' ? '送信中…' : 'パートナーに'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleGive(item.itemId, 'pet')}
-                      disabled={giving !== null}
-                      className="px-3 py-1.5 rounded-lg bg-fuchsia-500/80 hover:bg-fuchsia-500 disabled:opacity-50 text-white text-sm font-medium"
-                    >
-                      {giving?.itemId === item.itemId && giving?.target === 'pet' ? '送信中…' : 'ペットに'}
-                    </button>
+                    {canGiveToPartner && (
+                      <button
+                        type="button"
+                        onClick={() => handleGive(item.itemId, 'partner', item.name)}
+                        disabled={giving !== null}
+                        className="px-3 py-1.5 rounded-lg bg-cyan-500/80 hover:bg-cyan-500 disabled:opacity-50 text-white text-sm font-medium"
+                      >
+                        {giving?.itemId === item.itemId && giving?.target === 'partner' ? '送信中…' : 'パートナーに'}
+                      </button>
+                    )}
+                    {canGiveToPet && (
+                      <button
+                        type="button"
+                        onClick={() => handleGive(item.itemId, 'pet')}
+                        disabled={giving !== null}
+                        className="px-3 py-1.5 rounded-lg bg-fuchsia-500/80 hover:bg-fuchsia-500 disabled:opacity-50 text-white text-sm font-medium"
+                      >
+                        {giving?.itemId === item.itemId && giving?.target === 'pet' ? '送信中…' : 'ペットに'}
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}

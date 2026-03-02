@@ -1,15 +1,14 @@
 /**
- * バーページ。パートナーとペットを同画面に配置し、チャット・アイテム付与を行う。
- * サイバーパンク酒場風UI: 全面背景・ペット（左上）・パートナー＋チャット（下部中央）。
+ * バーページ。パートナーとのチャットとアイテム付与を行う。
+ * サイバーパンク酒場風UI: 全面背景・パートナー＋チャット（下部中央）。
  */
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { MessageCircle, Gift, Heart } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useAiUsage } from '@/hooks/useAiUsage';
 import { usePartnerVariant } from '@/contexts/PartnerVariantContext';
-import { useLastPetRarity, usePartnerFavorability } from '@/hooks/usePartnerBar';
+import { usePartnerFavorability } from '@/hooks/usePartnerBar';
 import { PartnerAvatar } from '@/components/PartnerAvatar';
-import { PetAvatar } from '@/components/PetAvatar';
 import { GiveItemModal } from '@/components/GiveItemModal';
 import { getExpressionForPartner } from '@/lib/partner-expression-context';
 
@@ -18,24 +17,11 @@ const BAR_BG_PATH = '/images/partner/bar-bg.png';
 const ITEM_JUST_GIVEN_DURATION_MS = 30000;
 const FAVORABILITY_MAX = 1000;
 
-/** ペットにアイテムを渡したときの吹き出し文言（レアリティ別） */
-const PET_BUBBLE_BY_RARITY: Record<string, { main: string; sub: string }> = {
-  common: { main: 'もらった！', sub: 'ありがとう' },
-  rare: { main: 'もらった！', sub: '嬉しい…' },
-  'super-rare': { main: 'もらった！キラキラ', sub: 'すごいの…！' },
-  'ultra-rare': { main: 'もらった！キラキラ', sub: '最高…！！' },
-  legend: { main: 'もらった！キラキラ', sub: '一生の宝物…！' },
-};
-const PET_BUBBLE_DEFAULT = { main: 'ありがとう！', sub: '嬉しい…' };
-
 export default function PartnerPage() {
   const [inputValue, setInputValue] = useState('');
   const [giveModalOpen, setGiveModalOpen] = useState(false);
   const [itemJustGivenToPartnerUntil, setItemJustGivenToPartnerUntil] = useState(0);
-  const [itemJustGivenToPetUntil, setItemJustGivenToPetUntil] = useState(0);
-  const [itemJustGivenToPetRarity, setItemJustGivenToPetRarity] = useState<string | null>(null);
   const { variant } = usePartnerVariant();
-  const { data: lastPetRarity } = useLastPetRarity();
   const { data: favorability } = usePartnerFavorability();
   const { messages, isLoading, sendMessage, error } = useChat();
   const { data: usage } = useAiUsage();
@@ -43,7 +29,6 @@ export default function PartnerPage() {
   const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
 
   const itemJustGivenToPartner = Date.now() < itemJustGivenToPartnerUntil;
-  const itemJustGivenToPet = Date.now() < itemJustGivenToPetUntil;
 
   const handleGiveSuccess = useCallback(
     (target: 'partner' | 'pet', grantedRarity?: string | null, itemName?: string) => {
@@ -52,10 +37,6 @@ export default function PartnerPage() {
         if (itemName && !isChatLimitReached && !isLoading) {
           sendMessage(`${itemName}を渡したよ`);
         }
-      }
-      if (target === 'pet') {
-        setItemJustGivenToPetUntil(Date.now() + ITEM_JUST_GIVEN_DURATION_MS);
-        setItemJustGivenToPetRarity(grantedRarity ?? null);
       }
     },
     [isChatLimitReached, isLoading, sendMessage]
@@ -66,19 +47,6 @@ export default function PartnerPage() {
     const t = setTimeout(() => setItemJustGivenToPartnerUntil(0), ITEM_JUST_GIVEN_DURATION_MS);
     return () => clearTimeout(t);
   }, [itemJustGivenToPartnerUntil]);
-
-  useEffect(() => {
-    if (itemJustGivenToPetUntil <= 0) return;
-    const t = setTimeout(() => {
-      setItemJustGivenToPetUntil(0);
-      setItemJustGivenToPetRarity(null);
-    }, ITEM_JUST_GIVEN_DURATION_MS);
-    return () => clearTimeout(t);
-  }, [itemJustGivenToPetUntil]);
-
-  const petBubbleMessage = itemJustGivenToPet
-    ? (PET_BUBBLE_BY_RARITY[itemJustGivenToPetRarity ?? ''] ?? PET_BUBBLE_DEFAULT)
-    : null;
 
   const expression = useMemo(
     () =>
@@ -112,28 +80,6 @@ export default function PartnerPage() {
         aria-hidden
       />
       <div className="absolute inset-0 bg-slate-950/50 pointer-events-none" aria-hidden />
-
-      {/* ペット: 左上に固定配置（全画面で視認しやすい） */}
-      <div
-        className="absolute z-10 top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 flex flex-col items-start justify-start gap-0 pointer-events-none"
-        aria-hidden
-      >
-        {itemJustGivenToPet && petBubbleMessage && (
-          <div
-            className="mb-1 px-3 py-2 rounded-lg border border-cyan-500/50 bg-slate-900/95 backdrop-blur-sm shadow-[0_0_12px_rgba(6,182,212,0.3)] animate-fade-in-up text-center"
-            role="status"
-            aria-live="polite"
-          >
-            <p className="text-sm font-medium text-cyan-200 whitespace-nowrap">{petBubbleMessage.main}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{petBubbleMessage.sub}</p>
-          </div>
-        )}
-        <PetAvatar
-          lastGrantedRarity={lastPetRarity ?? null}
-          className="w-24 sm:w-28 md:w-32 lg:w-40 max-h-[20vh] sm:max-h-[24vh] lg:max-h-[28vh] object-contain object-bottom drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)] [background:transparent]"
-          alt="ペット"
-        />
-      </div>
 
       <div className="relative z-10 mt-auto w-full max-w-6xl mx-auto px-4 md:px-6 pb-6 md:pb-8">
         <div className="flex flex-col md:flex-row items-end justify-center md:justify-center gap-6 md:gap-8">
@@ -272,6 +218,7 @@ export default function PartnerPage() {
         open={giveModalOpen}
         onClose={() => setGiveModalOpen(false)}
         onGiveSuccess={handleGiveSuccess}
+        allowedTargets={['partner']}
       />
     </div>
   );

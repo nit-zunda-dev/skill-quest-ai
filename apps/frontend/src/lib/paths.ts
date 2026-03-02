@@ -11,6 +11,7 @@ export const PATH_APP = '/app' as const;
 export const PATH_APP_QUESTS = '/app/quests' as const;
 export const PATH_APP_GRIMOIRE = '/app/grimoire' as const;
 export const PATH_APP_PARTNER = '/app/partner' as const;
+export const PATH_APP_PET = '/app/pet' as const;
 export const PATH_APP_ITEMS = '/app/items' as const;
 
 /** Genesis ステップの URL スラッグ（Task 10.1, Req 2.1, 5.3） */

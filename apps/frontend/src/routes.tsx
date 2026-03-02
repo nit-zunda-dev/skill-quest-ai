@@ -14,6 +14,7 @@ import {
   PATH_GENESIS,
   PATH_APP,
   PATH_GENESIS_INTRO,
+  PATH_APP_PET,
 } from '@/lib/paths';
 import App from '@/App';
 import { GenesisLayout } from '@/layouts/GenesisLayout';
@@ -26,6 +27,7 @@ import QuestBoardPage from '@/pages/QuestBoardPage';
 import GrimoirePage from '@/pages/GrimoirePage';
 import PartnerPage from '@/pages/PartnerPage';
 import ItemsPage from '@/pages/ItemsPage';
+import PetPage from '@/pages/PetPage';
 import { GenesisStepView } from '@/components/GenesisStepView';
 import { Navigate } from 'react-router-dom';
 
@@ -78,6 +80,10 @@ export const routeConfig: RouteObject[] = [
       {
         path: 'partner',
         element: <PartnerPage />,
+      },
+      {
+        path: 'pet',
+        element: <PetPage />,
       },
       {
         path: 'items',
