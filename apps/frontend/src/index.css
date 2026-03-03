@@ -114,6 +114,112 @@
     --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* Worldview-specific theme overrides (applied inside app layout) */
+.app-root[data-worldview="arcane-terminal"] {
+  /* Arcane Terminal: サイバーファンタジー / ネオン都市 */
+  --background: #050816;
+  --foreground: #e5e7ff;
+  --card: #0b1020;
+  --card-foreground: #e5e7ff;
+  --popover: #0b1020;
+  --popover-foreground: #e5e7ff;
+  --primary: #6c3fc5;
+  --primary-foreground: #f9fafb;
+  --secondary: #111827;
+  --secondary-foreground: #e5e7ff;
+  --muted: #111827;
+  --muted-foreground: #9ca3af;
+  --accent: #22d3ee;
+  --accent-foreground: #020617;
+  --destructive: #ef4444;
+  --border: #1f2937;
+  --input: #111827;
+  --ring: #4f46e5;
+  --chart-1: #6c3fc5;
+  --chart-2: #22d3ee;
+  --chart-3: #fbbf24;
+  --chart-4: #10b981;
+  --chart-5: #f97316;
+  --sidebar: #020617;
+  --sidebar-foreground: #e5e7ff;
+  --sidebar-primary: #6c3fc5;
+  --sidebar-primary-foreground: #f9fafb;
+  --sidebar-accent: #22d3ee;
+  --sidebar-accent-foreground: #020617;
+  --sidebar-border: #1f2937;
+  --sidebar-ring: #4f46e5;
+}
+
+.app-root[data-worldview="chronicle-campus"] {
+  /* Chronicle Campus: 学園・合格体験記 */
+  --background: #140813;
+  --foreground: #fde9f4;
+  --card: #1f1020;
+  --card-foreground: #fde9f4;
+  --popover: #1f1020;
+  --popover-foreground: #fde9f4;
+  --primary: #c4478a;
+  --primary-foreground: #fff7fb;
+  --secondary: #2a1530;
+  --secondary-foreground: #fde9f4;
+  --muted: #2a1530;
+  --muted-foreground: #f4cfe5;
+  --accent: #f5c2e7;
+  --accent-foreground: #3b1027;
+  --destructive: #fb7185;
+  --border: #3b1027;
+  --input: #2a1530;
+  --ring: #f472b6;
+  --chart-1: #c4478a;
+  --chart-2: #f97316;
+  --chart-3: #facc15;
+  --chart-4: #22c55e;
+  --chart-5: #38bdf8;
+  --sidebar: #1b1020;
+  --sidebar-foreground: #fde9f4;
+  --sidebar-primary: #c4478a;
+  --sidebar-primary-foreground: #fff7fb;
+  --sidebar-accent: #f5c2e7;
+  --sidebar-accent-foreground: #3b1027;
+  --sidebar-border: #3b1027;
+  --sidebar-ring: #f472b6;
+}
+
+.app-root[data-worldview="neo-frontier-hub"] {
+  /* Neo Frontier Hub: 作戦ハブ・ミッションボード */
+  --background: #020814;
+  --foreground: #e0f2fe;
+  --card: #041320;
+  --card-foreground: #e0f2fe;
+  --popover: #041320;
+  --popover-foreground: #e0f2fe;
+  --primary: #2e86ab;
+  --primary-foreground: #f9fafb;
+  --secondary: #071827;
+  --secondary-foreground: #e0f2fe;
+  --muted: #071827;
+  --muted-foreground: #9ca3af;
+  --accent: #22c55e;
+  --accent-foreground: #020617;
+  --destructive: #f97316;
+  --border: #0f172a;
+  --input: #071827;
+  --ring: #38bdf8;
+  --chart-1: #2e86ab;
+  --chart-2: #22c55e;
+  --chart-3: #facc15;
+  --chart-4: #f97316;
+  --chart-5: #6366f1;
+  --sidebar: #020617;
+  --sidebar-foreground: #e0f2fe;
+  --sidebar-primary: #2e86ab;
+  --sidebar-primary-foreground: #f9fafb;
+  --sidebar-accent: #22c55e;
+  --sidebar-accent-foreground: #020617;
+  --sidebar-border: #0f172a;
+  --sidebar-ring: #38bdf8;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Wand2, Sword, Scroll, User } from 'lucide-react';
+import { ArrowRight, Wand2, Sword, Scroll, User, Sparkles } from 'lucide-react';
+import { WORLDVIEWS, type WorldviewId } from '@skill-quest/shared';
 
 export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
   <div className="text-center space-y-8 animate-fade-in">
@@ -8,7 +9,7 @@ export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
         <Scroll className="w-10 h-10 text-indigo-300" />
       </div>
     </div>
-    <h1 className="text-4xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 via-white to-purple-200">
+    <h1 className="text-4xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-linear-to-r from-indigo-200 via-white to-purple-200">
       Skill Quest AI
     </h1>
     <p className="text-lg text-slate-400 max-w-md mx-auto leading-relaxed">
@@ -24,6 +25,83 @@ export const IntroStep: React.FC<{ onNext: () => void }> = ({ onNext }) => (
     </button>
   </div>
 );
+
+interface WorldviewStepProps {
+  value: WorldviewId;
+  onChange: (value: WorldviewId) => void;
+  onNext: () => void;
+}
+
+export const WorldviewStep: React.FC<WorldviewStepProps> = ({ value, onChange, onNext }) => {
+  const handleSelect = (id: WorldviewId) => {
+    onChange(id);
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-10 animate-fade-in" data-testid="genesis-worldview-step">
+      <div className="text-center space-y-3">
+        <span className="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold tracking-widest uppercase rounded-full bg-slate-800/80 text-slate-300 border border-slate-700">
+          <Sparkles className="w-3 h-3 mr-1" />
+          世界観の選択
+        </span>
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-white">
+          冒険の舞台となる世界を選んでください
+        </h2>
+        <p className="text-sm md:text-base text-slate-400 max-w-2xl mx-auto">
+          同じ目標でも、どんな世界で物語を進めるかで体験は少し変わります。あとから設定で変更することもできます。
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {WORLDVIEWS.map((worldview) => {
+          const selected = worldview.id === value;
+          return (
+            <button
+              key={worldview.id}
+              type="button"
+              onClick={() => handleSelect(worldview.id)}
+              className={`relative flex flex-col items-start p-4 rounded-xl border transition-all duration-200 bg-slate-900/60 hover:bg-slate-900/90 ${
+                selected
+                  ? 'border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                  : 'border-slate-700 hover:border-slate-500'
+              }`}
+            >
+              <div
+                className="absolute inset-0 rounded-xl opacity-40 pointer-events-none"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${worldview.bgGradientFrom}, ${worldview.bgGradientTo})`,
+                }}
+              />
+              <div className="relative z-10 space-y-2 text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-white">{worldview.label}</span>
+                  {selected && (
+                    <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500 text-slate-950">
+                      選択中
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">{worldview.description}</p>
+                <p className="text-[11px] text-slate-400">{worldview.targetPersonaHint}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="pt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={onNext}
+          className="inline-flex items-center justify-center px-8 py-3 text-sm md:text-base font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-500 transition-all duration-200 hover:shadow-[0_0_18px_rgba(16,185,129,0.45)]"
+        >
+          この世界で冒険を始める
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 interface QuestionStepProps {
   name: string;
@@ -87,7 +165,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({ name, goal, onChange
           <button
             onClick={onNext}
             disabled={isGenerating}
-            className="group relative inline-flex items-center justify-center px-8 py-3 w-full text-lg font-bold text-white transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02]"
+            className="group relative inline-flex items-center justify-center px-8 py-3 w-full text-lg font-bold text-white transition-all duration-200 bg-linear-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.02]"
           >
             {isGenerating ? (
               <>

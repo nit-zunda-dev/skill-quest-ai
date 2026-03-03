@@ -12,16 +12,28 @@ import { usePartnerVariant } from '@/contexts/PartnerVariantContext';
 import { PartnerAvatar } from '@/components/PartnerAvatar';
 import { getExpressionForPartner } from '@/lib/partner-expression-context';
 import { usePartnerFavorability } from '@/hooks/usePartnerBar';
+import { useProfile } from '@/contexts/ProfileContext';
 
 const PartnerWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const { profile } = useProfile();
   const { variant } = usePartnerVariant();
   const { data: favorability } = usePartnerFavorability({ enabled: isOpen });
   const { messages, isLoading, sendMessage, error } = useChat();
   const { data: usage } = useAiUsage();
   const chatRemaining = usage?.chatRemaining ?? null;
   const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
+
+  const worldviewId = profile.worldviewId;
+  const barLabel =
+    worldviewId === 'arcane-terminal'
+      ? 'ターミナルバー'
+      : worldviewId === 'chronicle-campus'
+        ? 'キャンパスカフェ'
+        : worldviewId === 'neo-frontier-hub'
+          ? 'オペレーションラウンジ'
+          : 'バー';
 
   const expression = useMemo(
     () =>
@@ -53,7 +65,7 @@ const PartnerWidget: React.FC = () => {
               className="w-14 h-14 object-contain shrink-0"
               alt="AIパートナー"
             />
-            <p className="text-sm font-medium text-white">バー</p>
+            <p className="text-sm font-medium text-white">{barLabel}</p>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto space-y-3 mb-3">
             {messages.length === 0 && !isLoading && (
@@ -64,7 +76,7 @@ const PartnerWidget: React.FC = () => {
               .map((msg, i) => (
                 <div
                   key={i}
-                  className={`text-sm leading-relaxed break-words ${
+                  className={`text-sm leading-relaxed wrap-break-word ${
                     msg.role === 'user' ? 'text-right ml-8' : 'text-left mr-8'
                   }`}
                 >
@@ -125,7 +137,7 @@ const PartnerWidget: React.FC = () => {
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform"
+        className="w-14 h-14 rounded-full bg-linear-to-r from-cyan-500 to-fuchsia-500 shadow-[0_0_20px_rgba(6,182,212,0.5)] flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform"
         aria-label={isOpen ? 'チャットを閉じる' : 'チャットを開く'}
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}

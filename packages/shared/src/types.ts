@@ -105,9 +105,63 @@ export enum TaskType {
   TODO = 'TODO',
 }
 
+/**
+ * 世界観IDの集合（閉集合）。
+ * 3ペルソナに対応した3つの世界観のみを提供する。
+ */
+export const WORLDVIEW_IDS = [
+  'arcane-terminal',
+  'chronicle-campus',
+  'neo-frontier-hub',
+] as const;
+
+export type WorldviewId = (typeof WORLDVIEW_IDS)[number];
+
+export interface WorldviewDefinition {
+  id: WorldviewId;
+  label: string;
+  description: string;
+  accentColor: string;
+  bgGradientFrom: string;
+  bgGradientTo: string;
+  /** 想定ペルソナや向いているユーザー像の簡易説明 */
+  targetPersonaHint: string;
+}
+
+export const WORLDVIEWS: readonly WorldviewDefinition[] = [
+  {
+    id: 'arcane-terminal',
+    label: 'Arcane Terminal',
+    description: 'サイバーパンク都市の片隅で、魔導端末を通じてコードと魔法を操る世界。',
+    accentColor: '#6C3FC5',
+    bgGradientFrom: '#050816',
+    bgGradientTo: '#1B2440',
+    targetPersonaHint: 'TRPG・ノベルゲーム好きのエンジニア向け（蓮ペルソナ寄り）',
+  },
+  {
+    id: 'chronicle-campus',
+    label: 'Chronicle Campus',
+    description: '静かな図書館とスタディカフェが並ぶ学園都市で、合格体験記を綴る世界。',
+    accentColor: '#C4478A',
+    bgGradientFrom: '#120815',
+    bgGradientTo: '#2A1430',
+    targetPersonaHint: '資格勉強や推し活と両立したい学習者向け（美月ペルソナ寄り）',
+  },
+  {
+    id: 'neo-frontier-hub',
+    label: 'Neo Frontier Hub',
+    description: '無数のミッションボードが並ぶ作戦ハブで、短時間セッションを積み上げる世界。',
+    accentColor: '#2E86AB',
+    bgGradientFrom: '#040910',
+    bgGradientTo: '#122331',
+    targetPersonaHint: '多忙な中で自分の時間を取り戻したいビジネスパーソン向け（大輝ペルソナ寄り）',
+  },
+] as const;
+
 export interface GenesisFormData {
   name: string;
   goal: string;
+  worldviewId: WorldviewId;
 }
 
 export interface CharacterProfile {
@@ -120,6 +174,7 @@ export interface CharacterProfile {
   currentXp: number;
   nextLevelXp: number;
   gold: number;
+  worldviewId: WorldviewId;
   /** 目標（クエスト自動生成の入力）。既存ユーザーは未設定のためオプショナル。 */
   goal?: string;
 }

@@ -3,6 +3,7 @@ import { GrimoireEntry } from '@skill-quest/shared';
 import { Scroll, Sparkles, Wand2 } from 'lucide-react';
 import { useGrimoire } from '@/hooks/useGrimoire';
 import { useAiUsage } from '@/hooks/useAiUsage';
+import { useProfile } from '@/contexts/ProfileContext';
 
 interface GrimoireProps {
   entries: GrimoireEntry[];
@@ -13,9 +14,29 @@ interface GrimoireProps {
 const Grimoire: React.FC<GrimoireProps> = ({ entries, onGenerate, isGenerating: externalIsGenerating }) => {
   const { generateGrimoire: internalGenerateGrimoire, isGenerating: internalIsGenerating, generateError } = useGrimoire();
   const { canGenerateGrimoire, grimoireRemaining, isLoading: usageLoading } = useAiUsage();
+  const { profile } = useProfile();
 
   const isGenerating = externalIsGenerating ?? internalIsGenerating;
   const generateGrimoire = onGenerate ?? internalGenerateGrimoire;
+
+  const worldviewId = profile.worldviewId;
+  const titleLabel =
+    worldviewId === 'arcane-terminal'
+      ? 'グリモワール (セッションログ)'
+      : worldviewId === 'chronicle-campus'
+        ? 'グリモワール (学習記録)'
+        : worldviewId === 'neo-frontier-hub'
+          ? 'グリモワール (ミッションログ)'
+          : 'グリモワール (冒険の記録)';
+
+  const emptyText =
+    worldviewId === 'arcane-terminal'
+      ? 'まだセッションはログに記録されていません'
+      : worldviewId === 'chronicle-campus'
+        ? 'まだ今月の学習記録は書き込まれていません'
+        : worldviewId === 'neo-frontier-hub'
+          ? 'まだミッションログは開かれていません'
+          : 'まだ物語は始まっていません';
 
   const handleGenerate = () => {
     if (canGenerateGrimoire && !isGenerating) {
@@ -24,11 +45,11 @@ const Grimoire: React.FC<GrimoireProps> = ({ entries, onGenerate, isGenerating: 
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex flex-col shadow-xl">
+    <div className="bg-card/80 backdrop-blur-md border border-border rounded-xl p-6 h-full flex flex-col shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white flex items-center">
           <Scroll className="w-5 h-5 mr-2 text-indigo-400" />
-          グリモワール (冒険の記録)
+          {titleLabel}
         </h2>
         <button
           onClick={handleGenerate}
@@ -58,10 +79,10 @@ const Grimoire: React.FC<GrimoireProps> = ({ entries, onGenerate, isGenerating: 
         </div>
       )}
 
-      <div className="flex-grow overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+      <div className="grow overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         {entries.length === 0 ? (
           <div className="text-center text-slate-500 py-10 italic">
-            まだ物語は始まっていません
+            {emptyText}
           </div>
         ) : (
           entries.slice().reverse().map(entry => (

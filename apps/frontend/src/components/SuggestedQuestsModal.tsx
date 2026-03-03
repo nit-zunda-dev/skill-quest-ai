@@ -44,7 +44,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-white"
@@ -52,23 +52,23 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
         >
           <X className="w-6 h-6" />
         </button>
-        <h3 className="text-xl font-bold text-white mb-4">タスク提案</h3>
+        <h3 className="text-xl font-bold text-card-foreground mb-4">タスク提案</h3>
 
         {isFetchingSuggestions && (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="w-10 h-10 animate-spin mb-4" />
             <p className="text-lg">提案を取得中...</p>
           </div>
         )}
 
         {suggestError && !isFetchingSuggestions && (
-          <div className="rounded-xl bg-red-900/20 border border-red-700/50 p-4 text-center">
+          <div className="rounded-xl bg-destructive/10 border border-destructive/60 p-4 text-center">
             <p className="text-red-300 mb-2">{suggestError.message}</p>
-            <p className="text-slate-400 text-sm mb-4">しばらく経ってから再試行してください。</p>
+            <p className="text-muted-foreground text-sm mb-4">しばらく経ってから再試行してください。</p>
             <button
               type="button"
               onClick={handleRetry}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg"
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg"
             >
               再試行
             </button>
@@ -76,7 +76,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
         )}
 
         {open && !goal.trim() && !isFetchingSuggestions && (
-          <div className="rounded-xl bg-slate-800/50 border border-slate-600 p-4 text-center text-slate-400 text-sm">
+          <div className="rounded-xl bg-muted/40 border border-border p-4 text-center text-muted-foreground text-sm">
             目標が設定されていません。左の「目標」で目標を入力し、確定すると提案が表示されます。
           </div>
         )}
@@ -87,11 +87,11 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
               {suggestions.map((item, i) => (
                 <li
                   key={i}
-                  className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-slate-200"
+                  className="flex items-center gap-3 bg-card/80 border border-border rounded-lg px-4 py-3 text-card-foreground"
                 >
                   <span className="font-medium">{item.title}</span>
-                  <span className="text-slate-500 text-sm">{item.type}</span>
-                  <span className="text-slate-500 text-sm">{item.difficulty}</span>
+                  <span className="text-muted-foreground text-sm">{item.type}</span>
+                  <span className="text-muted-foreground text-sm">{item.difficulty}</span>
                 </li>
               ))}
             </ul>
@@ -100,7 +100,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
                 type="button"
                 onClick={handleAdopt}
                 disabled={isAdopting}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50"
               >
                 {isAdopting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                 採用
@@ -109,7 +109,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
                 type="button"
                 onClick={onClose}
                 disabled={isAdopting}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-muted-foreground bg-muted rounded-xl hover:bg-muted/80"
               >
                 <XCircle className="w-5 h-5" />
                 スキップ

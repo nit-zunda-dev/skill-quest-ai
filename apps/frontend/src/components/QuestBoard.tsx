@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Task, TaskType, Difficulty } from '@skill-quest/shared';
+import { Task, TaskType, Difficulty, type WorldviewId } from '@skill-quest/shared';
 import { Plus, Trash2, Repeat, Check, Sparkles, Sword, Hourglass, Trophy, Shield, Flame } from 'lucide-react';
 
 type StatusKey = 'todo' | 'in_progress' | 'done';
@@ -12,9 +12,19 @@ interface QuestBoardProps {
   onUpdateStatus?: (taskId: string, status: StatusKey) => void;
   /** クエスト0件時に「目標からクエストを生成」案内を表示する場合に渡す。CTAクリックで呼ばれる。 */
   onRequestSuggestFromGoal?: () => void;
+  /** 世界観に応じてラベル・ヘッダーテキストを少し変える（Arcane / Chronicle / Neo） */
+  worldviewId?: WorldviewId;
 }
 
-const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTask, onDeleteTask, onUpdateStatus, onRequestSuggestFromGoal }) => {
+const QuestBoard: React.FC<QuestBoardProps> = ({
+  tasks,
+  onAddTask,
+  onCompleteTask,
+  onDeleteTask,
+  onUpdateStatus,
+  onRequestSuggestFromGoal,
+  worldviewId,
+}) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDifficulty, setNewTaskDifficulty] = useState<Difficulty>(Difficulty.EASY);
@@ -59,10 +69,43 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
     }
   };
 
+  // 世界観ごとにクエストボードのラベルを少し変える
+  const noun =
+    worldviewId === 'arcane-terminal'
+      ? 'セッション'
+      : worldviewId === 'chronicle-campus'
+        ? 'チャプター'
+        : worldviewId === 'neo-frontier-hub'
+          ? 'ミッション'
+          : 'クエスト';
+
+  const boardTitle =
+    worldviewId === 'arcane-terminal'
+      ? 'セッションボード'
+      : worldviewId === 'chronicle-campus'
+        ? 'ストーリーボード'
+        : worldviewId === 'neo-frontier-hub'
+          ? 'ミッションボード'
+          : 'クエストボード';
+
+  const emptyLabel = `${noun}なし`;
+
   const statusConfig: Record<StatusKey, { label: string; icon: React.ReactNode; headerClass: string }> = {
-    todo: { label: '未着手クエスト', icon: <Sword className="w-4 h-4" />, headerClass: 'bg-slate-700/70 border-slate-500/50 text-slate-200' },
-    in_progress: { label: '進行中クエスト', icon: <Hourglass className="w-4 h-4" />, headerClass: 'bg-amber-900/40 border-amber-500/50 text-amber-200' },
-    done: { label: '達成クエスト', icon: <Trophy className="w-4 h-4" />, headerClass: 'bg-emerald-900/40 border-emerald-500/50 text-emerald-200' },
+    todo: {
+      label: `未着手${noun}`,
+      icon: <Sword className="w-4 h-4" />,
+      headerClass: 'bg-slate-700/70 border-slate-500/50 text-slate-200',
+    },
+    in_progress: {
+      label: `進行中${noun}`,
+      icon: <Hourglass className="w-4 h-4" />,
+      headerClass: 'bg-amber-900/40 border-amber-500/50 text-amber-200',
+    },
+    done: {
+      label: `達成${noun}`,
+      icon: <Trophy className="w-4 h-4" />,
+      headerClass: 'bg-emerald-900/40 border-emerald-500/50 text-emerald-200',
+    },
   };
 
   const getStatusPill = (status: StatusKey) => {
@@ -156,12 +199,12 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
   };
 
   return (
-    <div className="bg-linear-to-br from-amber-950/25 via-slate-800/60 to-amber-950/20 backdrop-blur-md border-2 border-amber-800/40 rounded-xl p-6 h-full flex flex-col shadow-xl shadow-amber-950/20">
+    <div className="bg-card/80 backdrop-blur-md border border-border rounded-xl p-6 h-full flex flex-col shadow-xl">
       <header className={tasks.length === 0 ? 'mb-6' : ''}>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-amber-50 flex items-center tracking-wide">
             <Shield className="w-6 h-6 mr-2 text-amber-400/90" aria-hidden />
-            <span>クエストボード</span>
+            <span>{boardTitle}</span>
           </h2>
           <button 
             type="button"
@@ -233,7 +276,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
       {tasks.length === 0 && onRequestSuggestFromGoal ? (
         <div className="grow flex flex-col items-center justify-center py-12 px-4 text-center min-h-0">
           <p className="text-slate-300 text-sm mb-4">
-            目標に沿ったクエストをAIが提案します。まずは提案を取得してみましょう。
+            目標に沿った{noun}をAIが提案します。まずは提案を取得してみましょう。
           </p>
           <button
             type="button"
@@ -288,7 +331,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
           >
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {tasksByStatus.todo.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm">クエストなし</div>
+                <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
               ) : (
                 tasksByStatus.todo.map(renderTaskCard)
               )}
@@ -302,7 +345,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
           >
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {tasksByStatus.inProgress.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm">クエストなし</div>
+                <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
               ) : (
                 tasksByStatus.inProgress.map(renderTaskCard)
               )}
@@ -316,7 +359,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
           >
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {tasksByStatus.done.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm">クエストなし</div>
+                <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
               ) : (
                 tasksByStatus.done.map(renderTaskCard)
               )}
@@ -337,7 +380,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({ tasks, onAddTask, onCompleteTas
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                     {list.length === 0 ? (
-                      <div className="text-center text-slate-500 py-8 text-sm">クエストなし</div>
+                      <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
                     ) : (
                       list.map(renderTaskCard)
                     )}

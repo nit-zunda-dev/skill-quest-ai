@@ -117,6 +117,7 @@ export default function QuestBoardPage() {
             onRequestSuggestFromGoal={() => {
               setShowSuggestModal(true);
             }}
+            worldviewId={profile.worldviewId}
           />
         )}
       </div>

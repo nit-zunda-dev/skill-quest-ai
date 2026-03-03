@@ -11,6 +11,7 @@ import { usePartnerFavorability } from '@/hooks/usePartnerBar';
 import { PartnerAvatar } from '@/components/PartnerAvatar';
 import { GiveItemModal } from '@/components/GiveItemModal';
 import { getExpressionForPartner } from '@/lib/partner-expression-context';
+import { useProfile } from '@/contexts/ProfileContext';
 
 const BAR_BG_PATH = '/images/partner/bar-bg.png';
 
@@ -18,6 +19,7 @@ const ITEM_JUST_GIVEN_DURATION_MS = 30000;
 const FAVORABILITY_MAX = 1000;
 
 export default function PartnerPage() {
+  const { profile } = useProfile();
   const [inputValue, setInputValue] = useState('');
   const [giveModalOpen, setGiveModalOpen] = useState(false);
   const [itemJustGivenToPartnerUntil, setItemJustGivenToPartnerUntil] = useState(0);
@@ -29,6 +31,25 @@ export default function PartnerPage() {
   const isChatLimitReached = chatRemaining !== null && chatRemaining <= 0;
 
   const itemJustGivenToPartner = Date.now() < itemJustGivenToPartnerUntil;
+
+  const worldviewId = profile.worldviewId;
+  const barTitle =
+    worldviewId === 'arcane-terminal'
+      ? 'ターミナルバー'
+      : worldviewId === 'chronicle-campus'
+        ? 'キャンパスカフェ'
+        : worldviewId === 'neo-frontier-hub'
+          ? 'オペレーションラウンジ'
+          : 'バー';
+
+  const barTagline =
+    worldviewId === 'arcane-terminal'
+      ? 'ネオンに揺れるカウンターで、相棒がログインを待っている。'
+      : worldviewId === 'chronicle-campus'
+        ? '静かなカウンター席で、勉強の合間の一息とおしゃべりを。'
+        : worldviewId === 'neo-frontier-hub'
+          ? '作戦会議の合間に、短い一言を交わす作戦ラウンジ。'
+          : '相棒があなたの話を待っています。';
 
   const handleGiveSuccess = useCallback(
     (target: 'partner' | 'pet', grantedRarity?: string | null, itemName?: string) => {
@@ -79,7 +100,7 @@ export default function PartnerPage() {
         }}
         aria-hidden
       />
-      <div className="absolute inset-0 bg-slate-950/50 pointer-events-none" aria-hidden />
+            <div className="absolute inset-0 bg-slate-950/50 pointer-events-none" aria-hidden />
 
       <div className="relative z-10 mt-auto w-full max-w-6xl mx-auto px-4 md:px-6 pb-6 md:pb-8">
         <div className="flex flex-col md:flex-row items-end justify-center md:justify-center gap-6 md:gap-8">
@@ -97,9 +118,9 @@ export default function PartnerPage() {
           <div className="w-full md:min-w-[320px] md:max-w-xl max-h-[38vh] md:max-h-[44vh] flex flex-col rounded-2xl overflow-hidden border border-cyan-500/30 bg-slate-800/80 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.35)] order-2">
             <div className="shrink-0 px-3 py-2 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <h2 className="text-base font-bold text-white truncate">バー</h2>
+                <h2 className="text-base font-bold text-white truncate">{barTitle}</h2>
                 <p className="text-xs text-slate-400 truncate">
-                  相棒があなたの話を待っています。
+                  {barTagline}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 min-w-0" aria-label="パートナー好感度">
                   <span className="flex items-center gap-1 text-xs text-fuchsia-300 shrink-0">
@@ -108,7 +129,7 @@ export default function PartnerPage() {
                   </span>
                   <div className="flex-1 min-w-0 max-w-24 h-1.5 rounded-full bg-slate-700 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-300"
+                      className="h-full rounded-full bg-linear-to-r from-fuchsia-500 to-cyan-400 transition-all duration-300"
                       style={{ width: `${Math.min(100, (favorability ?? 0) / FAVORABILITY_MAX * 100)}%` }}
                     />
                   </div>
@@ -160,7 +181,7 @@ export default function PartnerPage() {
                           : 'inline-block bg-slate-800/90 text-slate-100 px-4 py-2 rounded-lg rounded-tl-none max-w-[85%] border border-cyan-500/20'
                       }
                     >
-                      <span className="text-sm leading-relaxed break-words">{msg.content}</span>
+                      <span className="text-sm leading-relaxed wrap-break-word">{msg.content}</span>
                     </span>
                   </div>
                 ))}

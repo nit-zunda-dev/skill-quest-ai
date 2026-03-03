@@ -96,7 +96,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               }`
             }
           >
-            <Icon className="w-5 h-5 flex-shrink-0" />
+            <Icon className="w-5 h-5 shrink-0" />
             {label}
           </NavLink>
         ))}
@@ -135,8 +135,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </>
   );
 
+  const worldviewId = profile.worldviewId;
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col md:flex-row relative overflow-hidden">
+    <div
+      className="app-root min-h-screen bg-background text-foreground flex flex-col md:flex-row relative overflow-hidden"
+      data-worldview={worldviewId}
+    >
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[100px]" />
@@ -211,7 +216,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <X className="w-6 h-6" />
             </button>
             <div className="flex items-center gap-2 mb-4 text-red-400">
-              <Trash2 className="w-6 h-6 flex-shrink-0" />
+              <Trash2 className="w-6 h-6 shrink-0" />
               <h3 className="text-xl font-bold text-white">アカウントを削除</h3>
             </div>
             <p className="text-slate-300 text-sm mb-4">
