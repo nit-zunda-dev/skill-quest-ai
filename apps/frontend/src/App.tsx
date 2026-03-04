@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [formData, setFormData] = useState<GenesisFormData>({
     name: '',
     goal: '',
+    worldviewId: 'arcane-terminal',
   });
   const [profile, setProfile] = useState<CharacterProfile | null>(null);
 
