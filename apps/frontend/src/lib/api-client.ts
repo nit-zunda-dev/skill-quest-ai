@@ -14,6 +14,7 @@ import {
   type Task,
   type UpdateGoalRequest,
   Difficulty,
+  WORLDVIEWS,
 } from '@skill-quest/shared';
 
 type HcClient = {
@@ -82,17 +83,21 @@ export interface NarrativeResult {
   grantedItem?: Item | null;
 }
 
-const FALLBACK_PROFILE = (name: string): CharacterProfile => ({
-  name,
-  className: '冒険者',
-  title: '始まりの旅人',
-  prologue: '新たな冒険の幕が開けます。',
-  themeColor: '#6366f1',
-  level: 1,
-  currentXp: 0,
-  nextLevelXp: 100,
-  gold: 0,
-});
+const FALLBACK_PROFILE = (name: string): CharacterProfile => {
+  const worldview = WORLDVIEWS[0];
+  return {
+    name,
+    className: '冒険者',
+    title: '始まりの旅人',
+    prologue: '新たな冒険の幕が開けます。',
+    themeColor: worldview.accentColor,
+    level: 1,
+    currentXp: 0,
+    nextLevelXp: 100,
+    gold: 0,
+    worldviewId: worldview.id,
+  };
+};
 
 export async function generateCharacter(data: GenesisFormData): Promise<CharacterProfile> {
   try {

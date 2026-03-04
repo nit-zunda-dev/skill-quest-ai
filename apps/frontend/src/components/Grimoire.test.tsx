@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Grimoire from './Grimoire';
-import { createTestGrimoireEntry } from '../../../../tests/fixtures';
+import { ProfileProvider } from '@/contexts/ProfileContext';
+import { createTestCharacterProfile, createTestGrimoireEntry } from '../../../../tests/fixtures';
 
 // フックをモック
 const mockGenerateGrimoire = vi.fn();
@@ -25,6 +26,15 @@ vi.mock('@/hooks/useAiUsage', () => ({
   useAiUsage: () => mockUseAiUsage(),
 }));
 
+function renderWithProfile(ui: React.ReactElement) {
+  const profile = createTestCharacterProfile();
+  return render(
+    <ProfileProvider initialProfile={profile}>
+      {ui}
+    </ProfileProvider>
+  );
+}
+
 describe('Grimoire', () => {
   const defaultProps = {
     entries: [],
@@ -37,12 +47,12 @@ describe('Grimoire', () => {
   });
 
   it('タイトルを表示する', () => {
-    render(<Grimoire {...defaultProps} />);
+    renderWithProfile(<Grimoire {...defaultProps} />);
     expect(screen.getByText(/グリモワール \(冒険の記録\)/)).toBeDefined();
   });
 
   it('エントリがない場合に空のメッセージを表示する', () => {
-    render(<Grimoire {...defaultProps} entries={[]} />);
+    renderWithProfile(<Grimoire {...defaultProps} entries={[]} />);
     expect(screen.getByText(/まだ物語は始まっていません/)).toBeDefined();
   });
 
@@ -57,7 +67,7 @@ describe('Grimoire', () => {
       }),
     ];
 
-    render(<Grimoire {...defaultProps} entries={entries} />);
+    renderWithProfile(<Grimoire {...defaultProps} entries={entries} />);
 
     expect(screen.getByText('Test Task')).toBeDefined();
     expect(screen.getByText(/This is a test narrative/)).toBeDefined();
@@ -72,7 +82,7 @@ describe('Grimoire', () => {
       createTestGrimoireEntry({ id: '3', taskTitle: 'Task 3' }),
     ];
 
-    render(<Grimoire {...defaultProps} entries={entries} />);
+    renderWithProfile(<Grimoire {...defaultProps} entries={entries} />);
 
     expect(screen.getByText('Task 1')).toBeDefined();
     expect(screen.getByText('Task 2')).toBeDefined();
@@ -85,7 +95,7 @@ describe('Grimoire', () => {
       createTestGrimoireEntry({ id: '2', taskTitle: 'Second Task' }),
     ];
 
-    const { container } = render(<Grimoire {...defaultProps} entries={entries} />);
+    const { container } = renderWithProfile(<Grimoire {...defaultProps} entries={entries} />);
     const taskTitles = screen.getAllByText(/Task/);
     
     // 最後のエントリが最初に表示される
@@ -93,25 +103,25 @@ describe('Grimoire', () => {
   });
 
   it('グリモワール作成ボタンを表示する', () => {
-    render(<Grimoire {...defaultProps} />);
+    renderWithProfile(<Grimoire {...defaultProps} />);
     const button = screen.getByRole('button', { name: /グリモワール作成/ });
     expect(button).toBeDefined();
   });
 
   it('生成可能な場合、ボタンが有効', () => {
-    render(<Grimoire {...defaultProps} />);
+    renderWithProfile(<Grimoire {...defaultProps} />);
     const button = screen.getByRole('button', { name: /グリモワール作成/ }) as HTMLButtonElement;
     expect(button.disabled).toBe(false);
   });
 
   it('生成中の場合、ボタンが無効化される', () => {
-    render(<Grimoire {...defaultProps} isGenerating={true} />);
+    renderWithProfile(<Grimoire {...defaultProps} isGenerating={true} />);
     const button = screen.getByRole('button', { name: /生成中/ }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
   });
 
   it('生成中の場合、「生成中...」と表示する', () => {
-    render(<Grimoire {...defaultProps} isGenerating={true} />);
+    renderWithProfile(<Grimoire {...defaultProps} isGenerating={true} />);
     expect(screen.getByText(/生成中/)).toBeDefined();
   });
 
@@ -122,7 +132,7 @@ describe('Grimoire', () => {
       isLoading: false,
     });
 
-    render(<Grimoire {...defaultProps} />);
+    renderWithProfile(<Grimoire {...defaultProps} />);
     expect(screen.getByText(/3回残り/)).toBeDefined();
   });
 
@@ -133,14 +143,14 @@ describe('Grimoire', () => {
       generateError: new Error('Generation failed'),
     });
 
-    render(<Grimoire {...defaultProps} />);
+    renderWithProfile(<Grimoire {...defaultProps} />);
     expect(screen.getByText(/エラー/)).toBeDefined();
     expect(screen.getByText(/Generation failed/)).toBeDefined();
   });
 
   it('外部からonGenerateが提供された場合、それを使用する', () => {
     const onGenerate = vi.fn();
-    render(<Grimoire {...defaultProps} onGenerate={onGenerate} />);
+    renderWithProfile(<Grimoire {...defaultProps} onGenerate={onGenerate} />);
 
     const button = screen.getByRole('button', { name: /グリモワール作成/ });
     fireEvent.click(button);
@@ -157,7 +167,7 @@ describe('Grimoire', () => {
       }),
     ];
 
-    render(<Grimoire {...defaultProps} entries={entries} />);
+    renderWithProfile(<Grimoire {...defaultProps} entries={entries} />);
     expect(screen.getByText('2024-01-01')).toBeDefined();
   });
 });

@@ -245,12 +245,13 @@ describe('AI service', () => {
       currentXp: 0,
       nextLevelXp: 100,
       gold: 0,
+      worldviewId: 'arcane-terminal',
     });
 
     it('uses Llama 3.1 8B and returns parsed CharacterProfile when AI returns valid JSON', async () => {
       const run = vi.fn().mockResolvedValue({ response: validProfileJson });
       const ai = { run };
-      const data = { name: 'テスト', goal: '目標' };
+      const data = { name: 'テスト', goal: '目標', worldviewId: 'arcane-terminal' as const };
 
       const result = await generateCharacter(ai, data);
 
@@ -265,7 +266,7 @@ describe('AI service', () => {
     it('returns fallback profile when AI returns invalid JSON', async () => {
       const run = vi.fn().mockResolvedValue({ response: 'not json at all' });
       const ai = { run };
-      const data = { name: 'フォールバック', goal: '目指す' };
+      const data = { name: 'フォールバック', goal: '目指す', worldviewId: 'neo-frontier-hub' as const };
 
       const result = await generateCharacter(ai, data);
 
@@ -277,7 +278,7 @@ describe('AI service', () => {
     it('returns fallback profile when AI throws', async () => {
       const run = vi.fn().mockRejectedValue(new Error('AI error'));
       const ai = { run };
-      const data = { name: 'エラー時', goal: '目標' };
+      const data = { name: 'エラー時', goal: '目標', worldviewId: 'chronicle-campus' as const };
 
       const result = await generateCharacter(ai, data);
 
@@ -288,7 +289,7 @@ describe('AI service', () => {
     it('passes gatewayId to runWithLlama31_8b when provided', async () => {
       const run = vi.fn().mockResolvedValue({ response: validProfileJson });
       const ai = { run };
-      const data = { name: 'テスト', goal: '目標' };
+      const data = { name: 'テスト', goal: '目標', worldviewId: 'arcane-terminal' as const };
 
       await generateCharacter(ai, data, 'gateway-123');
 

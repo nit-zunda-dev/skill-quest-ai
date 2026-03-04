@@ -50,8 +50,8 @@ describe('path constants (Task 1.1)', () => {
 });
 
 describe('Genesis step paths (Task 10.1)', () => {
-  it('defines GENESIS_STEP_SLUGS as intro, questions, loading, result, suggest', () => {
-    expect(GENESIS_STEP_SLUGS).toEqual(['intro', 'questions', 'loading', 'result', 'suggest']);
+  it('defines GENESIS_STEP_SLUGS as intro, worldview, questions, loading, result, suggest', () => {
+    expect(GENESIS_STEP_SLUGS).toEqual(['intro', 'worldview', 'questions', 'loading', 'result', 'suggest']);
   });
 
   it('getGenesisStepPath returns /genesis/<step> for each slug', () => {

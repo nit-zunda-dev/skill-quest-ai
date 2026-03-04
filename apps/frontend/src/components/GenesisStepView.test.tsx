@@ -55,11 +55,11 @@ describe('GenesisStepView (Task 10.1)', () => {
     mockNavigate.mockClear();
   });
 
-  it('INTRO で「冒険を始める」をクリックすると /genesis/questions へナビゲートする', () => {
+  it('INTRO で「冒険を始める」をクリックすると /genesis/worldview へナビゲートする', () => {
     renderAt('/genesis/intro');
     const button = screen.getByRole('button', { name: /冒険を始める/ });
     fireEvent.click(button);
-    expect(mockNavigate).toHaveBeenCalledWith(getGenesisStepPath('questions'));
+    expect(mockNavigate).toHaveBeenCalledWith(getGenesisStepPath('worldview'));
   });
 
   it('不正な step のとき /genesis/intro へリダイレクトする', () => {

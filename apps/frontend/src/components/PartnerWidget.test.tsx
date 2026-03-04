@@ -16,6 +16,8 @@ import {
   PARTNER_VARIANT_STORAGE_KEY,
 } from '@/contexts/PartnerVariantContext';
 import PartnerWidget from './PartnerWidget';
+import { ProfileProvider } from '@/contexts/ProfileContext';
+import { createTestCharacterProfile } from '../../../../tests/fixtures';
 
 const mockSendMessage = vi.fn();
 
@@ -36,11 +38,14 @@ const queryClient = new QueryClient({
 });
 
 function renderPartnerWidget() {
+  const profile = createTestCharacterProfile();
   return render(
     <QueryClientProvider client={queryClient}>
-      <PartnerVariantProvider>
-        <PartnerWidget />
-      </PartnerVariantProvider>
+      <ProfileProvider initialProfile={profile}>
+        <PartnerVariantProvider>
+          <PartnerWidget />
+        </PartnerVariantProvider>
+      </ProfileProvider>
     </QueryClientProvider>
   );
 }

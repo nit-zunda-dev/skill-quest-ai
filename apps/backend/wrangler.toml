@@ -23,6 +23,7 @@ FRONTEND_URL = "http://localhost:3000"
 # AI_GATEWAY_ID は .dev.vars ファイルで設定（Git管理外）
 # プレビュー/本番環境では Cloudflare ダッシュボードの環境変数で設定
 # 無料枠フォールバック（オプション）: AI_NEURONS_FALLBACK_THRESHOLD, AI_NEURONS_DAILY_LIMIT は .dev.vars またはダッシュボードで設定。未設定時はフォールバック判定なし
+# OPS_API_KEY: 運用者API用。ローカルは .dev.vars、プレビュー/本番は wrangler secret put で設定（デプロイしても消えない）
 
 # プレビュー環境設定（Cloudflare Pages と Workers の統合: docs/setup/04_production_environment_setup.md セクション6参照）
 [env.preview]

@@ -17,24 +17,24 @@ const RARITY_LABEL: Record<string, string> = {
 
 /** レアリティ別の枠・アクセント色（Tailwind クラス） */
 const RARITY_BORDER: Record<string, string> = {
-  legend: 'border-amber-400/80 bg-amber-500/10',
-  'ultra-rare': 'border-purple-400/70 bg-purple-500/10',
-  'super-rare': 'border-blue-400/60 bg-blue-500/10',
-  rare: 'border-emerald-400/50 bg-emerald-500/10',
-  common: 'border-slate-400/40 bg-slate-500/10',
+  legend: 'border-primary/80 bg-primary/10',
+  'ultra-rare': 'border-accent/70 bg-accent/10',
+  'super-rare': 'border-primary/60 bg-primary/10',
+  rare: 'border-accent/50 bg-accent/10',
+  common: 'border-border bg-secondary/20',
 };
 
 /** レアリティ別グロー色（CSS variable 用 rgba） */
 const RARITY_GLOW: Record<string, string> = {
-  legend: 'rgba(251, 191, 36, 0.7)',
-  'ultra-rare': 'rgba(192, 132, 252, 0.6)',
-  'super-rare': 'rgba(96, 165, 250, 0.55)',
-  rare: 'rgba(52, 211, 153, 0.5)',
-  common: 'rgba(148, 163, 184, 0.45)',
+  legend: 'color-mix(in srgb, var(--reward-fg) 85%, transparent)',
+  'ultra-rare': 'color-mix(in srgb, var(--accent) 70%, transparent)',
+  'super-rare': 'color-mix(in srgb, var(--primary) 60%, transparent)',
+  rare: 'color-mix(in srgb, var(--accent) 55%, transparent)',
+  common: 'color-mix(in srgb, var(--foreground) 30%, transparent)',
 };
 
-const defaultBorder = 'border-slate-500/50 bg-slate-700/20';
-const defaultGlow = 'rgba(148, 163, 184, 0.4)';
+const defaultBorder = 'border-border bg-secondary/20';
+const defaultGlow = 'color-mix(in srgb, var(--foreground) 30%, transparent)';
 
 export interface ItemAcquisitionCardProps {
   item: Item;
@@ -61,22 +61,22 @@ export function ItemAcquisitionCard({ item, compact = false, onClose, animationD
         aria-label={`獲得: ${item.name}`}
       >
         {imageError ? (
-          <div className="w-10 h-10 rounded bg-slate-700/50 flex items-center justify-center text-slate-500 shrink-0">
+          <div className="w-10 h-10 rounded bg-secondary/50 flex items-center justify-center text-muted-foreground shrink-0">
             ?
           </div>
         ) : (
           <img
             src={imagePath}
             alt={item.name}
-            className="w-10 h-10 rounded object-cover bg-slate-700/50 shrink-0"
+            className="w-10 h-10 rounded object-cover bg-secondary/50 shrink-0"
             onError={() => setImageError(true)}
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-white text-sm truncate" title={item.name}>
+          <p className="font-medium text-foreground text-sm truncate" title={item.name}>
             {item.name}
           </p>
-          <p className="text-xs text-slate-400">{RARITY_LABEL[item.rarity] ?? item.rarity}</p>
+          <p className="text-xs text-muted-foreground">{RARITY_LABEL[item.rarity] ?? item.rarity}</p>
         </div>
       </div>
     );
@@ -119,9 +119,9 @@ export function ItemAcquisitionCard({ item, compact = false, onClose, animationD
           </div>
         ));
       })()}
-      <div className="relative z-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-700/50 shrink-0 mb-3 flex items-center justify-center animate-item-float">
+      <div className="relative z-0 w-20 h-20 rounded-xl overflow-hidden bg-secondary/50 shrink-0 mb-3 flex items-center justify-center animate-item-float">
         {imageError ? (
-          <span className="text-3xl text-slate-500">?</span>
+          <span className="text-3xl text-muted-foreground">?</span>
         ) : (
           <img
             src={imagePath}
@@ -131,15 +131,15 @@ export function ItemAcquisitionCard({ item, compact = false, onClose, animationD
           />
         )}
       </div>
-      <p className="relative z-0 font-bold text-white text-center text-base truncate w-full drop-shadow-sm" title={item.name}>
+      <p className="relative z-0 font-bold text-foreground text-center text-base truncate w-full drop-shadow-sm" title={item.name}>
         {item.name}
       </p>
-      <p className="relative z-0 text-sm font-medium mt-1 text-slate-300">{RARITY_LABEL[item.rarity] ?? item.rarity}</p>
+      <p className="relative z-0 text-sm font-medium mt-1 text-muted-foreground">{RARITY_LABEL[item.rarity] ?? item.rarity}</p>
       {onClose && (
         <button
           type="button"
           onClick={onClose}
-          className="relative z-0 mt-4 text-sm text-slate-400 hover:text-white underline transition-colors"
+          className="relative z-0 mt-4 text-sm text-muted-foreground hover:text-foreground underline transition-colors"
         >
           閉じる
         </button>
