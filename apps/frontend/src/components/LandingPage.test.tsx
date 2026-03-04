@@ -59,12 +59,12 @@ describe('LandingPage value proposition (Task 4.2, Req 2.1, 2.2, 2.3)', () => {
 });
 
 describe('LandingPage visual (Task 4.3, Req 3.1, 3.3)', () => {
-  it('uses existing world palette (slate and indigo)', () => {
+  it('uses theme token-based palette', () => {
     render(<LandingPage onStartClick={vi.fn()} />);
     const page = screen.getByTestId('landing-page');
-    const html = page.innerHTML;
-    expect(html).toMatch(/slate/);
-    expect(html).toMatch(/indigo/);
+    const classes = page.getAttribute('class') ?? '';
+    expect(classes).toMatch(/bg-background/);
+    expect(classes).toMatch(/text-foreground/);
   });
 
   it('includes light animation or transition for reward feel', () => {

@@ -16,8 +16,8 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ profile }) => {
       {/* Avatar & Basic Info */}
       <div className="text-center mb-6">
         <div 
-          className="w-24 h-24 mx-auto bg-background rounded-full mb-4 flex items-center justify-center border-4 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
-          style={{ borderColor: 'var(--primary)' }}
+          className="w-24 h-24 mx-auto bg-background bg-slate-700 rounded-full mb-4 flex items-center justify-center border-4 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+          style={{ borderColor: profile.themeColor }}
         >
           <User className="w-12 h-12 text-muted-foreground" />
         </div>
@@ -41,7 +41,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ profile }) => {
           </div>
           <div className="w-full bg-background rounded-full h-2.5 overflow-hidden">
             <div 
-              className="h-2.5 rounded-full transition-all duration-500" 
+              className="h-2.5 rounded-full transition-all duration-500 bg-yellow-500" 
               style={{ width: `${xpPercentage}%`, backgroundColor: 'var(--reward-fg)' }}
             />
           </div>

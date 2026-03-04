@@ -254,7 +254,7 @@ function defaultCharacterProfile(name: string, goal: string, worldviewId: Worldv
     default:
       return {
         name,
-        className: 'フロントランナー',
+        className: '冒険者',
         title: '静かな作戦会議の主',
         prologue: `夜更けの作戦ハブに、淡いホログラムが灯る。「${goal}」を軸にした今日のミッションが、短時間で片付けるべきタスクとしてボードに浮かび上がった。`,
         themeColor: worldview.accentColor,
