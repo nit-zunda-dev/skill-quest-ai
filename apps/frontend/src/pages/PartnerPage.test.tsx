@@ -15,6 +15,8 @@ import {
 } from '@/contexts/PartnerVariantContext';
 import PartnerPage from './PartnerPage';
 import PartnerWidget from '@/components/PartnerWidget';
+import { ProfileProvider } from '@/contexts/ProfileContext';
+import { createTestCharacterProfile } from '../../../../tests/fixtures';
 
 const mockSendMessage = vi.fn();
 const queryClient = createQueryClient();
@@ -34,11 +36,14 @@ vi.mock('@/hooks/usePartnerBar', () => ({
 }));
 
 function renderPartnerPage() {
+  const profile = createTestCharacterProfile();
   return render(
     <QueryClientProvider client={queryClient}>
-      <PartnerVariantProvider>
-        <PartnerPage />
-      </PartnerVariantProvider>
+      <ProfileProvider initialProfile={profile}>
+        <PartnerVariantProvider>
+          <PartnerPage />
+        </PartnerVariantProvider>
+      </ProfileProvider>
     </QueryClientProvider>
   );
 }
@@ -113,13 +118,16 @@ describe('PartnerPage and PartnerWidget shared variant (Task 7.4, Req 5.4)', () 
   });
 
   it('page and widget both show partner image and same variant when under same Provider', () => {
+    const profile = createTestCharacterProfile();
     localStorage.setItem(PARTNER_VARIANT_STORAGE_KEY, 'male');
     render(
       <QueryClientProvider client={queryClient}>
-        <PartnerVariantProvider>
-          <PartnerPage />
-          <PartnerWidget />
-        </PartnerVariantProvider>
+        <ProfileProvider initialProfile={profile}>
+          <PartnerVariantProvider>
+            <PartnerPage />
+            <PartnerWidget />
+          </PartnerVariantProvider>
+        </ProfileProvider>
       </QueryClientProvider>
     );
     const pageImg = screen.getByRole('img', { name: /AIパートナー/i });

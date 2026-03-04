@@ -266,21 +266,24 @@ describe('updateProfileSchema', () => {
 
 describe('genesisFormDataSchema', () => {
   describe('parse', () => {
-    it('正常系: name と goal でパースできる', () => {
+    it('正常系: name と goal と worldviewId でパースできる', () => {
       const validData = {
         name: 'テストキャラ',
         goal: 'テスト目標',
+        worldviewId: 'arcane-terminal',
       };
 
       const result = genesisFormDataSchema.parse(validData);
       expect(result.name).toBe('テストキャラ');
       expect(result.goal).toBe('テスト目標');
+      expect(result.worldviewId).toBe('arcane-terminal');
     });
 
     it('異常系: 名前が空文字列の場合エラーを投げる', () => {
       const invalidData = {
         name: '',
         goal: 'テスト目標',
+        worldviewId: 'arcane-terminal',
       };
 
       expect(() => genesisFormDataSchema.parse(invalidData)).toThrow();
@@ -290,6 +293,17 @@ describe('genesisFormDataSchema', () => {
       const invalidData = {
         name: 'テストキャラ',
         goal: 'a'.repeat(501),
+        worldviewId: 'arcane-terminal',
+      };
+
+      expect(() => genesisFormDataSchema.parse(invalidData)).toThrow();
+    });
+
+    it('異常系: worldviewId が不正な場合エラーを投げる', () => {
+      const invalidData = {
+        name: 'テストキャラ',
+        goal: 'テスト目標',
+        worldviewId: 'invalid-worldview',
       };
 
       expect(() => genesisFormDataSchema.parse(invalidData)).toThrow();
@@ -301,6 +315,7 @@ describe('genesisFormDataSchema', () => {
       const result = genesisFormDataSchema.safeParse({
         name: 'テストキャラ',
         goal: 'テスト目標',
+        worldviewId: 'chronicle-campus',
       });
       expect(result.success).toBe(true);
     });

@@ -121,6 +121,34 @@ pnpm exec wrangler secret put BETTER_AUTH_BASE_URL --env preview
 
 設定しない場合は、WorkerのリクエストURLから自動判定される場合があります。必要に応じてドキュメントを参照してください。
 
+### 3.3 OPS_API_KEY（運用者API用・推奨）
+
+運用者向けAPI（`/api/ops/stats`、`/api/ops/ai-usage`）を有効にするためのキーです。**`wrangler secret put` で設定すると Cloudflare 側に保存され、デプロイのたびに消えません。** ダッシュボードの「環境変数」だけに設定していると、Git 連携デプロイ時に引き継がれない場合があるため、本番・プレビューでは必ずシークレットとして設定してください。
+
+**生成例（Node.js）**：
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**本番環境に設定**：
+
+```bash
+cd apps/backend
+pnpm exec wrangler secret put OPS_API_KEY --env production
+# プロンプトが表示されたら、上記で生成した文字列（または運用で使うキー）を貼り付けてEnter
+```
+
+**プレビュー環境に設定**：
+
+```bash
+cd apps/backend
+pnpm exec wrangler secret put OPS_API_KEY --env preview
+# 本番と別の値を使うことを推奨
+```
+
+設定しない環境では `/api/ops/*` は 404 を返します。Postman などで運用者APIを呼ぶ場合は、同じキーを `X-Ops-API-Key` ヘッダに設定してください。
+
 ---
 
 ## 4. wrangler.toml の環境分離

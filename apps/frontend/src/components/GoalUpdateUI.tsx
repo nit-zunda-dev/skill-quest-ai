@@ -46,10 +46,10 @@ const GoalUpdateUI: React.FC<GoalUpdateUIProps> = ({ profile, onGoalUpdateSucces
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-4 shadow-xl" data-testid="goal-update-ui">
+    <div className="bg-card/80 backdrop-blur-md border border-border rounded-xl p-4 shadow-xl" data-testid="goal-update-ui">
       <div className="flex items-center gap-2 mb-2">
-        <Target className="w-4 h-4 text-indigo-400" aria-hidden />
-        <h3 className="text-sm font-semibold text-slate-200">目標</h3>
+        <Target className="w-4 h-4 text-primary" aria-hidden />
+        <h3 className="text-sm font-semibold text-card-foreground">目標</h3>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <textarea
@@ -59,18 +59,18 @@ const GoalUpdateUI: React.FC<GoalUpdateUIProps> = ({ profile, onGoalUpdateSucces
           placeholder="例：英語力を上げる"
           rows={2}
           disabled={isSubmitting}
-          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-sm disabled:opacity-50"
+          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary outline-none resize-none text-sm disabled:opacity-50"
           aria-label="目標"
         />
         {errorMessage && (
-          <p className="text-amber-400 text-sm" role="alert">
+          <p className="text-destructive text-sm" role="alert">
             {errorMessage}
           </p>
         )}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+          className="w-full py-2 px-4 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground text-sm font-medium rounded-lg transition-colors"
         >
           {isSubmitting ? '更新中...' : '目標を更新'}
         </button>

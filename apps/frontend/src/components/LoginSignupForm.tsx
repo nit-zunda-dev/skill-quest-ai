@@ -104,7 +104,7 @@ const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess, initialMod
     <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto space-y-4">
       {mode === 'signup' && (
         <div>
-          <label htmlFor="auth-name" className="block text-sm font-medium text-slate-400 mb-1">
+          <label htmlFor="auth-name" className="block text-sm font-medium text-muted-foreground mb-1">
             名前
           </label>
           <input
@@ -113,14 +113,14 @@ const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess, initialMod
             placeholder="名前"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-slate-800/50 border border-slate-700 text-slate-100 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none placeholder:text-slate-600"
+            className="w-full bg-card/80 border border-border text-card-foreground rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none placeholder:text-muted-foreground"
             autoComplete="name"
           />
         </div>
       )}
 
       <div>
-        <label htmlFor="auth-email" className="block text-sm font-medium text-slate-400 mb-1">
+        <label htmlFor="auth-email" className="block text-sm font-medium text-muted-foreground mb-1">
           メール
         </label>
         <input
@@ -129,13 +129,13 @@ const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess, initialMod
           placeholder="メール"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-slate-800/50 border border-slate-700 text-slate-100 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none placeholder:text-slate-600"
+          className="w-full bg-card/80 border border-border text-card-foreground rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none placeholder:text-muted-foreground"
           autoComplete="email"
         />
       </div>
 
       <div>
-        <label htmlFor="auth-password" className="block text-sm font-medium text-slate-400 mb-1">
+        <label htmlFor="auth-password" className="block text-sm font-medium text-muted-foreground mb-1">
           パスワード
         </label>
         <input
@@ -144,13 +144,13 @@ const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess, initialMod
           placeholder="パスワード"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-slate-800/50 border border-slate-700 text-slate-100 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none placeholder:text-slate-600"
+          className="w-full bg-card/80 border border-border text-card-foreground rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none placeholder:text-muted-foreground"
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
         />
       </div>
 
       {displayError && (
-        <p className="text-sm text-red-400" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {displayError}
         </p>
       )}
@@ -159,14 +159,14 @@ const LoginSignupForm: React.FC<LoginSignupFormProps> = ({ onSuccess, initialMod
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+          className="w-full py-2 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition-colors"
         >
           {mode === 'login' ? 'ログイン' : 'サインアップ'}
         </button>
         <button
           type="button"
           onClick={switchMode}
-          className="w-full py-2 px-4 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+          className="w-full py-2 px-4 text-muted-foreground hover:text-foreground text-sm transition-colors"
         >
           {mode === 'login' ? 'サインアップ' : 'ログイン'}
         </button>

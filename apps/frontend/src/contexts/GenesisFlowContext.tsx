@@ -14,7 +14,7 @@ interface GenesisFlowContextValue {
 
 const GenesisFlowContext = createContext<GenesisFlowContextValue | null>(null);
 
-const initialFormData: GenesisFormData = { name: '', goal: '' };
+const initialFormData: GenesisFormData = { name: '', goal: '', worldviewId: 'arcane-terminal' };
 
 export function GenesisFlowProvider({ children }: { children: React.ReactNode }) {
   const [formData, setFormData] = useState<GenesisFormData>(initialFormData);

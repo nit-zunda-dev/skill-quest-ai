@@ -4,7 +4,7 @@
  */
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { IntroStep, QuestionStep, LoadingStep } from '@/components/GenesisStep';
+import { IntroStep, QuestionStep, LoadingStep, WorldviewStep } from '@/components/GenesisStep';
 import ResultStep from '@/components/ResultStep';
 import SuggestStep from '@/components/SuggestStep';
 import { useGenesisFlow } from '@/contexts/GenesisFlowContext';
@@ -94,15 +94,26 @@ export function GenesisStepView() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col overflow-hidden relative">
+    <div
+      className="app-root min-h-screen bg-background text-foreground flex flex-col overflow-hidden relative"
+      data-worldview={formData.worldviewId}
+    >
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[20%] w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[20%] w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-[-10%] left-[20%] w-96 h-96 rounded-full blur-3xl animate-pulse" style={{ backgroundColor: 'var(--ui-glow-1)' }} />
+        <div className="absolute bottom-[-10%] right-[20%] w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000" style={{ backgroundColor: 'var(--ui-glow-2)' }} />
       </div>
 
-      <div className="flex-grow flex items-center justify-center p-4 z-10">
+      <div className="grow flex items-center justify-center p-4 z-10">
         {step === 'intro' && (
-          <IntroStep onNext={() => navigate(getGenesisStepPath('questions'))} />
+          <IntroStep onNext={() => navigate(getGenesisStepPath('worldview'))} />
+        )}
+
+        {step === 'worldview' && (
+          <WorldviewStep
+            value={formData.worldviewId}
+            onChange={(id) => setFormData((prev) => ({ ...prev, worldviewId: id }))}
+            onNext={() => navigate(getGenesisStepPath('questions'))}
+          />
         )}
 
         {step === 'questions' && (
@@ -126,7 +137,7 @@ export function GenesisStepView() {
         )}
       </div>
 
-      <div className="p-4 text-center text-slate-600 text-xs z-10">
+      <div className="p-4 text-center text-muted-foreground text-xs z-10">
         Skill Quest AI v1.1.0 &bull; Powered by Workers AI
       </div>
     </div>

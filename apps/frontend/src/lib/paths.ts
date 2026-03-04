@@ -11,10 +11,11 @@ export const PATH_APP = '/app' as const;
 export const PATH_APP_QUESTS = '/app/quests' as const;
 export const PATH_APP_GRIMOIRE = '/app/grimoire' as const;
 export const PATH_APP_PARTNER = '/app/partner' as const;
+export const PATH_APP_PET = '/app/pet' as const;
 export const PATH_APP_ITEMS = '/app/items' as const;
 
 /** Genesis ステップの URL スラッグ（Task 10.1, Req 2.1, 5.3） */
-export const GENESIS_STEP_SLUGS = ['intro', 'questions', 'loading', 'result', 'suggest'] as const;
+export const GENESIS_STEP_SLUGS = ['intro', 'worldview', 'questions', 'loading', 'result', 'suggest'] as const;
 export type GenesisStepSlug = (typeof GENESIS_STEP_SLUGS)[number];
 
 /** ステップスラッグからパスを返す。正規形は /genesis/intro 等。 */

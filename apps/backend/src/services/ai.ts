@@ -2,9 +2,9 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type { Bindings } from '../types';
 import { getAiNeuronsFallbackConfig } from '../lib/ai-fallback-config';
 import { getGlobalNeuronsEstimateForDate } from './ai-usage';
-import type { CharacterProfile, GenesisFormData } from '@skill-quest/shared';
+import type { CharacterProfile, GenesisFormData, WorldviewId } from '@skill-quest/shared';
 import type { NarrativeRequest, PartnerMessageRequest, SuggestedQuestItem } from '@skill-quest/shared';
-import { Difficulty, TaskType } from '@skill-quest/shared';
+import { Difficulty, TaskType, WORLDVIEWS, WORLDVIEW_IDS } from '@skill-quest/shared';
 import { suggestedQuestItemSchema } from '@skill-quest/shared';
 import grimoireTemplates from '../templates/grimoire.json';
 
@@ -127,7 +127,7 @@ function createStubAiService(env: Bindings, opts?: { fallbackMessage?: string })
     runWithLlama31_8b: async () => msg,
     runWithLlama33_70b: async () => msg,
     generateCharacter: async (data: GenesisFormData) => {
-      const p = defaultCharacterProfile(data.name, data.goal);
+      const p = defaultCharacterProfile(data.name, data.goal, data.worldviewId);
       if (msg) return { ...p, prologue: msg };
       return p;
     },
@@ -217,20 +217,55 @@ export async function createAiService(
   return { service, isFallbackStub: false };
 }
 
-/** フォールバック用のデフォルトプロフィール */
-function defaultCharacterProfile(name: string, goal: string): CharacterProfile {
-  return {
-    name,
-    className: '冒険者',
-    title: '見習い',
-    prologue: `目標: ${goal}`,
-    themeColor: '#4a90d9',
-    level: 1,
-    currentXp: 0,
-    nextLevelXp: 100,
-    gold: 0,
-    goal,
-  };
+/** フォールバック用のデフォルトプロフィール（世界観別） */
+function defaultCharacterProfile(name: string, goal: string, worldviewId: WorldviewId): CharacterProfile {
+  const worldview = WORLDVIEWS.find((w) => w.id === worldviewId) ?? WORLDVIEWS[0];
+
+  switch (worldview.id) {
+    case 'arcane-terminal':
+      return {
+        name,
+        className: 'コードメイジ',
+        title: '未踏の回路を歩む者',
+        prologue: `サイバーパンク都市の片隅、薄暗い路地裏で旧式の魔導端末が静かに起動する。「${goal}」という新たなクエストが、青白い光と共にログへ刻まれた。`,
+        themeColor: worldview.accentColor,
+        level: 1,
+        currentXp: 0,
+        nextLevelXp: 100,
+        gold: 0,
+        worldviewId: worldview.id,
+        goal,
+      };
+    case 'chronicle-campus':
+      return {
+        name,
+        className: 'グリモワールキーパー',
+        title: '物語を綴る書架の番人',
+        prologue: `放課後の校舎に夕陽が差し込む頃、静かな図書館の一角で新しいノートが開かれる。「${goal}」というページから、あなただけの合格体験記が始まった。`,
+        themeColor: worldview.accentColor,
+        level: 1,
+        currentXp: 0,
+        nextLevelXp: 100,
+        gold: 0,
+        worldviewId: worldview.id,
+        goal,
+      };
+    case 'neo-frontier-hub':
+    default:
+      return {
+        name,
+        className: '冒険者',
+        title: '静かな作戦会議の主',
+        prologue: `夜更けの作戦ハブに、淡いホログラムが灯る。「${goal}」を軸にした今日のミッションが、短時間で片付けるべきタスクとしてボードに浮かび上がった。`,
+        themeColor: worldview.accentColor,
+        level: 1,
+        currentXp: 0,
+        nextLevelXp: 100,
+        gold: 0,
+        worldviewId: worldview.id,
+        goal,
+      };
+  }
 }
 
 function isCharacterProfile(obj: unknown): obj is CharacterProfile {
@@ -245,7 +280,9 @@ function isCharacterProfile(obj: unknown): obj is CharacterProfile {
     typeof o.level === 'number' &&
     typeof o.currentXp === 'number' &&
     typeof o.nextLevelXp === 'number' &&
-    typeof o.gold === 'number'
+    typeof o.gold === 'number' &&
+    typeof o.worldviewId === 'string' &&
+    WORLDVIEW_IDS.includes(o.worldviewId as (typeof WORLDVIEW_IDS)[number])
   );
   return hasRequiredFields;
 }
@@ -498,23 +535,59 @@ export async function generateCharacter(
   } catch {
     // fall through to fallback
   }
-  return defaultCharacterProfile(data.name, data.goal);
+  return defaultCharacterProfile(data.name, data.goal, data.worldviewId);
 }
 
 function buildCharacterPrompt(data: GenesisFormData): string {
+  const worldview = WORLDVIEWS.find((w) => w.id === data.worldviewId) ?? WORLDVIEWS[0];
+
+  const worldviewSection: string[] = [
+    `世界観ID: ${worldview.id}`,
+    `世界観名: ${worldview.label}`,
+    `世界観の説明: ${worldview.description}`,
+  ];
+
+  const worldviewSpecificRules: string[] = [];
+  switch (worldview.id) {
+    case 'arcane-terminal':
+      worldviewSpecificRules.push(
+        '- この世界観はサイバーパンク×TRPG風。「魔導端末」「回路」「ギルド」「コード」「ハック」などの語彙を自然な範囲で用いる。',
+        '- className や title には、エンジニアやプログラミング学習を想起させるニュアンスを少し含める（例: 「コードメイジ」「回路の旅人」など）。',
+      );
+      break;
+    case 'chronicle-campus':
+      worldviewSpecificRules.push(
+        '- この世界観は学園・図書館・スタディカフェ風。「図書館」「ノート」「キャンパス」「試験」「合格体験記」などの語彙を自然な範囲で用いる。',
+        '- className や title には、日々の勉強と成長ログを連想させるニュアンスを含める（例: 「グリモワールキーパー」「合格記を綴る者」など）。',
+      );
+      break;
+    case 'neo-frontier-hub':
+    default:
+      worldviewSpecificRules.push(
+        '- この世界観は作戦ハブ・ミッションボード風。「作戦室」「ミッション」「ブリーフィング」「ハブ」などの語彙を自然な範囲で用いる。',
+        '- className や title には、短時間のミッションを積み上げるビジネスパーソン像を薄く反映させる（例: 「フロントランナー」「静かなるオペレーター」など）。',
+      );
+      break;
+  }
+
   return [
     'あなたはノベルゲー／TRPGの世界を紡ぐゲームマスターです。',
     '冒険者（プレイヤー）のプロフィールを生成し、JSONのみで返してください。',
     `冒険者の名前: ${data.name}`,
     `冒険者の目標: ${data.goal}`,
-    '【生成ルール】',
+    '【世界観】',
+    ...worldviewSection,
+    '【生成ルール（共通）】',
     `- name: 「${data.name}」をそのまま使用。`,
-    '- className: 目標に応じたTRPG的なクラス名（例: 目標が語学なら「言霊使い」、プログラミングなら「魔導技師」、資格なら「賢者見習い」など）。',
+    '- className: 目標と世界観に応じたTRPG的なクラス名（例: 目標が語学なら「言霊使い」、プログラミングなら「魔導技師」、資格なら「賢者見習い」など）。',
     '- title: 冒険者の二つ名・称号（例: 「暁の探求者」「未踏の挑戦者」）。',
     '- prologue: この冒険者の物語の始まりを2〜3文で描写する。目標に向かって旅立つ導入シーンを、ノベルゲーの冒頭のように情景豊かに書く。',
-    '- themeColor: キャラクターの雰囲気に合う色（#で始まる6桁のカラーコード）。',
+    '- themeColor: キャラクターと世界観の雰囲気に合う色（#で始まる6桁のカラーコード）。',
     '- level: 1, currentXp: 0, nextLevelXp: 100, gold: 0（固定）。',
-    '必須フィールド: name, className, title, prologue, themeColor, level, currentXp, nextLevelXp, gold。',
+    '【生成ルール（世界観別の追加条件）】',
+    ...worldviewSpecificRules,
+    '【必須フィールド】 name, className, title, prologue, themeColor, level, currentXp, nextLevelXp, gold, worldviewId。',
+    `- worldviewId: 「${worldview.id}」という文字列をそのまま設定する。`,
   ].join('\n');
 }
 

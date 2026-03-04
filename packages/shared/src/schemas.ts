@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export { z };
-import { Difficulty, TaskType, Category, Rarity } from './types';
+import { Difficulty, TaskType, Category, Rarity, WORLDVIEW_IDS } from './types';
 
 // クエスト作成リクエストスキーマ
 export const createQuestSchema = z.object({
@@ -37,6 +37,7 @@ export const updateProfileSchema = z.object({
 export const genesisFormDataSchema = z.object({
   name: z.string().min(1, '名前は必須です').max(50, '名前は50文字以内で入力してください'),
   goal: z.string().min(1, '目標は必須です').max(500, '目標は500文字以内で入力してください'),
+  worldviewId: z.enum(WORLDVIEW_IDS),
 });
 
 // ナラティブ生成リクエストスキーマ

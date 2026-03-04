@@ -24,8 +24,8 @@ export function RequireGenesis({ children }: RequireGenesisProps) {
 
   if (state.kind === 'loading') {
     return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex items-center justify-center">
-        <div className="text-slate-400 animate-pulse">読み込み中...</div>
+      <div className="app-root min-h-screen bg-background text-foreground flex items-center justify-center" data-worldview="arcane-terminal">
+        <div className="text-muted-foreground animate-pulse">読み込み中...</div>
       </div>
     );
   }
@@ -36,8 +36,8 @@ export function RequireGenesis({ children }: RequireGenesisProps) {
 
   if (state.kind === 'error') {
     return (
-      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-        <p className="text-red-400" role="alert">
+      <div className="app-root min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4" data-worldview="arcane-terminal">
+        <p className="text-destructive" role="alert">
           {state.message}
         </p>
       </div>

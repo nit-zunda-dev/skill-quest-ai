@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import { streamText } from 'hono/streaming';
 import type { Bindings, AuthUser } from '../types';
 import {
+  z,
   genesisFormDataSchema,
   narrativeRequestSchema,
   partnerMessageRequestSchema,
@@ -45,6 +46,18 @@ type AiVariables = { user: AuthUser };
  */
 export const aiRouter = new Hono<{ Bindings: Bindings; Variables: AiVariables }>();
 
+/**
+ * /generate-character 用の入力スキーマ。
+ * - 新仕様: worldviewId 必須（genesisFormDataSchema）
+ * - 旧仕様: name / goal のみ（worldviewId 省略時は arcane-terminal とみなす）
+ */
+const generateCharacterRequestSchema = genesisFormDataSchema.or(
+  z.object({
+    name: genesisFormDataSchema.shape.name,
+    goal: genesisFormDataSchema.shape.goal,
+  })
+);
+
 const limitExceeded = (c: { json: (body: unknown, status: number) => Response }, message: string) =>
   c.json({ error: 'Too Many Requests', message }, 429);
 
@@ -82,13 +95,26 @@ aiRouter.get('/character', async (c) => {
 
 aiRouter.post(
   '/generate-character',
-  zValidator('json', genesisFormDataSchema),
+  zValidator('json', generateCharacterRequestSchema),
   async (c) => {
     const user = c.get('user');
     const already = await hasCharacterGenerated(c.env.DB, user.id);
     if (already) return limitExceeded(c, 'キャラクターは1アカウント1回までです。');
 
-    const data = c.req.valid('json');
+    const raw = c.req.valid('json') as
+      | typeof genesisFormDataSchema._type
+      | { name: string; goal: string };
+
+    const withWorldview = 'worldviewId' in raw && raw.worldviewId
+      ? raw
+      : { ...raw, worldviewId: 'arcane-terminal' as const };
+
+    const data = {
+      name: withWorldview.name,
+      goal: withWorldview.goal,
+      worldviewId: withWorldview.worldviewId,
+    };
+
     const nameResult = prepareUserPrompt(data.name);
     if (!nameResult.ok) return c.json({ error: 'Invalid or unsafe input', reason: nameResult.reason }, 400);
     const goalResult = prepareUserPrompt(data.goal);
