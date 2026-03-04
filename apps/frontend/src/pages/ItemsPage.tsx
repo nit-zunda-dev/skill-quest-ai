@@ -51,10 +51,10 @@ export default function ItemsPage() {
   if (isLoading) {
     return (
       <div className="max-w-xl mx-auto flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <div className="w-20 h-20 rounded-2xl bg-slate-700/50 flex items-center justify-center mb-6 animate-pulse">
-          <Package className="w-10 h-10 text-slate-500" />
+        <div className="w-20 h-20 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6 animate-pulse">
+          <Package className="w-10 h-10 text-muted-foreground" />
         </div>
-        <p className="text-slate-400 text-sm">読み込み中…</p>
+        <p className="text-muted-foreground text-sm">読み込み中…</p>
       </div>
     );
   }
@@ -62,7 +62,7 @@ export default function ItemsPage() {
   if (error) {
     return (
       <div className="max-w-xl mx-auto flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <p className="text-red-400 text-sm">{error instanceof Error ? error.message : '所持一覧の取得に失敗しました。'}</p>
+        <p className="text-destructive text-sm">{error instanceof Error ? error.message : '所持一覧の取得に失敗しました。'}</p>
       </div>
     );
   }
@@ -73,19 +73,19 @@ export default function ItemsPage() {
   return (
     <div className="max-w-5xl mx-auto flex flex-col min-h-[50vh]">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white">獲得アイテム</h2>
+        <h2 className="text-xl font-bold text-foreground">獲得アイテム</h2>
         {totalCount > 0 && (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             {collectedCount} / {totalCount} コレクト
           </p>
         )}
       </div>
       {masterList.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 text-center">
-          <div className="w-20 h-20 rounded-2xl bg-slate-700/50 flex items-center justify-center mb-6">
-            <Package className="w-10 h-10 text-slate-500" />
+          <div className="w-20 h-20 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6">
+            <Package className="w-10 h-10 text-muted-foreground" />
           </div>
-          <p className="text-slate-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             タスクをクリアすると獲得したアイテムがここに表示されます。
             <br />
             まだアイテムはありません。
@@ -95,7 +95,7 @@ export default function ItemsPage() {
         <div className="space-y-5">
           {Array.from(groupedMaster.entries()).map(([rarity, groupItems]) => (
             <section key={rarity}>
-              <h3 className="text-sm font-semibold text-slate-400 mb-2">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-2">
                 {RARITY_LABEL[rarity] ?? rarity}
               </h3>
               <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -118,28 +118,28 @@ export default function ItemsPage() {
 function ItemCard({ item }: { item: Item }) {
   const imagePath = buildItemImagePath(item.id, item.category);
   return (
-    <li className="flex flex-col items-center p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+    <li className="flex flex-col items-center p-3 rounded-lg bg-card/60 border border-border/70">
       <img
         src={imagePath}
         alt={item.name}
-        className="w-12 h-12 rounded object-cover bg-slate-700/50 shrink-0"
+        className="w-12 h-12 rounded object-cover bg-secondary/50 shrink-0"
       />
-      <p className="mt-2 font-medium text-white text-center text-sm truncate w-full" title={item.name}>
+      <p className="mt-2 font-medium text-foreground text-center text-sm truncate w-full" title={item.name}>
         {item.name}
       </p>
-      <p className="text-xs text-slate-400">{item.rarity}</p>
+      <p className="text-xs text-muted-foreground">{item.rarity}</p>
     </li>
   );
 }
 
 function PlaceholderCard() {
   return (
-    <li className="flex flex-col items-center p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 border-dashed">
-      <div className="w-12 h-12 rounded bg-slate-700/50 flex items-center justify-center text-xl font-bold text-slate-500 shrink-0">
+    <li className="flex flex-col items-center p-3 rounded-lg bg-card/40 border border-border/70 border-dashed">
+      <div className="w-12 h-12 rounded bg-secondary/50 flex items-center justify-center text-xl font-bold text-muted-foreground shrink-0">
         ?
       </div>
-      <p className="mt-2 font-medium text-slate-500 text-sm">？？？</p>
-      <p className="text-xs text-slate-600">未獲得</p>
+      <p className="mt-2 font-medium text-muted-foreground text-sm">？？？</p>
+      <p className="text-xs text-muted-foreground">未獲得</p>
     </li>
   );
 }

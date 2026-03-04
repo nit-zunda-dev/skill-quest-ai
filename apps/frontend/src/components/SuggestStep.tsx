@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CharacterProfile } from '@skill-quest/shared';
-import { Compass, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useSuggestQuests } from '@/hooks/useSuggestQuests';
 
 interface SuggestStepProps {
@@ -55,11 +55,11 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-in pb-12" data-testid="genesis-suggest-step">
       <div className="text-center mb-10">
-        <span className="text-indigo-400 text-sm font-semibold tracking-wider uppercase">タスク提案</span>
-        <h1 className="text-3xl md:text-4xl font-display font-bold text-white mt-2 mb-2">
+        <span className="text-primary text-sm font-semibold tracking-wider uppercase">タスク提案</span>
+        <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mt-2 mb-2">
           目標に沿ったクエストを提案します
         </h1>
-        <p className="text-lg text-slate-400">
+        <p className="text-lg text-muted-foreground">
           次のステップで提案を確認し、採用またはスキップできます。
         </p>
       </div>
@@ -67,18 +67,18 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
       <div className="max-w-2xl mx-auto space-y-6">
         {!hasGoal && suggestions.length === 0 && !isFetchingSuggestions && !suggestError && (
           <form onSubmit={handleSubmitGoal} className="space-y-4">
-            <label className="block text-sm font-medium text-slate-400">目標を入力してください</label>
+            <label className="block text-sm font-medium text-muted-foreground">目標を入力してください</label>
             <input
               type="text"
               value={goalInput}
               onChange={(e) => setGoalInput(e.target.value)}
               placeholder="例：英語学習、ダイエット、副業など"
-              className="w-full bg-slate-800/50 border border-slate-700 text-slate-100 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full bg-input border border-border text-foreground rounded-lg px-4 py-3 focus:ring-2 focus:ring-ring outline-none"
             />
             <button
               type="submit"
               disabled={goalInput.trim().length === 0}
-              className="w-full inline-flex items-center justify-center px-6 py-3 font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center px-6 py-3 font-bold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               提案を取得
             </button>
@@ -86,16 +86,16 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
         )}
 
         {isFetchingSuggestions && (
-          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="w-10 h-10 animate-spin mb-4" />
             <p className="text-lg">生成中...</p>
           </div>
         )}
 
         {suggestError && (
-          <div className="rounded-xl bg-red-900/20 border border-red-700/50 p-6 text-center">
-            <p className="text-red-300 mb-2">{suggestError.message}</p>
-            <p className="text-slate-400 text-sm">しばらく経ってから再試行してください。</p>
+          <div className="rounded-xl bg-destructive/10 border border-destructive/40 p-6 text-center">
+            <p className="text-destructive mb-2">{suggestError.message}</p>
+            <p className="text-muted-foreground text-sm">しばらく経ってから再試行してください。</p>
           </div>
         )}
 
@@ -105,11 +105,12 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
               {suggestions.map((item, i) => (
                 <li
                   key={i}
-                  className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-slate-200"
+                  className="flex items-center gap-3 border border-border rounded-lg px-4 py-3 text-foreground"
+                  style={{ backgroundColor: 'var(--surface-soft)' }}
                 >
                   <span className="font-medium">{item.title}</span>
-                  <span className="text-slate-500 text-sm">{item.type}</span>
-                  <span className="text-slate-500 text-sm">{item.difficulty}</span>
+                  <span className="text-muted-foreground text-sm">{item.type}</span>
+                  <span className="text-muted-foreground text-sm">{item.difficulty}</span>
                 </li>
               ))}
             </ul>
@@ -118,7 +119,7 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
                 type="button"
                 onClick={handleAdopt}
                 disabled={isAdopting}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-primary-foreground bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50"
               >
                 {isAdopting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                 採用
@@ -127,7 +128,7 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
                 type="button"
                 onClick={handleReject}
                 disabled={isAdopting}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-slate-200 bg-slate-700 rounded-xl hover:bg-slate-600"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-secondary-foreground bg-secondary rounded-xl hover:bg-secondary/80"
               >
                 <XCircle className="w-5 h-5" />
                 スキップ
@@ -140,7 +141,7 @@ const SuggestStep: React.FC<SuggestStepProps> = ({ profile, onComplete }) => {
           <button
             type="button"
             onClick={onComplete}
-            className="w-full mt-4 text-slate-400 hover:text-slate-300 text-sm"
+            className="w-full mt-4 text-muted-foreground hover:text-foreground text-sm"
           >
             スキップしてダッシュボードへ
           </button>

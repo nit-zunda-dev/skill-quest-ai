@@ -136,7 +136,7 @@ export const WORLDVIEWS: readonly WorldviewDefinition[] = [
     accentColor: '#6C3FC5',
     bgGradientFrom: '#050816',
     bgGradientTo: '#1B2440',
-    targetPersonaHint: 'TRPG・ノベルゲーム好きのエンジニア向け（蓮ペルソナ寄り）',
+    targetPersonaHint: 'TRPG・ノベルゲーム好きのエンジニア向け',
   },
   {
     id: 'chronicle-campus',
@@ -145,7 +145,7 @@ export const WORLDVIEWS: readonly WorldviewDefinition[] = [
     accentColor: '#C4478A',
     bgGradientFrom: '#120815',
     bgGradientTo: '#2A1430',
-    targetPersonaHint: '資格勉強や推し活と両立したい学習者向け（美月ペルソナ寄り）',
+    targetPersonaHint: '資格勉強や推し活と両立したい学習者向け',
   },
   {
     id: 'neo-frontier-hub',
@@ -154,7 +154,7 @@ export const WORLDVIEWS: readonly WorldviewDefinition[] = [
     accentColor: '#2E86AB',
     bgGradientFrom: '#040910',
     bgGradientTo: '#122331',
-    targetPersonaHint: '多忙な中で自分の時間を取り戻したいビジネスパーソン向け（大輝ペルソナ寄り）',
+    targetPersonaHint: '多忙な中で自分の時間を取り戻したいビジネスパーソン向け',
   },
 ] as const;
 

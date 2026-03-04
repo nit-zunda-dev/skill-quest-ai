@@ -47,7 +47,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
       <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-500 hover:text-white"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
           aria-label="閉じる"
         >
           <X className="w-6 h-6" />
@@ -63,7 +63,7 @@ const SuggestedQuestsModal: React.FC<SuggestedQuestsModalProps> = ({ open, onClo
 
         {suggestError && !isFetchingSuggestions && (
           <div className="rounded-xl bg-destructive/10 border border-destructive/60 p-4 text-center">
-            <p className="text-red-300 mb-2">{suggestError.message}</p>
+            <p className="text-destructive mb-2">{suggestError.message}</p>
             <p className="text-muted-foreground text-sm mb-4">しばらく経ってから再試行してください。</p>
             <button
               type="button"

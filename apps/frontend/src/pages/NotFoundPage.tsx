@@ -13,18 +13,18 @@ export default function NotFoundPage() {
   return (
     <PageMeta {...NOT_FOUND_META}>
     <main className="min-h-[60vh] flex flex-col items-center justify-center px-4" data-testid="not-found-page">
-      <h1 className="text-6xl font-bold text-slate-300 mb-2">404</h1>
-      <p className="text-xl text-slate-400 mb-8">ページが見つかりません</p>
+      <h1 className="text-6xl font-bold text-foreground mb-2">404</h1>
+      <p className="text-xl text-muted-foreground mb-8">ページが見つかりません</p>
       <nav className="flex flex-wrap gap-4 justify-center">
         <Link
           to={PATH_LANDING}
-          className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           トップへ
         </Link>
         <Link
           to={PATH_LOGIN}
-          className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:border-indigo-500 hover:text-indigo-400 transition-colors"
+          className="px-4 py-2 rounded-lg border border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
         >
           ログイン
         </Link>

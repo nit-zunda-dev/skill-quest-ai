@@ -3,6 +3,7 @@ import { Task, TaskType, Difficulty, type WorldviewId } from '@skill-quest/share
 import { Plus, Trash2, Repeat, Check, Sparkles, Sword, Hourglass, Trophy, Shield, Flame } from 'lucide-react';
 
 type StatusKey = 'todo' | 'in_progress' | 'done';
+type DifficultyBadgeStyle = { color: string; borderColor: string; backgroundColor: string };
 
 interface QuestBoardProps {
   tasks: Task[];
@@ -61,12 +62,18 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
     setIsAdding(false);
   };
 
-  const getDifficultyColor = (diff: Difficulty) => {
-    switch (diff) {
-      case Difficulty.EASY: return 'text-emerald-400 border-emerald-600/50 bg-emerald-900/30';
-      case Difficulty.MEDIUM: return 'text-amber-300 border-amber-500/50 bg-amber-900/30';
-      case Difficulty.HARD: return 'text-rose-400 border-rose-600/50 bg-rose-900/30';
-    }
+  const getDifficultyStyle = (diff: Difficulty): DifficultyBadgeStyle => {
+    const token =
+      diff === Difficulty.EASY
+        ? 'var(--difficulty-easy)'
+        : diff === Difficulty.MEDIUM
+          ? 'var(--difficulty-medium)'
+          : 'var(--difficulty-hard)';
+    return {
+      color: token,
+      borderColor: `color-mix(in srgb, ${token} 55%, transparent)`,
+      backgroundColor: `color-mix(in srgb, ${token} 20%, transparent)`,
+    };
   };
 
   // 世界観ごとにクエストボードのラベルを少し変える
@@ -94,17 +101,17 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
     todo: {
       label: `未着手${noun}`,
       icon: <Sword className="w-4 h-4" />,
-      headerClass: 'bg-slate-700/70 border-slate-500/50 text-slate-200',
+      headerClass: 'bg-secondary/70 border-border text-secondary-foreground',
     },
     in_progress: {
       label: `進行中${noun}`,
       icon: <Hourglass className="w-4 h-4" />,
-      headerClass: 'bg-amber-900/40 border-amber-500/50 text-amber-200',
+      headerClass: 'bg-primary/20 border-primary/40 text-primary',
     },
     done: {
       label: `達成${noun}`,
       icon: <Trophy className="w-4 h-4" />,
-      headerClass: 'bg-emerald-900/40 border-emerald-500/50 text-emerald-200',
+      headerClass: 'bg-accent/20 border-accent/40 text-accent',
     },
   };
 
@@ -112,10 +119,10 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
     const { label, icon } = statusConfig[status];
     const pillClass =
       status === 'done'
-        ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-200'
+        ? 'bg-accent/20 border-accent/60 text-accent'
         : status === 'in_progress'
-          ? 'bg-amber-500/20 border-amber-500/60 text-amber-200'
-          : 'bg-slate-500/20 border-slate-500/60 text-slate-300';
+          ? 'bg-primary/20 border-primary/60 text-primary'
+          : 'bg-secondary/40 border-border text-muted-foreground';
     return (
       <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded border ${pillClass}`}>
         {icon}
@@ -148,33 +155,34 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
       <div 
         key={task.id} 
         onClick={() => handleTaskClick(task)}
-        className="group relative p-3 rounded-lg border-2 bg-linear-to-br from-amber-50/10 via-slate-800/95 to-amber-100/10 border-amber-700/30 hover:border-amber-500/50 hover:from-amber-50/15 hover:to-amber-100/15 transition-all duration-300 cursor-pointer active:scale-[0.98]"
+        className="group relative p-3 rounded-lg border-2 border-border hover:border-primary/50 transition-all duration-300 cursor-pointer active:scale-[0.98]"
+        style={{ backgroundColor: 'var(--surface-soft)' }}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start space-x-2 flex-1 min-w-0">
             <div
               className={`mt-1 w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 ${
                 status === 'done'
-                  ? 'bg-green-500/20 border-green-500 text-green-500'
+                  ? 'bg-accent/20 border-accent text-accent'
                   : status === 'in_progress'
-                  ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500'
-                  : 'border-slate-500 text-transparent'
+                  ? 'bg-primary/20 border-primary text-primary'
+                  : 'border-border text-transparent'
               }`}
             >
               {status === 'done' && <Check className="w-3 h-3" />}
-              {status === 'in_progress' && <div className="w-2 h-2 rounded-full bg-yellow-500" />}
+              {status === 'in_progress' && <div className="w-2 h-2 rounded-full bg-primary" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="mb-1.5">{getStatusPill(status)}</div>
-              <h3 className={`font-medium text-sm ${status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+              <h3 className={`font-medium text-sm ${status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                 {task.title}
               </h3>
               <div className="flex items-center mt-1 space-x-2 flex-wrap">
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${getDifficultyColor(task.difficulty)}`}>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded border" style={getDifficultyStyle(task.difficulty)}>
                   {task.difficulty}
                 </span>
                 {task.type !== TaskType.TODO && (
-                  <span className="text-xs text-amber-400/90 flex items-center gap-1">
+                  <span className="text-xs text-primary/90 flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5" aria-hidden />
                     <span>連続 {task.streak || 0}</span>
                   </span>
@@ -188,7 +196,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
               e.stopPropagation();
               onDeleteTask(task.id);
             }}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-red-400 opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0 -m-2"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-destructive opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0 -m-2"
             aria-label="クエストを削除"
           >
             <Trash2 className="w-5 h-5" />
@@ -202,27 +210,27 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
     <div className="bg-card/80 backdrop-blur-md border border-border rounded-xl p-6 h-full flex flex-col shadow-xl">
       <header className={tasks.length === 0 ? 'mb-6' : ''}>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-bold text-amber-50 flex items-center tracking-wide">
-            <Shield className="w-6 h-6 mr-2 text-amber-400/90" aria-hidden />
+          <h2 className="text-xl font-bold text-foreground flex items-center tracking-wide">
+            <Shield className="w-6 h-6 mr-2 text-primary" aria-hidden />
             <span>{boardTitle}</span>
           </h2>
           <button 
             type="button"
             onClick={() => setIsAdding(true)}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-lg transition-colors"
             aria-label="クエストを追加"
           >
             <Plus className="w-5 h-5" />
           </button>
         </div>
         {tasks.length > 0 && (
-          <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-300">
+          <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>全クエスト: {tasks.length}</span>
             <span>完了: {tasksByStatus.done.length}</span>
           </div>
         )}
         {tasks.length > 0 && onUpdateStatus && (
-          <p className="mb-4 text-xs text-slate-400">
+          <p className="mb-4 text-xs text-muted-foreground">
             カードをタップすると 未着手 → 進行中 → 達成 の順に切り替わります
           </p>
         )}
@@ -230,13 +238,13 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
 
       {/* Add Task Form */}
       {isAdding && (
-        <div className="mb-4 p-4 bg-slate-900/80 rounded-lg border border-indigo-500/50 animate-fade-in-up">
+        <div className="mb-4 p-4 rounded-lg border border-primary/40 animate-fade-in-up" style={{ backgroundColor: 'var(--surface-strong)' }}>
           <input
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             placeholder="クエスト名を入力..."
-            className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white mb-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full bg-input border border-border rounded p-2 text-foreground mb-3 focus:ring-2 focus:ring-ring outline-none"
             aria-label="クエスト名"
             autoFocus
             onKeyDown={(e) => {
@@ -254,9 +262,12 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
                   key={d}
                   type="button"
                   onClick={() => setNewTaskDifficulty(d)}
-                  className={`min-h-[44px] px-3 py-2 rounded text-xs font-bold border ${
-                    newTaskDifficulty === d ? getDifficultyColor(d) : 'border-slate-700 text-slate-400'
-                  }`}
+                  className="min-h-[44px] px-3 py-2 rounded text-xs font-bold border"
+                  style={
+                    newTaskDifficulty === d
+                      ? getDifficultyStyle(d)
+                      : { borderColor: 'var(--border)', color: 'var(--muted-foreground)' }
+                  }
                   aria-pressed={newTaskDifficulty === d}
                   aria-label={`難易度: ${d}`}
                 >
@@ -265,8 +276,8 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
               ))}
             </div>
             <div className="flex space-x-2">
-              <button type="button" onClick={() => setIsAdding(false)} className="min-h-[44px] text-slate-400 hover:text-white px-4 py-2 text-sm">キャンセル</button>
-              <button type="button" onClick={handleAdd} className="min-h-[44px] bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-500">追加</button>
+              <button type="button" onClick={() => setIsAdding(false)} className="min-h-[44px] text-muted-foreground hover:text-foreground px-4 py-2 text-sm">キャンセル</button>
+              <button type="button" onClick={handleAdd} className="min-h-[44px] bg-primary text-primary-foreground px-4 py-2 rounded text-sm hover:bg-primary/90">追加</button>
             </div>
           </div>
         </div>
@@ -275,13 +286,13 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
       {/* 空状態: クエスト0件かつ目標から提案を促す場合（Task 8.1） */}
       {tasks.length === 0 && onRequestSuggestFromGoal ? (
         <div className="grow flex flex-col items-center justify-center py-12 px-4 text-center min-h-0">
-          <p className="text-slate-300 text-sm mb-4">
+          <p className="text-muted-foreground text-sm mb-4">
             目標に沿った{noun}をAIが提案します。まずは提案を取得してみましょう。
           </p>
           <button
             type="button"
             onClick={onRequestSuggestFromGoal}
-            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-xl transition-colors"
             aria-label="目標からクエストを生成"
           >
             <Sparkles className="w-5 h-5" />
@@ -310,11 +321,11 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
                 className={`min-h-[44px] flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeMobileTab === key
                     ? key === 'todo'
-                      ? 'bg-slate-600 text-white shadow'
+                      ? 'bg-secondary text-secondary-foreground shadow'
                       : key === 'in_progress'
-                        ? 'bg-amber-600/90 text-white shadow'
-                        : 'bg-emerald-600/90 text-white shadow'
-                    : 'bg-slate-700/60 text-slate-400 hover:text-slate-200'
+                        ? 'bg-primary/90 text-primary-foreground shadow'
+                        : 'bg-accent/90 text-accent-foreground shadow'
+                    : 'bg-secondary/70 text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {label} ({key === 'todo' ? tasksByStatus.todo.length : key === 'in_progress' ? tasksByStatus.inProgress.length : tasksByStatus.done.length})
@@ -331,7 +342,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
           >
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {tasksByStatus.todo.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
+                <div className="text-center text-muted-foreground py-8 text-sm">{emptyLabel}</div>
               ) : (
                 tasksByStatus.todo.map(renderTaskCard)
               )}
@@ -345,7 +356,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
           >
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {tasksByStatus.inProgress.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
+                <div className="text-center text-muted-foreground py-8 text-sm">{emptyLabel}</div>
               ) : (
                 tasksByStatus.inProgress.map(renderTaskCard)
               )}
@@ -359,7 +370,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
           >
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {tasksByStatus.done.length === 0 ? (
-                <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
+                <div className="text-center text-muted-foreground py-8 text-sm">{emptyLabel}</div>
               ) : (
                 tasksByStatus.done.map(renderTaskCard)
               )}
@@ -380,7 +391,7 @@ const QuestBoard: React.FC<QuestBoardProps> = ({
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                     {list.length === 0 ? (
-                      <div className="text-center text-slate-500 py-8 text-sm">{emptyLabel}</div>
+                      <div className="text-center text-muted-foreground py-8 text-sm">{emptyLabel}</div>
                     ) : (
                       list.map(renderTaskCard)
                     )}

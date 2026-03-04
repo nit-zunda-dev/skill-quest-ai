@@ -17,7 +17,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ profile }) => {
       <div className="text-center mb-6">
         <div 
           className="w-24 h-24 mx-auto bg-background rounded-full mb-4 flex items-center justify-center border-4 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
-          style={{ borderColor: profile.themeColor }}
+          style={{ borderColor: 'var(--primary)' }}
         >
           <User className="w-12 h-12 text-muted-foreground" />
         </div>
@@ -25,7 +25,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ profile }) => {
         <p className="text-sm text-primary font-medium mb-1">{profile.className}</p>
         <p className="text-xs text-muted-foreground italic">"{profile.title}"</p>
         <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-background/80 border border-border text-[10px] font-medium text-muted-foreground">
-          <Sparkles className="w-3 h-3 text-amber-300" />
+          <Sparkles className="w-3 h-3 text-primary" />
           <span className="truncate max-w-40">
             {worldview.label}
           </span>
@@ -36,19 +36,19 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ profile }) => {
       <div className="space-y-4 mb-8">
         <div>
           <div className="flex justify-between text-xs mb-1">
-            <span className="flex items-center text-yellow-400"><Star className="w-3 h-3 mr-1 fill-current" /> XP (Lv.{profile.level})</span>
+            <span className="flex items-center" style={{ color: 'var(--reward-fg)' }}><Star className="w-3 h-3 mr-1 fill-current" /> XP (Lv.{profile.level})</span>
             <span className="text-muted-foreground">{profile.currentXp} / {profile.nextLevelXp}</span>
           </div>
           <div className="w-full bg-background rounded-full h-2.5 overflow-hidden">
             <div 
-              className="bg-yellow-500 h-2.5 rounded-full transition-all duration-500" 
-              style={{ width: `${xpPercentage}%` }}
-            ></div>
+              className="h-2.5 rounded-full transition-all duration-500" 
+              style={{ width: `${xpPercentage}%`, backgroundColor: 'var(--reward-fg)' }}
+            />
           </div>
         </div>
         
-        <div className="flex items-center justify-end text-sm text-yellow-200 font-bold bg-background/60 p-2 rounded-lg border border-yellow-500/20">
-           <Coins className="w-4 h-4 mr-2 text-yellow-500" />
+        <div className="flex items-center justify-end text-sm font-bold bg-background/60 p-2 rounded-lg border border-border" style={{ color: 'var(--reward-fg)' }}>
+           <Coins className="w-4 h-4 mr-2" />
            {profile.gold} G
         </div>
       </div>

@@ -100,11 +100,11 @@ export default function QuestBoardPage() {
     <>
       <div className="flex-1 min-h-[400px]">
         {questsLoading ? (
-          <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex items-center justify-center text-slate-400">
+          <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-6 h-full flex items-center justify-center text-muted-foreground">
             クエストを読み込み中...
           </div>
         ) : questsError ? (
-          <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-xl p-6 h-full flex items-center justify-center text-red-400">
+          <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-6 h-full flex items-center justify-center text-destructive">
             クエストの読み込みに失敗しました
           </div>
         ) : (
@@ -124,18 +124,18 @@ export default function QuestBoardPage() {
 
       {completedTask && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
-            <button onClick={closeNarrativeModal} className="absolute top-4 right-4 text-slate-500 hover:text-white">
+          <div className="bg-card border border-border rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
+            <button onClick={closeNarrativeModal} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
               <X className="w-6 h-6" />
             </button>
             {!narrativeResult ? (
               <>
-                <h3 className="text-xl font-bold text-white mb-2">クエスト報告: {completedTask.title}</h3>
-                <p className="text-slate-400 text-sm mb-4">
+                <h3 className="text-xl font-bold text-foreground mb-2">クエスト報告: {completedTask.title}</h3>
+                <p className="text-muted-foreground text-sm mb-4">
                   このタスクについてのコメントや感想があれば入力してください。AIがあなたの物語を紡ぎます。
                 </p>
                 <textarea
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none mb-6 h-24 resize-none"
+                  className="w-full bg-input border border-border rounded-lg p-3 text-foreground focus:ring-2 focus:ring-ring outline-none mb-6 h-24 resize-none"
                   placeholder="例：30分集中できた！ / 雨の中走りきった！"
                   value={narrativeComment}
                   onChange={(e) => setNarrativeComment(e.target.value)}
@@ -143,7 +143,7 @@ export default function QuestBoardPage() {
                 <button
                   onClick={confirmCompletion}
                   disabled={isProcessingNarrative}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg flex items-center justify-center transition-all"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-lg flex items-center justify-center transition-all"
                 >
                   {isProcessingNarrative ? (
                     <span className="animate-pulse">記録中...</span>
@@ -156,26 +156,26 @@ export default function QuestBoardPage() {
               </>
             ) : (
               <div className="text-center animate-fade-in-up">
-                <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-500">
-                  <Sparkles className="w-8 h-8 text-yellow-400" />
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/50">
+                  <Sparkles className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-2xl font-display font-bold text-white mb-2">QUEST CLEAR!</h3>
-                <p className="text-slate-300 italic mb-6 leading-relaxed bg-slate-900/50 p-4 rounded border border-slate-700/50">
+                <h3 className="text-2xl font-display font-bold text-foreground mb-2">QUEST CLEAR!</h3>
+                <p className="text-muted-foreground italic mb-6 leading-relaxed p-4 rounded border border-border/70" style={{ backgroundColor: 'var(--surface-soft)' }}>
                   &quot;{narrativeResult.narrative}&quot;
                 </p>
                 <div className="flex justify-center space-x-6 mb-6 flex-wrap">
                   <div className="text-center">
-                    <div className="text-sm text-slate-500 uppercase">EXP</div>
-                    <div className="text-2xl font-bold text-yellow-400">+{narrativeResult.xp}</div>
+                    <div className="text-sm text-muted-foreground uppercase">EXP</div>
+                    <div className="text-2xl font-bold" style={{ color: 'var(--reward-fg)' }}>+{narrativeResult.xp}</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm text-slate-500 uppercase">GOLD</div>
-                    <div className="text-2xl font-bold text-yellow-400">+{narrativeResult.gold}</div>
+                    <div className="text-sm text-muted-foreground uppercase">GOLD</div>
+                    <div className="text-2xl font-bold" style={{ color: 'var(--reward-fg)' }}>+{narrativeResult.gold}</div>
                   </div>
                 </div>
                 {narrativeResult.grantedItem != null && (
                   <div className="mb-6">
-                    <p className="text-center text-lg font-bold text-transparent bg-clip-text bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 mb-4 animate-item-get-text">
+                    <p className="text-center text-lg font-bold text-transparent bg-clip-text bg-linear-to-r from-primary via-accent to-primary mb-4 animate-item-get-text">
                       アイテムをゲット！
                     </p>
                     <div className="flex justify-center">
@@ -185,7 +185,7 @@ export default function QuestBoardPage() {
                 )}
                 <button
                   onClick={closeNarrativeModal}
-                  className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-8 rounded-lg"
+                  className="bg-secondary hover:bg-secondary/80 text-secondary-foreground font-bold py-2 px-8 rounded-lg"
                 >
                   閉じる
                 </button>
@@ -197,8 +197,8 @@ export default function QuestBoardPage() {
 
       {directCompleteGrantedItem != null && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-800/95 border border-slate-600 rounded-2xl max-w-sm w-full p-6 shadow-2xl shadow-amber-500/10 animate-item-pop-in">
-            <p className="text-center text-xl font-bold text-transparent bg-clip-text bg-linear-to-r from-amber-400 via-yellow-300 to-amber-400 mb-5 animate-item-get-text">
+          <div className="bg-card/95 border border-border rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-item-pop-in">
+            <p className="text-center text-xl font-bold text-transparent bg-clip-text bg-linear-to-r from-primary via-accent to-primary mb-5 animate-item-get-text">
               アイテムをゲット！
             </p>
             <ItemAcquisitionCard item={directCompleteGrantedItem} onClose={() => setDirectCompleteGrantedItem(null)} />

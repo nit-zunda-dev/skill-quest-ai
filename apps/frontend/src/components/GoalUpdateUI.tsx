@@ -63,7 +63,7 @@ const GoalUpdateUI: React.FC<GoalUpdateUIProps> = ({ profile, onGoalUpdateSucces
           aria-label="目標"
         />
         {errorMessage && (
-          <p className="text-amber-400 text-sm" role="alert">
+          <p className="text-destructive text-sm" role="alert">
             {errorMessage}
           </p>
         )}

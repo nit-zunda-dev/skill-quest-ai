@@ -78,6 +78,19 @@
     --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
     --sidebar-border: oklch(0.929 0.013 255.508);
     --sidebar-ring: oklch(0.704 0.04 256.788);
+    /* Semantic tokens for worldview-driven surfaces and highlights */
+    --ui-glow-1: rgb(59 130 246 / 0.16);
+    --ui-glow-2: rgb(168 85 247 / 0.14);
+    --surface-strong: rgb(15 23 42 / 0.88);
+    --surface-soft: rgb(30 41 59 / 0.45);
+    --interactive-soft: rgb(51 65 85 / 0.7);
+    --reward-fg: #facc15;
+    --partner-accent: #22d3ee;
+    --partner-accent-soft: rgb(34 211 238 / 0.22);
+    --partner-secondary: #f472b6;
+    --difficulty-easy: #34d399;
+    --difficulty-medium: #f59e0b;
+    --difficulty-hard: #f87171;
 }
 
 .dark {
@@ -148,6 +161,18 @@
   --sidebar-accent-foreground: #020617;
   --sidebar-border: #1f2937;
   --sidebar-ring: #4f46e5;
+  --ui-glow-1: rgb(34 211 238 / 0.14);
+  --ui-glow-2: rgb(108 63 197 / 0.16);
+  --surface-strong: rgb(2 6 23 / 0.85);
+  --surface-soft: rgb(11 16 32 / 0.65);
+  --interactive-soft: rgb(17 24 39 / 0.82);
+  --reward-fg: #fbbf24;
+  --partner-accent: #22d3ee;
+  --partner-accent-soft: rgb(34 211 238 / 0.22);
+  --partner-secondary: #a78bfa;
+  --difficulty-easy: #10b981;
+  --difficulty-medium: #fbbf24;
+  --difficulty-hard: #fb7185;
 }
 
 .app-root[data-worldview="chronicle-campus"] {
@@ -183,6 +208,18 @@
   --sidebar-accent-foreground: #3b1027;
   --sidebar-border: #3b1027;
   --sidebar-ring: #f472b6;
+  --ui-glow-1: rgb(196 71 138 / 0.18);
+  --ui-glow-2: rgb(245 194 231 / 0.16);
+  --surface-strong: rgb(31 16 32 / 0.9);
+  --surface-soft: rgb(42 21 48 / 0.7);
+  --interactive-soft: rgb(59 16 39 / 0.72);
+  --reward-fg: #fbcfe8;
+  --partner-accent: #f5c2e7;
+  --partner-accent-soft: rgb(245 194 231 / 0.24);
+  --partner-secondary: #f59e0b;
+  --difficulty-easy: #f5c2e7;
+  --difficulty-medium: #f59e0b;
+  --difficulty-hard: #fb7185;
 }
 
 .app-root[data-worldview="neo-frontier-hub"] {
@@ -218,6 +255,18 @@
   --sidebar-accent-foreground: #020617;
   --sidebar-border: #0f172a;
   --sidebar-ring: #38bdf8;
+  --ui-glow-1: rgb(46 134 171 / 0.16);
+  --ui-glow-2: rgb(56 189 248 / 0.12);
+  --surface-strong: rgb(4 19 32 / 0.86);
+  --surface-soft: rgb(7 24 39 / 0.66);
+  --interactive-soft: rgb(15 23 42 / 0.8);
+  --reward-fg: #facc15;
+  --partner-accent: #38bdf8;
+  --partner-accent-soft: rgb(56 189 248 / 0.22);
+  --partner-secondary: #22c55e;
+  --difficulty-easy: #22c55e;
+  --difficulty-medium: #38bdf8;
+  --difficulty-hard: #f97316;
 }
 
 @layer base {

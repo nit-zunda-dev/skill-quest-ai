@@ -33,8 +33,8 @@ export default function HomePage() {
         <section className="bg-card/80 backdrop-blur-md border border-border rounded-xl p-4">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">クエスト状況</h2>
           <p className="text-card-foreground">
-            未完了 <span className="font-bold text-yellow-400">{todoCount}</span> 件 / 完了{' '}
-            <span className="font-bold text-green-400">{doneCount}</span> 件
+            未完了 <span className="font-bold text-primary">{todoCount}</span> 件 / 完了{' '}
+            <span className="font-bold text-accent">{doneCount}</span> 件
           </p>
         </section>
       )}
