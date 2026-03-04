@@ -61,13 +61,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
             className="w-full min-w-0 space-y-6 sm:space-y-7 text-left flex flex-col justify-center"
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-bold text-white leading-tight font-display">
-              退屈なTODOを、
+              あなたの目標が
               <span className="block bg-gradient-to-r from-emerald-400 via-green-400 to-violet-400 bg-clip-text text-transparent">
-                楽しい物語に。
+                物語になる
               </span>
             </h1>
             <p className="text-slate-400 text-base md:text-lg xl:text-xl leading-relaxed">
-              目標を入力すれば、AIがクエストと物語を紡ぎ出す。クリアするたびに届く物語と報酬、AIパートナーとの冒険で、「また三日坊主」はもう終わり。
+              目標を入力すれば、AIがクエストと物語を紡ぎ出す。クリアするたびに報酬と物語の続きが届く、
+              一人ひとりのための目標達成新感覚ゲームアプリ
             </p>
             <Button
               onClick={onStartClick}
