@@ -1,68 +1,41 @@
 /**
- * ガチャ Task 2.1: アイテムマスタ・所持履歴テーブルのスキーマ定義の検証
+ * 認証スキーマ（user / session / account / verification）の検証
  */
 import { describe, it, expect } from 'vitest';
 import { getTableColumns } from 'drizzle-orm';
-import { items, userAcquiredItems, partnerFavorability, aiDailyUsage, schema } from './schema';
+import { user, session, account, verification, schema } from './schema';
 
 function columnNames(table: ReturnType<typeof getTableColumns>): string[] {
   return Object.values(table).map((col) => col.name);
 }
 
-describe('gacha schema (Task 2.1)', () => {
-  describe('items', () => {
-    it('テーブルがスキーマに含まれる', () => {
-      expect(schema).toHaveProperty('items', items);
-    });
-
-    it('一意ID・カテゴリ・レアリティ・表示名・説明・ドロップ有効フラグを持つ', () => {
-      const cols = columnNames(getTableColumns(items));
-      expect(cols).toContain('id');
-      expect(cols).toContain('category');
-      expect(cols).toContain('rarity');
-      expect(cols).toContain('name');
-      expect(cols).toContain('description');
-      expect(cols).toContain('enabled_for_drop');
-    });
+describe('auth schema', () => {
+  it('exports only Better Auth tables on schema object', () => {
+    expect(Object.keys(schema).sort()).toEqual(['account', 'session', 'user', 'verification']);
   });
 
-  describe('user_acquired_items', () => {
-    it('テーブルがスキーマに含まれる', () => {
-      expect(schema).toHaveProperty('userAcquiredItems', userAcquiredItems);
-    });
-
-    it('ユーザーID・アイテムID・クエストID・取得時刻を持つ', () => {
-      const cols = columnNames(getTableColumns(userAcquiredItems));
-      expect(cols).toContain('user_id');
-      expect(cols).toContain('item_id');
-      expect(cols).toContain('quest_id');
-      expect(cols).toContain('acquired_at');
-      expect(cols).toContain('id');
-    });
+  it('user has id, email, name', () => {
+    const cols = columnNames(getTableColumns(user));
+    expect(cols).toContain('id');
+    expect(cols).toContain('email');
+    expect(cols).toContain('name');
   });
 
-  describe('partner_favorability', () => {
-    it('テーブルがスキーマに含まれる', () => {
-      expect(schema).toHaveProperty('partnerFavorability', partnerFavorability);
-    });
-
-    it('user_id, favorability, updated_at を持つ', () => {
-      const cols = columnNames(getTableColumns(partnerFavorability));
-      expect(cols).toContain('user_id');
-      expect(cols).toContain('favorability');
-      expect(cols).toContain('updated_at');
-    });
+  it('session references user', () => {
+    const cols = columnNames(getTableColumns(session));
+    expect(cols).toContain('user_id');
+    expect(cols).toContain('token');
   });
-});
 
-describe('ai_daily_usage (infra-stability-cost Task 1.1)', () => {
-  it('neurons_estimate カラムを持つ（integer, default 0）', () => {
-    const cols = getTableColumns(aiDailyUsage);
-    expect(cols).toHaveProperty('neuronsEstimate');
-    expect(cols.neuronsEstimate).toBeDefined();
-    expect(String(cols.neuronsEstimate.columnType)).toContain('Integer');
-    const def = cols.neuronsEstimate.default;
-    expect(def).toBeDefined();
-    expect(String(def)).toMatch(/0/);
+  it('account has provider and password fields', () => {
+    const cols = columnNames(getTableColumns(account));
+    expect(cols).toContain('provider_id');
+    expect(cols).toContain('user_id');
+  });
+
+  it('verification has identifier and value', () => {
+    const cols = columnNames(getTableColumns(verification));
+    expect(cols).toContain('identifier');
+    expect(cols).toContain('value');
   });
 });

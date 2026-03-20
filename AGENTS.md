@@ -4,6 +4,8 @@ Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life
 
 ## Project Context
 
+**製品状態（フェーズ1）**: 旧 Skill Quest（Genesis・クエスト・AI パートナー・ガチャ等）はコード・API・D1 から撤去済み。フロントは `/`（仮トップ）・`/login`・`/account` のみ。ポータルとミニアプリは次フェーズ。
+
 ### Paths
 - Steering: `.kiro/steering/`
 - Specs: `.kiro/specs/`

@@ -2,7 +2,7 @@
  * Task 13.1: wrangler.toml の環境分離を検証するテスト
  * - [env.preview] と [env.production] が定義されていること
  * - 本番とプレビューで異なる D1 database_id が設定されていること
- * - 各環境で FRONTEND_URL と AI バインディングが設定されていること
+ * - 各環境で FRONTEND_URL が設定されていること
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -56,14 +56,10 @@ describe('wrangler.toml environment separation (Task 13.1)', () => {
     expect(content).toMatch(/\[env\.production\][\s\S]*?FRONTEND_URL/);
   });
 
-  it('configures AI binding for preview', () => {
-    expect(content).toMatch(/\[env\.preview\.ai\]/);
-    expect(content).toMatch(/\[env\.preview\.ai\][\s\S]*?binding\s*=\s*"AI"/);
-  });
-
-  it('configures AI binding for production', () => {
-    expect(content).toMatch(/\[env\.production\.ai\]/);
-    expect(content).toMatch(/\[env\.production\.ai\][\s\S]*?binding\s*=\s*"AI"/);
+  it('does not define Workers AI binding (removed in phase 1)', () => {
+    expect(content).not.toMatch(/\[ai\]/);
+    expect(content).not.toMatch(/\[env\.preview\.ai\]/);
+    expect(content).not.toMatch(/\[env\.production\.ai\]/);
   });
 
   it('configures D1 binding "DB" for preview and production', () => {

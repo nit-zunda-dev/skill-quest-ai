@@ -1,8 +1,3 @@
-/**
- * 認証必須ガード（Task 2.1, 2.2, Requirements 1.2, 4.1, 4.4）
- * 未認証の場合は /login へリダイレクトし、returnUrl を付与する。
- * returnUrl は同一オリジンかつアプリ内パスのみ許可し、無効な場合は /app へフォールバックする。
- */
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +14,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
   if (isLoading) {
     return (
-      <div className="app-root min-h-screen bg-background text-foreground flex items-center justify-center" data-worldview="arcane-terminal">
+      <div className="app-root min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-muted-foreground animate-pulse">読み込み中...</div>
       </div>
     );

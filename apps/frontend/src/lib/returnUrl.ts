@@ -1,22 +1,12 @@
 /**
- * returnUrl 検証（Task 2.2, Requirements 4.1）
- * 同一オリジンかつアプリ内パス（/app で始まる）のみ許可。無効な値は /app へフォールバックする。
+ * returnUrl 検証: 同一オリジン想定で、アプリ内パス（/account）のみ許可。
  */
-import { PATH_APP } from '@/lib/paths';
+import { PATH_ACCOUNT } from '@/lib/paths';
 
-/**
- * pathname がアプリ内パス（/app または /app/ で始まる）かどうか。
- * /appetizer 等は許可しない。
- */
-function isAppInternalPath(pathname: string): boolean {
-  return pathname === PATH_APP || pathname.startsWith(PATH_APP + '/');
+function isAccountInternalPath(pathname: string): boolean {
+  return pathname === PATH_ACCOUNT || pathname.startsWith(`${PATH_ACCOUNT}/`);
 }
 
-/**
- * リダイレクト先として許可する returnUrl を返す。
- * アプリ内パスの場合のみ pathname + search を返し、それ以外は PATH_APP を返す。
- */
 export function getValidReturnUrl(pathname: string, search: string): string {
-  const path = isAppInternalPath(pathname) ? pathname + search : PATH_APP;
-  return path;
+  return isAccountInternalPath(pathname) ? pathname + search : PATH_ACCOUNT;
 }

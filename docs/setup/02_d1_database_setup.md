@@ -169,6 +169,12 @@ wrangler d1 execute skill-quest-db --local --command "SELECT 1;"
 
 テーブル一覧や中身の確認方法は [データベース確認方法](./04_データベース確認方法.md) を参照してください。
 
+## フェーズ1: レガシーテーブル削除（2026-03）
+
+`apps/backend/migrations/0012_drop_legacy_app_tables.sql` がクエスト・ガチャ・AI 利用ログ等の旧テーブルを **DROP TABLE IF EXISTS** で削除します。適用後の Drizzle スキーマは **Better Auth 用 4 テーブル**（`user`, `session`, `account`, `verification`）のみです。
+
+プレビュー・本番ではデプロイ前に必ずマイグレーションを適用してください（例: `pnpm --filter @skill-quest/backend run db:migrate:preview`）。ローカルは `db:migrate:local`。
+
 ## 次のステップ
 
 ローカル開発用D1データベースの作成が完了したら、スキーマ（`apps/backend/src/db/schema.ts`）の変更後、`pnpm db:generate` でマイグレーションを生成し、`pnpm db:migrate:local` で適用します。詳細は [データベース設計](../architecture/04_データベース設計.md) を参照してください。

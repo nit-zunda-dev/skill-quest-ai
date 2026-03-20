@@ -12,26 +12,14 @@ binding = "DB"
 database_name = "skill-quest-db"
 database_id = "local"
 
-# Workers AIバインディング（常にリモート。local devでも利用料が発生する場合あり）
-[ai]
-binding = "AI"
-remote = true
-
 # 環境変数（開発環境）
 [vars]
 FRONTEND_URL = "http://localhost:3000"
-# AI_GATEWAY_ID は .dev.vars ファイルで設定（Git管理外）
-# プレビュー/本番環境では Cloudflare ダッシュボードの環境変数で設定
-# 無料枠フォールバック（オプション）: AI_NEURONS_FALLBACK_THRESHOLD, AI_NEURONS_DAILY_LIMIT は .dev.vars またはダッシュボードで設定。未設定時はフォールバック判定なし
-# OPS_API_KEY: 運用者API用。ローカルは .dev.vars、プレビュー/本番は wrangler secret put で設定（デプロイしても消えない）
+# OPS_API_KEY: 運用者API用。ローカルは .dev.vars、プレビュー/本番は wrangler secret put で設定
 
 # プレビュー環境設定（Cloudflare Pages と Workers の統合: docs/setup/04_production_environment_setup.md セクション6参照）
 [env.preview]
 vars = { FRONTEND_URL = "https://develop.skill-quest-ai.pages.dev" }
-# AI_GATEWAY_ID は Cloudflare ダッシュボードの環境変数で設定（Git管理外）
-[env.preview.ai]
-binding = "AI"
-remote = true
 [[env.preview.d1_databases]]
 binding = "DB"
 database_name = "skill-quest-db-preview"
@@ -40,10 +28,6 @@ database_id = "3bf843ff-b857-4d8e-a9cc-861b18b38929"
 # 本番環境設定（カスタムドメイン: docs/setup/09_custom_domain_setup.md）
 [env.production]
 vars = { FRONTEND_URL = "https://app.skill-quest-ai.com" }
-# AI_GATEWAY_ID は Cloudflare ダッシュボードの環境変数で設定（Git管理外）
-[env.production.ai]
-binding = "AI"
-remote = true
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "skill-quest-db-production"

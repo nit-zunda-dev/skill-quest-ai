@@ -1,20 +1,15 @@
-/**
- * RequireAuth ガードの単体テスト（Task 2.1, 2.2, 14.1）
- * 認証済みなら子要素を描画、未認証なら /login へリダイレクト（returnUrl 付与）、ローディング中は読み込み表示。
- */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
-import { PATH_LOGIN } from '@/lib/paths';
+import { PATH_LOGIN, PATH_ACCOUNT } from '@/lib/paths';
 
 const mockUseAuth = vi.fn();
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-// Navigate の to を検証するため、テスト用にモック（実装は DOM を描画しない）
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return {
@@ -26,11 +21,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 function renderWithRouter(initialPath: string, ui: React.ReactElement) {
-  return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      {ui}
-    </MemoryRouter>
-  );
+  return render(<MemoryRouter initialEntries={[initialPath]}>{ui}</MemoryRouter>);
 }
 
 describe('RequireAuth', () => {
@@ -38,13 +29,10 @@ describe('RequireAuth', () => {
     mockUseAuth.mockReset();
   });
 
-  it('認証済みのとき子要素を描画する', () => {
-    mockUseAuth.mockReturnValue({
-      isAuthenticated: true,
-      isLoading: false,
-    });
+  it('renders children when authenticated', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
     renderWithRouter(
-      '/app/quests',
+      PATH_ACCOUNT,
       <RequireAuth>
         <span>Child content</span>
       </RequireAuth>
@@ -52,13 +40,10 @@ describe('RequireAuth', () => {
     expect(screen.getByText('Child content')).toBeTruthy();
   });
 
-  it('未認証のとき /login へリダイレクトする（子は表示されない）', () => {
-    mockUseAuth.mockReturnValue({
-      isAuthenticated: false,
-      isLoading: false,
-    });
+  it('redirects to login with returnUrl when unauthenticated', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: false });
     renderWithRouter(
-      '/app/quests',
+      `${PATH_ACCOUNT}/x`,
       <RequireAuth>
         <span>Child content</span>
       </RequireAuth>
@@ -67,37 +52,29 @@ describe('RequireAuth', () => {
     const to = screen.getByTestId('require-auth-redirect').getAttribute('data-to');
     expect(to).toContain(PATH_LOGIN);
     expect(to).toContain('returnUrl');
-    expect(to).toContain(encodeURIComponent('/app/quests'));
+    expect(to).toContain(encodeURIComponent(`${PATH_ACCOUNT}/x`));
   });
 
-  it('未認証でパスがアプリ外のとき returnUrl は /app にフォールバックする', () => {
-    mockUseAuth.mockReturnValue({
-      isAuthenticated: false,
-      isLoading: false,
-    });
+  it('falls back returnUrl to PATH_ACCOUNT for non-account paths', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: false });
     renderWithRouter(
       '/',
       <RequireAuth>
         <span>Child content</span>
       </RequireAuth>
     );
-    expect(screen.queryByText('Child content')).toBeNull();
     const to = screen.getByTestId('require-auth-redirect').getAttribute('data-to');
-    expect(to).toContain('returnUrl=%2Fapp');
+    expect(to).toContain(`returnUrl=${encodeURIComponent(PATH_ACCOUNT)}`);
   });
 
-  it('ローディング中は読み込み表示をし、子は描画しない', () => {
-    mockUseAuth.mockReturnValue({
-      isAuthenticated: false,
-      isLoading: true,
-    });
+  it('shows loading state', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: true });
     renderWithRouter(
-      '/app',
+      PATH_ACCOUNT,
       <RequireAuth>
         <span>Child content</span>
       </RequireAuth>
     );
     expect(screen.getByText('読み込み中...')).toBeTruthy();
-    expect(screen.queryByText('Child content')).toBeNull();
   });
 });

@@ -1,8 +1,5 @@
 /**
- * Task 5.2: 認証フローの統合テスト
- * ログインからログアウトまでの一連の操作を検証。D1 を使用。
- * 1本のテストで sign-up → sign-in → get-session → sign-out を通しで実行し、
- * テスト間のストレージ分離の影響を受けないようにする。
+ * 認証フローの統合テスト（D1 + Better Auth）
  */
 import { SELF, env } from 'cloudflare:test';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -13,19 +10,10 @@ const TEST_PASSWORD = 'TestPassword123!';
 const TEST_NAME = 'Auth Integration User';
 
 const RESET_STATEMENTS = [
-  'DELETE FROM interaction_logs',
-  'DELETE FROM user_progress',
-  'DELETE FROM grimoire_entries',
-  'DELETE FROM quests',
   'DELETE FROM session',
   'DELETE FROM account',
-  'DELETE FROM user_character_generated',
-  'DELETE FROM user_character_profile',
-  'DELETE FROM ai_daily_usage',
-  'DELETE FROM rate_limit_logs',
   'DELETE FROM verification',
   'DELETE FROM user',
-  'DELETE FROM skills',
 ];
 
 async function resetDatabase() {
@@ -34,7 +22,7 @@ async function resetDatabase() {
   }
 }
 
-describe('Auth flow integration (Task 5.2)', () => {
+describe('Auth flow integration', () => {
   beforeAll(async () => {
     await resetDatabase();
   });

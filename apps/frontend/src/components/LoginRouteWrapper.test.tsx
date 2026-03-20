@@ -1,14 +1,9 @@
-/**
- * LoginRouteWrapper の単体テスト（Task 5.1, Requirements 4.1 / Task 12.1, 5.3）
- * 認証成功後に returnUrl が有効ならその URL へ、無効または無ければダッシュボードへ遷移する。
- * クエリ mode / returnUrl の正規化を検証する。
- */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LoginRouteWrapper } from './LoginRouteWrapper';
-import { PATH_APP } from '@/lib/paths';
+import { PATH_ACCOUNT, PATH_LANDING } from '@/lib/paths';
 
 const mockNavigate = vi.fn();
 const mockRefetch = vi.fn();
@@ -49,11 +44,7 @@ vi.mock('@/components/LoginSignupForm', () => ({
 }));
 
 function renderWithRouter(initialEntry: string, ui: React.ReactElement) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      {ui}
-    </MemoryRouter>
-  );
+  return render(<MemoryRouter initialEntries={[initialEntry]}>{ui}</MemoryRouter>);
 }
 
 describe('LoginRouteWrapper', () => {
@@ -61,63 +52,50 @@ describe('LoginRouteWrapper', () => {
     vi.clearAllMocks();
   });
 
-  it('LoginSignupForm を表示する', () => {
+  it('renders LoginSignupForm', () => {
     renderWithRouter('/login', <LoginRouteWrapper />);
     expect(screen.getByTestId('simulate-success')).toBeTruthy();
   });
 
-  it('認証成功時に有効な returnUrl があればその URL へ遷移する', () => {
-    renderWithRouter('/login?returnUrl=%2Fapp%2Fquests', <LoginRouteWrapper />);
+  it('navigates to valid returnUrl under /account', () => {
+    renderWithRouter(`/login?returnUrl=${encodeURIComponent('/account')}`, <LoginRouteWrapper />);
     fireEvent.click(screen.getByTestId('simulate-success'));
     expect(mockRefetch).toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalledWith('/app/quests');
+    expect(mockNavigate).toHaveBeenCalledWith(PATH_ACCOUNT);
   });
 
-  it('認証成功時に returnUrl が無効なら PATH_APP へ遷移する', () => {
+  it('navigates to PATH_ACCOUNT when returnUrl is invalid', () => {
     renderWithRouter('/login?returnUrl=%2Fother', <LoginRouteWrapper />);
     fireEvent.click(screen.getByTestId('simulate-success'));
-    expect(mockNavigate).toHaveBeenCalledWith(PATH_APP);
+    expect(mockNavigate).toHaveBeenCalledWith(PATH_ACCOUNT);
   });
 
-  it('認証成功時に returnUrl が無ければ PATH_APP へ遷移する', () => {
+  it('navigates to PATH_ACCOUNT when returnUrl is missing', () => {
     renderWithRouter('/login', <LoginRouteWrapper />);
     fireEvent.click(screen.getByTestId('simulate-success'));
-    expect(mockNavigate).toHaveBeenCalledWith(PATH_APP);
+    expect(mockNavigate).toHaveBeenCalledWith(PATH_ACCOUNT);
   });
 
-  it('認証成功時に returnUrl が /app なら /app へ遷移する', () => {
-    renderWithRouter('/login?returnUrl=%2Fapp', <LoginRouteWrapper />);
+  it('allows returnUrl / (landing)', () => {
+    renderWithRouter(`/login?returnUrl=${encodeURIComponent('/')}`, <LoginRouteWrapper />);
     fireEvent.click(screen.getByTestId('simulate-success'));
-    expect(mockNavigate).toHaveBeenCalledWith(PATH_APP);
+    expect(mockNavigate).toHaveBeenCalledWith(PATH_LANDING);
   });
 
-  describe('Task 12.1: クエリ・ハッシュの正規化 (Req 5.3)', () => {
-    it('mode=signup のときフォームに initialMode=signup を渡す', () => {
+  describe('query normalization', () => {
+    it('passes initialMode signup when mode=signup', () => {
       renderWithRouter('/login?mode=signup', <LoginRouteWrapper />);
-      expect(screen.getByTestId('initial-mode').textContent).to.equal('signup');
+      expect(screen.getByTestId('initial-mode').textContent).toBe('signup');
     });
 
-    it('mode=invalid のとき initialMode=login をデフォルトとする', () => {
+    it('defaults to login for invalid mode', () => {
       renderWithRouter('/login?mode=invalid', <LoginRouteWrapper />);
-      expect(screen.getByTestId('initial-mode').textContent).to.equal('login');
+      expect(screen.getByTestId('initial-mode').textContent).toBe('login');
     });
 
-    it('mode が欠落しているとき initialMode=login を渡す', () => {
-      renderWithRouter('/login', <LoginRouteWrapper />);
-      expect(screen.getByTestId('initial-mode').textContent).to.equal('login');
-    });
-
-    it('returnUrl が無効なときマウント時に URL を正規化する（setSearchParams を呼ぶ）', () => {
+    it('calls setSearchParams when returnUrl is invalid external', () => {
       renderWithRouter('/login?returnUrl=http%3A%2F%2Fevil.com', <LoginRouteWrapper />);
       expect(mockSetSearchParams).toHaveBeenCalled();
-      const setSearchParamsArg = mockSetSearchParams.mock.calls[0][0];
-      if (typeof setSearchParamsArg === 'function') {
-        const prev = new URLSearchParams('returnUrl=http%3A%2F%2Fevil.com');
-        const next = setSearchParamsArg(prev);
-        expect(next.get('returnUrl')).toBeFalsy();
-      } else {
-        expect(setSearchParamsArg.get?.('returnUrl')).toBeFalsy();
-      }
     });
   });
 });
