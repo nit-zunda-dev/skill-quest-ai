@@ -99,6 +99,8 @@ pnpm db:tables
 
 ### 開発サーバーの起動
 
+初回クローン後やローカル D1 をリセットしたあとは、`apps/backend` で `pnpm db:migrate:local` を実行してから `pnpm dev` してください。未適用だと Better Auth が `user` テーブルを参照できずサインアップが 500 になります。
+
 ```bash
 # すべてのアプリケーションを起動
 pnpm dev
